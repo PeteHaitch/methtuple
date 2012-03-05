@@ -1,0 +1,147 @@
+\documentclass[a4paper]{article}
+
+%%%%%%% inclusion of latex 2e packages or extensions %
+\usepackage{graphicx} % better graphics
+\usepackage{todonotes} % Can insert to-do notes "missing image" notes
+\usepackage{amsmath, amsfonts, amsthm} % some better math environments
+\usepackage{bm} % enable bold math fonts
+%\usepackage{hyperref} % pdf hyperlinks
+\usepackage{tabulary} % better tables
+\usepackage{tabularx}
+\usepackage{multirow} % create multirow tables more easily
+\usepackage[novbox]{pdfsync}  % enable tex source and pdf output
+%syncronicity. NB: This package may break tabulary - [novbox] argument
+%tries to fix this.
+\usepackage{natbib} % year, date citations
+\usepackage{booktabs} % [ackage for creating nicer tables
+\usepackage{url} % url package
+
+
+% Custom commands
+\newcommand{\fastq}{\texttt{FASTQ }}
+\newcommand{\SAM}{\texttt{SAM }}
+\newcommand{\als}{\texttt{.als }}
+\newcommand{\methyl}{5$^{\text{me}}$C }
+\setlength{\doublerulesep}{\arrayrulewidth}
+\interfootnotelinepenalty=10000
+\def\eqd{\,{\buildrel d \over =}\,} % equal in distribution sign
+
+% Sweave options
+%\SweaveOpts{keep.source=TRUE} % Retains R comments
+
+%****************************
+\title{Analysing CpG comethylation via bisulfite sequencing}
+\author{Peter Hickey \\
+}
+
+\date{
+  \begin{center}
+	\today 
+	\end{center}
+}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\section{Statistical framework}
+I consider each \textbf{pair} of \textbf{neighbouring} CpG dinucleotides in the reference genome\todo{Extend to non-neighbouring CpGs and non-CpG methylation}. Denote a pair of neighbouring CpGs by (X$_{c,p_1}$, X$_{c,p_2}$), where the subscript $c$ denotes the chromosome and subscripts $p_1$ and $p_2$ denote the position of the cytosine in each CpG; the pairs are ordered so that $p_1 < p_2$. In what follows I consider a single pair of CpGs and simplify the notation to $X = (X_1, X_{1+d})$ where $d > 1$ is the distance between the cytosine positions in each CpG.
+
+We are interested in studying the \emph{comethylation} of neighbouring CpGs. For each DNA fragment the methylation status at a CpG is a binary outcome ($M$ = methylated or $U$ = unmethylated). Statistically this means we are interested in studying correlated binary variates. We are also interested in studying how this correlation varies with $d$ and how the correlation changes according to the region of the genome (e.g. CpG Islands, promoter regions of genes, etc.).
+
+For each pair $X$, we tabulate the number of reads that report methylation at each CpG. If we were to only count reads that overlapped \textbf{both} CpGs then we would get something like Table~\ref{tab:2x2}. If we instead count all reads that overlap at least one of the CpGs in the pair then we would get a table like Table~\ref{tab:3x3}\footnote{Actually this table considers all reads regardless of any overlap. This is discussed later.}. Table~\ref{tab:3x3} will give better estimates of the marginal probabilities, i.e. the probability of $X_1$ or $X_{1+d}$ being methylated. Table~\ref{tab:2x2} is a sub-table of Table~\ref{tab:3x3}.
+
+\begin{table}[htdp]
+\caption{A $2\times 2$ contingency table of the reads overlapping a pair of neighbouring CpGs. $M$ = methylated, and $U$ = unmethylated. This table only includes reads that overlap both CpGs in the pair.}
+\centering
+%\begin{tabularx}{0.55\textwidth}{l l l l l l}
+\begin{tabular}{l l l l l}
+\toprule
+ & & \multicolumn{2}{c}{CpG$_2$} & \\
+\cmidrule(lr{0.95em}){3-4}
+ & & $M$ & $U$ & Total \\
+\midrule
+\multirow{2}{*}{CpG$_1$} & $M$ & $\eta_{11}$ & $\eta_{12}$ & $\eta_{10}$ \\
+ & $U$ & $\eta_{21}$ & $\eta_{22}$ & $\eta_{20}$ \\
+\midrule
+ & Total & $\eta_{01}$ & $\eta_{02}$ & $\eta$ \\
+\bottomrule
+%\end{tabularx}
+\end{tabular}
+\label{tab:2x2}
+\end{table}%
+
+\begin{table}[htdp]
+\caption{A $3\times 3$ contingency table of all reads and whether each read overlaps the CpG pair. $M$ = methylated, $U$ = unmethylated, and $-$ = read does not overlap the CpG.}
+\centering
+%\begin{tabularx}{0.55\textwidth}{l l l l l l}
+\begin{tabular}{l l l l l l}
+\toprule
+ & & \multicolumn{3}{c}{CpG$_2$} & \\
+\cmidrule(lr{0.95em}){3-5}
+ & & $M$ & $U$ & $-$ & Total \\
+\midrule
+\multirow{3}{*}{CpG$_1$} & $M$ & $n_{11}$ & $n_{12}$ & $n_{13}$ & $n_{10}$ \\
+ & $U$ & $n_{21}$ & $n_{22}$ & $n_{23}$ & $n_{20}$ \\
+ & $-$ & $n_{31}$ & $n_{32}$ & $n_{33}$ & $n_{30}$ \\
+\midrule
+ & Total & $n_{01}$ & $n_{02}$ & $n_{03}$ & $n$ \\
+\bottomrule
+%\end{tabularx}
+\end{tabular}
+\label{tab:3x3}
+\end{table}%
+
+Table~\ref{tab:3x3} includes information we probably don't care about, such as the number of reads in the sample that don't overlap either CpG$_1$ or CpG$_2$; this value (entry $n_{33}$) will be overwhelmingly large for every table.
+
+\clearpage
+
+\section{Programming strategy}
+Constructing the CpG tables is not a straightforward programming task. It involves the following steps\todo{Create CpG\_fw.bed and CpG\_rev.bed?}:
+\begin{enumerate}
+\item Define X
+\item Identify all reads overlapping at least one of the CpGs in $X$.
+\begin{enumerate}
+\item Reads aligned to the positive strand must overlap the cytosine in the \underline{C}pG.
+\item Reads aligned to the negative strand must overlap the guanine in the Cp\underline{G}.
+\end{enumerate}
+\item Tabulate the methylation status of each read.
+\begin{enumerate}
+\item For reads aligned to the forward strand, $C \Rightarrow M$ and $T \Rightarrow U$ at a \underline{C}pG.
+\item For reads aligned to the reverse strand, $G \Rightarrow M$ and $A \Rightarrow U$ at a Cp\underline{G}.
+\end{enumerate}
+\end{enumerate}
+
+The Illumina data have been aligned with \texttt{Bismark} and then converted to the bam format using \texttt{bismark2SAM\_v5\_xm.pl}\footnote{Available from \url{http://www.bioinformatics.bbsrc.ac.uk/projects/download.html#bismark}.} and \texttt{SAMtools}. The methylation string is stored in the \texttt{XM} tag of the bam file. I wrote a function to read the bam file into R. It requires the bam file to be indexed and assumes that the reads are aligned to the hg19 reference genome, though this requirement is easily modified. The output if a \texttt{GRanges} object.
+
+<<>>=
+library(Rsamtools)
+library(BSgenome)
+library(BSgenome.Hsapiens.UCSC.hg19)
+# Requires Rsamtools, BSgenome and BSgenome.Hsapiens.UCSC.hg19.
+readBismarkBam <- function(x){
+  bam.param <- ScanBamParam(what = c("rname", "strand", "pos", "qwidth"), tag = "XM")
+  bam <- scanBam(file = x, index = x, param = bam.param)
+  bam[[1]]$rname <- as(bam[[1]]$rname, "character")
+  bam[[1]]$strand <- as(bam[[1]]$strand, "character")
+  gr <- GRanges(seqnames=bam[[1]]$rname, strand = bam[[1]]$strand, ranges=IRanges(start=bam[[1]]$pos, width = bam[[1]]$qwidth), XM = bam[[1]]$tag$XM)
+  
+  # Add hg19 reference genome metadata
+  seqlevels(gr) <- seqlevels(Hsapiens)
+  seqlengths(gr) <- seqlengths(Hsapiens)
+  gr
+}
+readBismarkBam("~/Desktop/Comethylation/sandpit/SRR206931_bismark_sorted.bam")
+@
+\texttt{readBismarkBam()} is slightly worse than linear in speed vs. size of bam file --- a 182MB bam took an average 11 seconds to process and a 912MB bam took on average 79 seconds to process, with $n=5$ runs per file (NB: the first run was the slowest by 30 seconds for the 912MB bam file or $10\times$ longer than the first run of the 182MB file).
+
+%Once the bismark output has been converted to SAM, this should be relatively easy for a single $X$. Do \texttt{samtools view -L CpG\_pair.bed in.bam} and then process the \texttt{XM} tag of each read. Take note that ``An alignment may be given multiple times if it is overlapping several regions.'' (SAMtools manual). I also need to check what counts as an overlap, e.g. 1nt of the region or the entire region. May need to filter on the first 15nt of the read as well (as Kasper did).
+
+
+
+\listoftodos
+
+
+\end{document}
