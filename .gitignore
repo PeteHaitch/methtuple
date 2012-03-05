@@ -1,0 +1,5 @@
+# Ignore bam files and bam indexes
+*.bam
+*.bam.bai
+# Ignore the RData files in the data directory
+data/*.RData
