@@ -57,11 +57,12 @@ import csv
   ### z for not methylated C in CpG context (was converted)     ###
   #################################################################
 
-## TODO: [options] might include ignoring positions at end of read, ignoring low quality reads/positions
 ## TODO: Pretty up the file and add error checks & warnings
 ## TODO: Write a basic version of this program implemented in C. Compare run times of python vs. C implementation
 ## TODO: Discuss "random choice of CpGs in a read" with Terry - naive approach results in pairs with intra-pair distance > 40 (< 30%). Prove this analytically. Might choose outermost pair.
-## TODO: Implement command line option to choose how CpG pairs are selected, e.g. random, outermost, innermost, other(?)
+## TODO: Make shorter version of variable names, e.g. -5/--ignore5
+## TODO: Add counter for "ignored" CpGs
+## TODO: Add check to make sure "ignore" values make sense
 ## TODO: Write Version 2 that looks at read content, rather than XM tag, to determine methylation status. NB: Will need to be very careful with reads aligning to Crick-strand (NB: unmethylated reverse strand reads are A at the G in the CpG and methylated reads are G at the G in the CpG.)
 
 # Command line passer
@@ -70,15 +71,18 @@ parser.add_argument('samfile', type=argparse.FileType('r'), nargs=1,
                    help='The (sorted) Bismark SAM file to be processed. Can be a Bismark BAM files piped via SAMtools')
 parser.add_argument('output', type=argparse.FileType('w'), nargs=1,
                    help='The output filename')
-parser.add_argument('--ignore5', metavar = '<int>',
+parser.add_argument('--ignore5', metavar = '<int>', type = int,
                   default=0,
-                  help='NOT YET IMPLEMENTED ignore <int> bases from 5\' (left) end of reads (default: 0)') ## TODO: Add 'type' argument
-parser.add_argument('--ignore3', metavar = '<int>',
+                  help='Ignore <int> bases from 5\' (left) end of reads (default: 0)')
+parser.add_argument('--ignore3', metavar = '<int>', type = int,
                   default=0,
-                  help='NOT YET IMPLEMENTED ignore <int> bases from 3\' (right) end of reads (default: 0)') ## TODO: Add 'type' argument
+                  help='Ignore <int> bases from 3\' (right) end of reads (default: 0)')
 parser.add_argument('--maxReadLength', metavar = '<int>', type = int,
                   default=150,
-                  help='NOT YET IMPLEMENTED Maximum read length in bp (default: 150)')
+                  help='Maximum read length in bp (default: 150)')
+parser.add_argument('--pairChoice', metavar = '<string>',
+                  default="random",
+                  help='Method for constructing CpG pairs in reads that contain more than two CpGs: random, leftmost or outermost (default: random)')
 parser.add_argument('--dummy', action='store_true',help='An example dummy TRUE/FALSE variable (default: FALSE)')
 
 args = parser.parse_args()
@@ -87,6 +91,9 @@ args = parser.parse_args()
 SAM = args.samfile[0]
 OUT = args.output[0]
 maxReadLength = args.maxReadLength
+pairChoice = args.pairChoice
+ignore5 = args.ignore5
+ignore3 = args.ignore3
 
 # Variable initialisations
 CpG_pattern = re.compile(r"[Zz]")
@@ -121,16 +128,24 @@ for line in SAM:
             methylated_CpG_positions[i] += 1
         for i in unmethylated_CpG_index:
             unmethylated_CpG_positions[i] += 1
+        # Ignore --ignore5 and --ignore3 bases from read
+        CpG_index = [pos for pos in CpG_index if pos > ignore5 and pos <= (len(XM) - ignore3)]
+        n_CpGs = len(CpG_index) # Update the number of CpGs the read overlaps post-"ignore"
         # If there is more than one CpG in the read then we want to process that read
         if n_CpGs > 1:
-            ## Choose two of those CpGs at random
-            #CpG_pair = random.sample(CpG_index, 2)
-            #CpG_pair.sort() # Important to sort the result to ensure CpG_1 < CpG_2 by position
-            # Choose the outermost CpG pair, i.e. the CpG with the greatest intra-pair distance
-            CpG_pair = [CpG_index[1], CpG_index[-1]]
+            # Create a CpG pair - the choice is random, leftmost or outermost.
+            # The outermost pair ensures the greatest intra-pair distance.
+            if pairChoice=="random":
+                CpG_pair = random.sample(CpG_index, 2)
+                CpG_pair.sort() # Important to sort the result to ensure CpG_1 < CpG_2 by position
+            elif pairChoice=="outermost":
+                CpG_pair = [CpG_index[0], CpG_index[-1]]
+            elif pairChoice=="leftmost":
+                CpG_pair = [CpG_index[0], CpG_index[1]]
+            else:
+                sys.exit("Error: pairChoice must be one of random, leftmost or outermost. Please retry.")
             index = array(CpG_pair)
             positions = start + index # positions are 1-based leftmost mapping positions (just like in the SAM spec)
-            #print >> OUT, chrom, positions[0], positions[1], XM[index[0]], XM[index[1]]
             output=[chrom, positions[0], positions[1], XM[index[0]], XM[index[1]]]
             tabWriter.writerow(output)
 
@@ -146,7 +161,7 @@ sys.stdout.write('Count\n')
 print '------------------'
 for index in range(len(CpGs_per_read)):
     print index, '\t', CpGs_per_read[index]
-print '%d (%d%%) reads contained > 1 CpG' % (sum(CpGs_per_read) - CpGs_per_read[0], 100 * (sum(CpGs_per_read) - CpGs_per_read[0])/read_counter)
+print '%d (%d%%) reads contained > 1 CpG (this includes ignored CpGs!)' % (sum(CpGs_per_read) - CpGs_per_read[0], 100 * (sum(CpGs_per_read) - CpGs_per_read[0])/read_counter)
 print 'Position in read of methylated CpGs'
 print methylated_CpG_positions
 print 'Position in read of unmethylated CpGs'
