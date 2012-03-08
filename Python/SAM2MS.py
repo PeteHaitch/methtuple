@@ -4,6 +4,7 @@ import random
 from numpy import array
 import argparse
 import sys
+import csv
 
 ## Extract comethylation signal for reads overlapping multiple CpGs
 ## SAM input file is the output of Bismark (no pre-processing required)
@@ -56,17 +57,17 @@ import sys
   ### z for not methylated C in CpG context (was converted)     ###
   #################################################################
 
-## TODO: Make output tab separated to make it a pseudo-BED file (.pbed). This file can then (probably) be processed with standard tool, e.g. BEDtools
 ## TODO: [options] might include ignoring positions at end of read, ignoring low quality reads/positions
 ## TODO: Pretty up the file and add error checks & warnings
 ## TODO: Write a basic version of this program implemented in C. Compare run times of python vs. C implementation
-## TODO: Discuss "random choice of CpGs in a read" with Terry - naive approach results in pairs with intra-pair distance > 40 (< 30%). Prove this analytically.
+## TODO: Discuss "random choice of CpGs in a read" with Terry - naive approach results in pairs with intra-pair distance > 40 (< 30%). Prove this analytically. Might choose outermost pair.
+## TODO: Implement command line option to choose how CpG pairs are selected, e.g. random, outermost, innermost, other(?)
 ## TODO: Write Version 2 that looks at read content, rather than XM tag, to determine methylation status. NB: Will need to be very careful with reads aligning to Crick-strand (NB: unmethylated reverse strand reads are A at the G in the CpG and methylated reads are G at the G in the CpG.)
 
 # Command line passer
 parser = argparse.ArgumentParser(description='Extract the methylation call at two CpGs for reads that overlap multiple CpG from a Bismark SAM file. If a read overlaps more than two CpGs, select two CpGs at random. The output of this file can be used for analysing comethylation along a read.')
 parser.add_argument('samfile', type=argparse.FileType('r'), nargs=1,
-                   help='The Bismark SAM file to be processed')
+                   help='The (sorted) Bismark SAM file to be processed. Can be a Bismark BAM files piped via SAMtools')
 parser.add_argument('output', type=argparse.FileType('w'), nargs=1,
                    help='The output filename')
 parser.add_argument('--ignore5', metavar = '<int>',
@@ -97,6 +98,9 @@ CpG_positions = [0] * maxReadLength # Count how often each position on the read 
 methylated_CpG_positions = [0] * maxReadLength # Count how many times each position on the read was a methylated CpG
 unmethylated_CpG_positions = [0] * maxReadLength # Count how many times each position on the read was an unmethylated CpG
 
+# Function to write tab-separated outputfile
+tabWriter = csv.writer(OUT, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
+
 # Process each line of SAM file
 for line in SAM:
     if not line.startswith('@'): # Skip SAM header lines
@@ -119,12 +123,16 @@ for line in SAM:
             unmethylated_CpG_positions[i] += 1
         # If there is more than one CpG in the read then we want to process that read
         if n_CpGs > 1:
-            # Choose two of those CpGs at random
-            CpG_pair = random.sample(CpG_index, 2)
-            CpG_pair.sort() # Important to sort the result to ensure CpG_1 < CpG_2 by position
+            ## Choose two of those CpGs at random
+            #CpG_pair = random.sample(CpG_index, 2)
+            #CpG_pair.sort() # Important to sort the result to ensure CpG_1 < CpG_2 by position
+            # Choose the outermost CpG pair, i.e. the CpG with the greatest intra-pair distance
+            CpG_pair = [CpG_index[1], CpG_index[-1]]
             index = array(CpG_pair)
-            positions = start + index #### TODO: Check positions are correct (i.e. 0-offset vs. 1-offset) - need to think about stranded-ness as well!
-            print >> OUT, chrom, positions[0], positions[1], XM[index[0]], XM[index[1]]
+            positions = start + index # positions are 1-based leftmost mapping positions (just like in the SAM spec)
+            #print >> OUT, chrom, positions[0], positions[1], XM[index[0]], XM[index[1]]
+            output=[chrom, positions[0], positions[1], XM[index[0]], XM[index[1]]]
+            tabWriter.writerow(output)
 
 # Close the file connections     
 SAM.close()
