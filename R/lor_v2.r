@@ -34,7 +34,7 @@ df$lor <- y[seq(1, length(y), 2)]
 df$ASE <- y[seq(2, length(y), 2)]
 
 limits <- aes(ymax = lor + 2*ASE, ymin = lor - 2*ASE)
-m <- ggplot(data = df, aes(x = distance, y = lor)) + geom_point() + geom_errorbar(limits) + opts(title = paste("FF: SRR094471\n", "n = ", nrow(x)))
+m <- ggplot(data = df, aes(x = distance, y = lor)) + geom_point() + geom_errorbar(limits) + opts(title = paste("FF: SRR094471\n", "n = ", nrow(x))) + scale_y_continuous(limits = c(0, 5))
 ggsave(filename = "SRR094471_lors.pdf", plot = m)
 dev.off()
 
@@ -54,7 +54,7 @@ y <- unlist(lors.in.CGI)
 df.in.CGI$lor <- y[seq(1, length(y), 2)]
 df.in.CGI$ASE <- y[seq(2, length(y), 2)]
 limits <- aes(ymax = lor + 2*ASE, ymin = lor - 2*ASE)
-m.in.CGI <- ggplot(data = df.in.CGI, aes(x = distance, y = lor)) + geom_point() + geom_errorbar(limits) + opts(title = paste("FF: SRR094471 in CGI\n", "n = ", sum(x$CGI)))
+m.in.CGI <- ggplot(data = df.in.CGI, aes(x = distance, y = lor)) + geom_point() + geom_errorbar(limits) + opts(title = paste("FF: SRR094471 in CGI\n", "n = ", sum(x$CGI))) + scale_y_continuous(limits = c(0, 5))
 ggsave(filename = "SRR094471_lors_in_CGI.pdf", plot = m.in.CGI)
 dev.off()
 
@@ -64,6 +64,6 @@ y <- unlist(lors.out.CGI)
 df.out.CGI$lor <- y[seq(1, length(y), 2)]
 df.out.CGI$ASE <- y[seq(2, length(y), 2)]
 limits <- aes(ymax = lor + 2*ASE, ymin = lor - 2*ASE)
-m.out.CGI <- ggplot(data = df.out.CGI, aes(x = distance, y = lor)) + geom_point() + geom_errorbar(limits) + opts(title = paste("FF: SRR094471 out CGI\n", "n = ", nrow(x) - sum(x$CGI)))
+m.out.CGI <- ggplot(data = df.out.CGI, aes(x = distance, y = lor)) + geom_point() + geom_errorbar(limits) + opts(title = paste("FF: SRR094471 out CGI\n", "n = ", nrow(x) - sum(x$CGI))) + scale_y_continuous(limits = c(0, 5))
 ggsave(filename = "SRR094471_lors_out_CGI.pdf", plot = m.out.CGI)
 dev.off()
