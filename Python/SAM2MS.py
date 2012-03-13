@@ -64,6 +64,7 @@ import csv
 ## TODO: Add counter for "ignored" CpGs
 ## TODO: Add check to make sure "ignore" values make sense
 ## TODO: Write Version 2 that looks at read content, rather than XM tag, to determine methylation status. NB: Will need to be very careful with reads aligning to Crick-strand (NB: unmethylated reverse strand reads are A at the G in the CpG and methylated reads are G at the G in the CpG.)
+## TODO: Add to documentation how to pipe BAM files to SAM2MS.py and how to use samtools view -F 1024 to skip reads marked as duplicates by Picard MarkDuplicates
 
 # Command line passer
 parser = argparse.ArgumentParser(description='Extract the methylation call at two CpGs for reads that overlap multiple CpG from a Bismark SAM file. If a read overlaps more than two CpGs, select two CpGs at random. The output of this file can be used for analysing comethylation along a read.')
