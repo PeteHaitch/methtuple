@@ -74,9 +74,9 @@ import pysam
 ## TODO: (MAJOR UPGRADE) Write Version 2 that looks at read content, rather than XM tag, to determine methylation status. NB: Will need to be very careful with reads aligning to Crick-strand (NB: unmethylated reverse strand reads are A at the G in the CpG and methylated reads are G at the G in the CpG.)
 
 # Command line passer
-parser = argparse.ArgumentParser(description='Extract the methylation calls for a CpG pair from reads that overlap multiple CpGs from a Bismark BAM file. The output file contains the positions of the CpG pair using 1-based co-ordinates on the forward strand of the cytosine in each CpG. If a read overlaps more than two CpGs there are several ways to construct the pairs (see the --pairChoice argument). The output of this file can be used for analysing comethylation along a read.')
-parser.add_argument('BAM', metavar = 'BAM',
-                  help='The path to the BAM file')
+parser = argparse.ArgumentParser(description='Extract the methylation calls for a CpG pair from reads that overlap multiple CpGs from a Bismark SAM/BAM file. The output file contains the positions of the CpG pair using 1-based co-ordinates on the forward strand of the cytosine in each CpG. If a read overlaps more than two CpGs there are several ways to construct the pairs (see the --pairChoice argument). The output of this file can be used for analysing comethylation along a read.')
+parser.add_argument('SAM', metavar = 'SAM',
+                  help='The path to the Bismark SAM/BAM file')
 parser.add_argument('output', type=argparse.FileType('w'), nargs=1,
                    help='The output filename')
 parser.add_argument('-5', '--ignore5', metavar = '<int>', type = int,
@@ -106,8 +106,8 @@ ignore3 = args.ignore3
 CpG_pattern = re.compile(r"[Zz]")
 methylated_CpG_pattern = re.compile(r"[Z]")
 unmethylated_CpG_pattern = re.compile(r"[z]")
-read_counter = 0 # The number of reads processed by BAM2MS.py
-duplicate_read_counter = 0 # The number of duplicate reads ignore by BAM2MS.py
+read_counter = 0 # The number of reads processed by SAM2MS.py
+duplicate_read_counter = 0 # The number of duplicate reads ignore by SAM2MS.py
 CpGs_per_read = [0] * (maxReadLength/2 + 2) # The number of reads containing x CpGs (x = 0, 1, ...; the minimum number of CpGs is 0 and the maximum number of CpGs is half the read length + 1)
 CpG_positions = [0] * maxReadLength # Count how often each position on the read was a CpG
 methylated_CpG_positions = [0] * maxReadLength # Count how many times each position on the read was a methylated CpG
@@ -116,11 +116,11 @@ unmethylated_CpG_positions = [0] * maxReadLength # Count how many times each pos
 # Function to write tab-separated outputfile
 tabWriter = csv.writer(OUT, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
 
-# Opens BAM file - does not currently work for SAM files as the autodetect SAM/BAM option isn't working for pysam.Samfile()
-bam = pysam.Samfile(args.BAM, 'rb') 
+# Opens SAM/BAM file
+sam = pysam.Samfile(args.SAM) 
 
 # Process each line of SAM file
-for read in bam:
+for read in sam:
     # Skip duplicate reads if requested
     if args.ignoreDuplicates and read.is_duplicate:
         read_counter += 1
@@ -128,8 +128,8 @@ for read in bam:
         continue
     else:
         read_counter += 1 # Increment the counter
-        chrom = bam.getrname(read.tid) # 
-        start = read.pos + 1 # read.pos is 0-based in accordance with BAM file specificiations and Python standards. I convert this to 1-based positions.
+        chrom = sam.getrname(read.tid) # 
+        start = read.pos + 1 # read.pos is 0-based in accordance with BAM file specificiations and Python standards, regardless of whether the file is in BAM or SAM format. I convert this to 1-based positions.
         XM = [tag[1] for tag in read.tags if tag[0]=='XM'][0] # Tags are stored as a Python list of 2-tuples [("TAG_NAME", "TAG_VALUE"), ...]. This assumes there is one, and one only, XM tag.
         CpG_index = [m.start() for m in re.finditer(CpG_pattern, XM)] # Stores index of CpGs in read (C for Watson strand, G for Crick strand)
         methylated_CpG_index = [m.start() for m in re.finditer(methylated_CpG_pattern, XM)] # Stores index of methylated CpGs in read
@@ -169,7 +169,7 @@ for read in bam:
             tabWriter.writerow(output)
 
 # Close the file connections
-bam.close()
+sam.close()
 OUT.close()
 
 # Print summary statistics to standard output
