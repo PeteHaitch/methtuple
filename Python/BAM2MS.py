@@ -74,7 +74,7 @@ import pysam
 ## TODO: (MAJOR UPGRADE) Write Version 2 that looks at read content, rather than XM tag, to determine methylation status. NB: Will need to be very careful with reads aligning to Crick-strand (NB: unmethylated reverse strand reads are A at the G in the CpG and methylated reads are G at the G in the CpG.)
 
 # Command line passer
-parser = argparse.ArgumentParser(description='Extract the methylation calls for a CpG pair from reads that overlap multiple CpGs from a Bismark BAM file. The output file contains the positions of the CpG pair using 1-based co-ordinates of the cytosine in each CpG. If a read overlaps more than two CpGs there are several ways to construct the pairs (see the --pairChoice argument). The output of this file can be used for analysing comethylation along a read.')
+parser = argparse.ArgumentParser(description='Extract the methylation calls for a CpG pair from reads that overlap multiple CpGs from a Bismark BAM file. The output file contains the positions of the CpG pair using 1-based co-ordinates on the forward strand of the cytosine in each CpG. If a read overlaps more than two CpGs there are several ways to construct the pairs (see the --pairChoice argument). The output of this file can be used for analysing comethylation along a read.')
 parser.add_argument('BAM', metavar = 'BAM',
                   help='The path to the BAM file')
 parser.add_argument('output', type=argparse.FileType('w'), nargs=1,
@@ -162,9 +162,9 @@ for read in bam:
             index = array(CpG_pair)
             # If a read maps to the reverse strand the Z/z characters in the XM string point to the G in the CpG - I want to point to the C in the CpG so I move the position coordinates 1bp to the left
             if(read.is_reverse):
-                positions = start + index - 1 # positions are 1-based positions of the cytosines in each CpG 
+                positions = start + index - 1 # positions are 1-based positions of the cytosines on the forward strand in each CpG 
             else:
-                positions = start + index # positions are 1-based positions of the cytosines in each CpG 
+                positions = start + index # positions are 1-based positions of the cytosines on the forward strand in each CpG  
             output=[chrom, positions[0], positions[1], XM[index[0]], XM[index[1]]]
             tabWriter.writerow(output)
 
