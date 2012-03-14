@@ -57,6 +57,10 @@ import csv
   ### z for not methylated C in CpG context (was converted)     ###
   #################################################################
 
+############
+# IMPORTANT: SAM2MS.py does not properly handle reads aligned to the reverse strand. See SAM2MS_pysam.py for a fix
+############
+
 ## TODO: Pretty up the file and add error checks & warnings
 ## TODO: Write a basic version of this program implemented in C. Compare run times of python vs. C implementation
 ## TODO: Discuss "random choice of CpGs in a read" with Terry - naive approach results in pairs with intra-pair distance > 40 (< 30%). Prove this analytically. Might choose outermost pair.
