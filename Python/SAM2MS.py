@@ -67,8 +67,9 @@ import pysam
 ### A note on duplicates
 # True PCR duplicates may be missed by MarkDuplicates if the reads have undergone different amounts of trimming since the start and end co-ordinates of the duplicate reads no longer need coincide even if both reads have the same POS field in the SAM file.
 
+## TODO: Use "read.positions" to extract position of CpG in reference genome rather than my method of read.start + index. This method may(?) generalise better to reads containing indels, i.e. using the Bowtie2 pipeline
+## TODO: Clarifiy how "read.positions" works if there is an insertion or deletion in the read; example read HWI-ST567_0245:2:65:16410:91305#GGCTAC in 46210.bam
 ## TODO: Discuss "random choice of CpGs in a read" with Terry - naive approach results in pairs with intra-pair distance > 40 (< 30%). Prove this analytically. Might choose outermost pair instead.
-## TODO: Add SAM file support (should be possible with upgrade of pysam from version 0.4.1 to 0.6)
 ## TODO: Paired-end version. Be careful of orientation of read pairs and stranded-ness for ignore5, ignore3 options and parsing of XM tag
 
 ## TODO: (MAJOR UPGRADE) Write Version 2 that looks at read content, rather than XM tag, to determine methylation status. NB: Will need to be very careful with reads aligning to Crick-strand (NB: unmethylated reverse strand reads are A at the G in the CpG and methylated reads are G at the G in the CpG.)
@@ -162,10 +163,12 @@ for read in sam:
             index = array(CpG_pair)
             # If a read maps to the reverse strand the Z/z characters in the XM string point to the G in the CpG - I want to point to the C in the CpG so I move the position coordinates 1bp to the left
             if(read.is_reverse):
-                positions = start + index - 1 # positions are 1-based positions of the cytosines on the forward strand in each CpG 
+                positions = start + index - 1 # positions are 1-based positions of the cytosines on the forward strand in each CpG
+                strand = "-"
             else:
-                positions = start + index # positions are 1-based positions of the cytosines on the forward strand in each CpG  
-            output=[chrom, positions[0], positions[1], XM[index[0]], XM[index[1]]]
+                positions = start + index # positions are 1-based positions of the cytosines on the forward strand in each CpG
+                strand = "+"
+            output=[chrom, positions[0], positions[1], XM[index[0]], XM[index[1]], strand]
             tabWriter.writerow(output)
 
 # Close the file connections
