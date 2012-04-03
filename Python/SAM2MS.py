@@ -67,6 +67,7 @@ import pysam
 ### A note on duplicates
 # True PCR duplicates may be missed by MarkDuplicates if the reads have undergone different amounts of trimming since the start and end co-ordinates of the duplicate reads no longer need coincide even if both reads have the same POS field in the SAM file.
 
+## TODO: Add normalising factor to "position in read of (un)methylated CpGs" based on number of reads of length n
 ## TODO: Use "read.positions" to extract position of CpG in reference genome rather than my method of read.start + index. This method may(?) generalise better to reads containing indels, i.e. using the Bowtie2 pipeline
 ## TODO: Clarifiy how "read.positions" works if there is an insertion or deletion in the read; example read HWI-ST567_0245:2:65:16410:91305#GGCTAC in 46210.bam
 ## TODO: Discuss "random choice of CpGs in a read" with Terry - naive approach results in pairs with intra-pair distance > 40 (< 30%). Prove this analytically. Might choose outermost pair instead.
