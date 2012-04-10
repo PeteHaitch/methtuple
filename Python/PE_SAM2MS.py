@@ -11,13 +11,19 @@ import pysam
 # Input must have been corrected with correct_Bismark_PE_SAM.py!!! Only works for directional libraries.
 # Only allows "outermost" CpG-pairs
 # If a read1 and read2 overlap (i.e. the DNA fragment was shorter then the sum of the read lenghts) I exclude the overlapping positions from the 3' end of read2 since read2 is generally of lower quality. A better approach would be to trim bases from either read1 or read2 depending on which read had the lower quality 'overlap-bases'. The Epigenomic Roadmap recommend that "Paired-reads that have partial overlap in genome coverage should be trimmed from the 3' so as to avoid treating sequence derived from multiple passes of the same genomic DNA fragment as independent data points." (http://www.roadmapepigenomics.org/files/protocols/data/dna-methylation/MethylC-SeqStandards_FINAL.pdf). A further improvement would be a check that the overlap reports a consistent methylation call. A further complication is addressed by bad_overlap_pairs.
-# CpG1 and position1 always refer to the leftmost CpG in the pair while CpG2 and position2 always refer to the rightmost CpG in the pair. Thus, for OT reads CpG1 is from read1 while for OB reads CpG1 is from read2 in readpairs where each read contains a CpG.
 # CpGL and positionL always refer to the leftmost CpG in the pair while CpGR and positionR always refer to the rightmost CpG in the pair. Thus, for OT reads CpGL is from read1 while for OB reads CpGL is from read2 in readpairs where each read contains a CpG.
+# TLEN is defined as the rightmost position of read2 (read1) minus the leftmost position of read1 (read2) plus 1 for OT (OB) aligned reads. Thus if TLEN < read1.alen + read2.alen the two reads overlap.
 
+## TODO: Bismark's TLEN computation is incorrect for overlapping reads from a read-pair. Thus it should not be used for inferring that reads overlap. Rewrite any features that rely on inferring read overlaps so as not to rely on the TLEN value. A bug report has been submitted to the developer's of Bismark.
+## TODO: Fix bug in calculation of overlapping reads - reads overlap if abs(TLEN) < read1.alen + read2.alen
+## TODO: Fix bug when ignoring reads that have "bad" overlap.
+## TODO: Add parameter to specify minimum and maximum insert sizes for a read-pair to be considered
 ## TODO: Write bad_overlap_reads to a separate file.
+## TODO: Make sure that Case1C and Case2B point to the C in the CpG and not the G
 ## TODO: Test-case with reads that contain an overlap.
 ## TODO: Add counters for each of the cases, CpGs_per_read, CpG_positions, methylated_CpG_positions, unmethylated_CpG_positions, bad_overlap_pairs
 ## TODO: Add --ignore5 and --ignore3 options
+## TODO: Add check if --ignoreDuplicates is set and ignore duplicates if it is set
 
 # Variable initialisations
 maxReadLength = 150
@@ -34,8 +40,8 @@ ignore2 = 0 # The number of bases of read2 to ignore due to overlap between read
 bad_overlap_pairs = 0 # The number of read-pairs where the leftmost position of read2 (read1) is to the left of the leftmost position of read1 (read2) for reads informative for the OT (OB) strand. Such reads are ignored when computing single-strand comethylation as they can violate the assumption that posL < posR.
 
 # Open file handles
-f = pysam.Samfile('sorted_test_cases.bam')
-OUT = open('sorted_test_cases.MS', 'w')
+f = pysam.Samfile('fixed_bismark.bam')
+OUT = open('fixed_bismark.MS', 'w')
 # Function to write tab-separated outputfile
 tabWriter = csv.writer(OUT, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
 
@@ -44,7 +50,6 @@ tabWriter = csv.writer(OUT, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MIN
 f.reset()
 for read in f:
     pair_counter += 1
-    ## TODO: Add check if --ignoreDuplicates is set and ignore duplicates if it is set
     if read.is_proper_pair and read.is_read1 and read.tid == read.rnext and not read.is_duplicate:
         chrom = f.getrname(read.tid)
         ignore2 = 0
@@ -57,63 +62,68 @@ for read in f:
             continue 
         finally: 
             f.seek(pointer)
-        readXM = [tag[1] for tag in read.tags if tag[0]=='XM'][0] # The XM tag for read1. Tags are stored as a Python list of 2-tuples [("TAG_NAME", "TAG_VALUE"), ...]. This assumes there is one, and one only, XM tag per read
-        mateXM = [tag[1] for tag in mate.tags if tag[0]=='XM'][0] # The XM tag for read2. Tags are stored as a Python list of 2-tuples [("TAG_NAME", "TAG_VALUE"), ...]. This assumes there is one, and one only, XM tag per read
+        # Rename read and mate as the more descriptive read1 and read2
+        read1 = read
+        read2 = mate
+        read1XM = [tag[1] for tag in read1.tags if tag[0]=='XM'][0] # The XM tag for read1. Tags are stored as a Python list of 2-tuples [("TAG_NAME", "TAG_VALUE"), ...]. This assumes there is one, and one only, XM tag per read
+        read2XM = [tag[1] for tag in read2.tags if tag[0]=='XM'][0] # The XM tag for read2. Tags are stored as a Python list of 2-tuples [("TAG_NAME", "TAG_VALUE"), ...]. This assumes there is one, and one only, XM tag per read
         # Case1: read-pair informative for OT, read orientation is +/-
-        if (not read.is_reverse and mate.is_reverse):
-            # If TLEN < 0 it means the leftmost (3') position of read2 is left of the leftmost (5') position of read1. These reads complicate
-            if read.tlen < 0:
-                bad_overlap_pairs += 1              
+        if (not read1.is_reverse and read2.is_reverse):
+            # If read1.tlen < 0 it means the leftmost (3') position of read2 is to the left of the leftmost (5') position of read1. These reads complicate the assignment of "leftmost" CpGs in CpG-pairs, so we exclude these read-pairs.
+            if read1.tlen < 0:
+                bad_overlap_pairs += 1
+                print 'Ignoring read-pair', read.qname, 'due to bad overlap (=', read1.tlen, ')'
+                continue
             # start1 <= start2 by definition for a properly paired OT read
-            start1 = read.pos + 1 # read.pos is 0-based in accordance with BAM file specificiations and Python standards, regardless of whether the file is in BAM or SAM format. I convert this to 1-based positions
-            start2 = mate.pos + 1 # mate.pos is 0-based in accordance with BAM file specificiations and Python standards, regardless of whether the file is in BAM or SAM format. I convert this to 1-based positions
+            start1 = read1.pos + 1 # read1.pos is 0-based in accordance with BAM file specificiations and Python standards, regardless of whether the file is in BAM or SAM format. I convert this to 1-based positions
+            start2 = read2.pos + 1 # read2.pos is 0-based in accordance with BAM file specificiations and Python standards, regardless of whether the file is in BAM or SAM format. I convert this to 1-based positions
             strand = "+"
-            # If the two reads overlap, drop the offending positions from the leftmost (3') position of read2
-            if read.positions[-1] >= mate.positions[0]: 
-                ignore2 =  int(read.positions[-1] - mate.positions[0] + 1)
-                mateXM = mateXM[ignore2:]
+            # If the two reads overlap, i.e the rightmost position of read1 is greater than or equal to the leftmost position of read2, drop the offending positions from the leftmost (3') position of read2
+            if read1.positions[-1] >= read2.positions[0]: 
+                ignore2 =  int(read1.positions[-1] - read2.positions[0] + 1) # In this case, ignore2 is the number of bases to ignore from the 3' end of read2.
+                read2XM = read2XM[ignore2:]
             # Identify CpGs in read1 and read2
-            CpG_index1 = [m.start() for m in re.finditer(CpG_pattern, readXM)]
-            CpG_index2 = [m.start() for m in re.finditer(CpG_pattern, mateXM)]
+            CpG_index1 = [m.start() for m in re.finditer(CpG_pattern, read1XM)]
+            CpG_index2 = [m.start() for m in re.finditer(CpG_pattern, read2XM)]
             # CaseA: > 0 CpGs in both reads of pair    
             if (len(CpG_index1) > 0 and len(CpG_index2) > 0):
-                CpG1 = CpG_index1[0] # Leftmost CpG in read1
-                CpG2 = CpG_index2[-1] # Rightmost CpG in read2
-                position1 = start1 + CpG1
-                position2 = start2 + CpG2 + ignore2 # +ignore2 to deal with ignored bases
-                output=[chrom, position1, position2, readXM[CpG1], mateXM[CpG2], strand] # Output is left-to-right thus read1 appears first for OT reads.
-                if position1 > position2:
-                    print "Error: Case1A pos1 > pos2"
-                    print read
-                    print mate
+                CpGL = CpG_index1[0] # Leftmost CpG in read1
+                CpGR = CpG_index2[-1] # Rightmost CpG in read2
+                positionL = start1 + CpGL
+                positionR = start2 + CpGR + ignore2 # +ignore2 to deal with ignored bases
+                output=[chrom, positionL, positionR, read1XM[CpGL], read2XM[CpGR], strand] # Output is left-to-right, thus read1XM appears before read2XM for OT read-pairs.
+                if positionL > positionR:
+                    print "Error: Case1A posL > posR"
+                    print read1
+                    print read2
                     print output
                     break
                 tabWriter.writerow(output)
             # CaseB: > 1 CpG in read1 but 0 CpGs in read2
             elif (len(CpG_index1) > 1 and len(CpG_index2) == 0):
-                CpG1 = CpG_index1[0]
-                CpG2 = CpG_index1[-1]
-                position1 = start1 + CpG1
-                position2 = start1 + CpG2
-                output=[chrom, position1, position2, readXM[CpG1], readXM[CpG2], strand]
-                if position1 > position2:
-                    print "Error: Case1B pos1 > pos2"
-                    print read
-                    print mate
+                CpGL = CpG_index1[0]
+                CpGR = CpG_index1[-1]
+                positionL = start1 + CpGL
+                positionR = start1 + CpGR
+                output=[chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand]
+                if positionL > positionR:
+                    print "Error: Case1B posL > posR"
+                    print read1
+                    print read2
                     print output
                     break
                 tabWriter.writerow(output)
             # CaseC: 0 CpGs in read1 but > 1 CpGs in read2
             elif (len(CpG_index1) == 0 and len(CpG_index2) > 1):
-                CpG1 = CpG_index2[0]
-                CpG2 = CpG_index2[-1]
-                position1 = start2 + CpG1
-                position2 = start2 + CpG2
-                output=[chrom, position1, position2, mateXM[CpG1], mateXM[CpG2], strand] # Need to add ignore2 to pos2 because otherwise the position is incorrectly translated to the left
-                if position1 > position2:
-                    print "Error: Case1C pos1 > pos2"
-                    print read
-                    print mate
+                CpGL = CpG_index2[0]
+                CpGR = CpG_index2[-1]
+                positionL = start2 + CpGL
+                positionR = start2 + CpGR
+                output=[chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand]
+                if positionL > positionR:
+                    print "Error: Case1C posL > posR"
+                    print read1
+                    print read2
                     print output
                     break
                 tabWriter.writerow(output)
@@ -124,57 +134,62 @@ for read in f:
                 print 'Unexpected CpG count at read', read.qname
                 break
             # Case2: read-pair informative for OB
-        elif (read.is_reverse and not mate.is_reverse):
-            # start1 >= start2 by defintion for a properly paired OB read
-            start1 = read.pos + 1 # read.pos is 0-based in accordance with BAM file specificiations and Python standards, regardless of whether the file is in BAM or SAM format. I convert this to 1-based positions
-            start2 = mate.pos + 1 # mate.pos is 0-based in accordance with BAM file specificiations and Python standards, regardless of whether the file is in BAM or SAM format. I convert this to 1-based positions
+        elif (read1.is_reverse and not read2.is_reverse):
+            # If read2.tlen < 0 it means the leftmost (3') position of read1 is to the left of the leftmost (5') position of read2. These reads complicate the assignment of "leftmost" CpGs in CpG-pairs, so we exclude these read-pairs
+            if read2.tlen < 0:
+                bad_overlap_pairs += 1
+                print 'Ignoring read-pair', read.qname, 'due to bad overlap (=', read2.tlen, ')'
+                continue
+            # start1 >= start2 by definition for a properly paired OB read
+            start1 = read1.pos + 1 # read1.pos is 0-based in accordance with BAM file specificiations and Python standards, regardless of whether the file is in BAM or SAM format. I convert this to 1-based positions
+            start2 = read2.pos + 1 # read2.pos is 0-based in accordance with BAM file specificiations and Python standards, regardless of whether the file is in BAM or SAM format. I convert this to 1-based positions
             strand = "-"
-            # If the two reads overlap, drop the offending positions from the leftmost (3') position of read2
-            if mate.positions[-1] >= read.positions[0]:
-                ignore2 = len(mateXM) - int(mate.positions[-1] - read.positions[0] + 1)
-                mateXM = mateXM[:ignore2]
+            # If the two reads overlap, i.e the rightmost position of read2 is greater than or equal to the leftmost position of read1, drop the offending positions from the rightmost (3') position of read2
+            if read2.positions[-1] >= read1.positions[0]:
+                ignore2 = len(read2XM) - int(read2.positions[-1] - read1.positions[0] + 1) # In this case, ignore2 is the number of bases to retain from the 5' end of read2.
+                read2XM = read2XM[:ignore2]
             # Identify CpGs in read1 and read2
-            CpG_index1 = [m.start() for m in re.finditer(CpG_pattern, mateXM)]
-            CpG_index2 = [m.start() for m in re.finditer(CpG_pattern, readXM)]
+            CpG_index1 = [m.start() for m in re.finditer(CpG_pattern, read1XM)]
+            CpG_index2 = [m.start() for m in re.finditer(CpG_pattern, read2XM)]
             # CaseA: A CpG in both reads of pair
             if (len(CpG_index1) > 0 and len(CpG_index2) > 0):
-                CpG1 = CpG_index1[0] # Leftmost CpG in read2
-                CpG2 = CpG_index2[-1] # Rightmost CpG in read1
-                position1 = start2 + CpG1 - 1 # No need to ignore2 since 3' bases of read2 are rightmost; -1 so as to point to C on the forward strand in the CpG 
-                position2 = start1 + CpG2 - 1 # -1 so as to point to C on the forward strand in the CpG
-                output=[chrom, position1, position2, mateXM[CpG1], readXM[CpG2], strand] # Output is left-to-right thus read2 appears first for OB reads.
-                if position1 > position2:
-                    print "Error: Case2A pos1 > pos2"
-                    print read
-                    print mate
+                CpGL = CpG_index2[0] # Leftmost CpG in read2
+                CpGR = CpG_index1[-1] # Rightmost CpG in read1
+                positionL = start2 + CpGL - 1 # No need to ignore2 since 3' bases of read2 are rightmost; -1 so as to point to C on the forward strand in the CpG 
+                positionR = start1 + CpGR - 1 # -1 so as to point to C on the forward strand in the CpG
+                output=[chrom, positionL, positionR, read2XM[CpGL], read1XM[CpGR], strand] # Output is left-to-right, thus read2XM appears before read1XM for OB read-pairs.
+                if positionL > positionR:
+                    print "Error: Case2A posL > posR"
+                    print read1
+                    print read2
                     print output
                     break
                 tabWriter.writerow(output)
                 # CaseB: > 1 CpG in read1 but 0 CpGs in read2
             elif (len(CpG_index1) > 1 and len(CpG_index2) == 0):
-                CpG1 = CpG_index1[0] # Leftmost CpG in read1
-                CpG2 = CpG_index1[-1] # Rightmost CpG in read1
-                position1 = start1 + CpG1 - 1 # -1 so as to point to C on the forward strand in the CpG 
-                position2 = start1 + CpG2 - 1 # -1 so as to point to C on the forward strand in the CpG
-                output=[chrom, position1, position2, readXM[CpG1], readXM[CpG2], strand]
-                if position1 > position2:
-                    print "Error: Case2B pos1 > pos2"
-                    print read
-                    print mate
+                CpGL = CpG_index1[0] # Leftmost CpG in read1
+                CpGR = CpG_index1[-1] # Rightmost CpG in read1
+                positionL = start1 + CpGL - 1 # -1 so as to point to C on the forward strand in the CpG 
+                positionR = start1 + CpGR - 1 # -1 so as to point to C on the forward strand in the CpG
+                output=[chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand]
+                if positionL > positionR:
+                    print "Error: Case2B posL > posR"
+                    print read1
+                    print read2
                     print output
                     break
                 tabWriter.writerow(output)
             # CaseC: 0 CpGs in read1 but > 1 CpGs in read2
             elif (len(CpG_index1) == 0 and len(CpG_index2) > 1):
-                CpG1 = CpG_index2[0] # Leftmost CpG in read2
-                CpG2 = CpG_index2[-1] # Rightmost CpG in read2
-                position1 = start2 + CpG1 - 1 # -1 so as to point to C on the forward strand in the CpG 
-                position2 = start2 + CpG2 - 1 # -1 so as to point to C on the forward strand in the CpG
-                output=[chrom, position1, position2, mateXM[CpG1], mateXM[CpG2], strand] # Need to add ignore2 to pos2 because otherwise the position is incorrectly translated to the left
-                if position1 > position2:
-                    print "Error: Case2C pos1 > pos2"
-                    print read
-                    print mate
+                CpGL = CpG_index2[0] # Leftmost CpG in read2
+                CpGR = CpG_index2[-1] # Rightmost CpG in read2
+                positionL = start2 + CpGL - 1 # -1 so as to point to C on the forward strand in the CpG 
+                positionR = start2 + CpGR - 1 # -1 so as to point to C on the forward strand in the CpG
+                output=[chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand]
+                if positionL > positionR:
+                    print "Error: Case2C posL > posR"
+                    print read1
+                    print read2
                     print output
                     break
                 tabWriter.writerow(output)
@@ -191,3 +206,4 @@ for read in f:
 
 f.close()
 OUT.close()
+print 'Total number of read-pairs with bad overlaps = ', bad_overlap_pairs
