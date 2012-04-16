@@ -8,14 +8,19 @@ import pysam
 ## See accompanying Word document "Paired_end_read_orientation.docx" for details.
 
 ###### WARNING - CURRENTLY ONLY HANDLE DIRECTIONAL-LIBRARIES ########
-###### WARNING - RENAME OLD AND NEW FILE HANDLES PRIOR TO USE #######
 
-## TODO: Add check that TLEN is positive for read1 (read2) if read is informative for OT (OB) strand. This is necessary to ensure read1 (read2) is leftmost compared to read2 (read1) for the OT (OB) strand.
 ## TODO: Add program name and settings to @PG tag in header, rather than as a comment (@CO)
-## TODO: Add argparse options
+
+# Command line passer
+parser = argparse.ArgumentParser(description='Fix the FLAG values in a Bismark paired-end SAM file. Specifically, correct the strand information in the FLAG and add a tag (XS:Z:<tag> to encode which DNA-strand the read is informative for, where <tag> = OT, CTOT, OB or CTOB. See accompanying Word document "Paired_end_read_orientation.docx" for details.\nWARNING: Currently only supports directional-libraries.')
+parser.add_argument('infile', metavar = 'in.bam',
+                  help='The path to the original Bismark SAM/BAM file')
+parser.add_argument('outfile', metavar = 'out.bam',
+                  help='The path to the new SAM/BAM file')
+args = parser.parse_args()
 
 # Open the old SAM/BAM file
-OLD = pysam.Samfile('trimmed_paired_SRR097428_1_HWI-BRUNOP20X_0637:1.fastq.gz.val_paired_1.fq.gz_bismark_pe.bam', 'rb')
+OLD = pysam.Samfile(args.infile)
 
 #### Standard Bismark FLAG values
 #  67 - read paired, read mapped in proper pair, first in pair
@@ -33,8 +38,8 @@ OLD = pysam.Samfile('trimmed_paired_SRR097428_1_HWI-BRUNOP20X_0637:1.fastq.gz.va
 
 # Create new SAM/BAM file
 header = OLD.header
-header['CO'] = ['Bismark SAM/BAM file corrected by correct_Bismark_PE_SAM.py']
-NEW = pysam.Samfile("fixed_trimmed_paired_SRR097428_1_HWI-BRUNOP20X_0637:1.fastq.gz.val_paired_1.fq.gz_bismark_pe.bam", "wb", header = header)
+header['CO'] = ['Bismark SAM/BAM file FLAGs corrected by correct_Bismark_PE_SAM.py']
+NEW = pysam.Samfile(args.outfile, "wb", header = header)
 
 for read in OLD:
     read.qname = read.qname.rstrip('/[1-2]') # Remove the /1 or /2 suffix attached by Bowtie/Bismark to paired-end reads
