@@ -14,6 +14,7 @@ import pysam
 # CpGL and positionL always refer to the leftmost CpG in the pair while CpGR and positionR always refer to the rightmost CpG in the pair. Thus, for OT reads CpGL is from read1 while for OB reads CpGL is from read2 in readpairs where each read contains a CpG.
 # TLEN is defined as the rightmost position of read2 (read1) minus the leftmost position of read1 (read2) plus 1 for OT (OB) aligned reads. Thus if TLEN < read1.alen + read2.alen the two reads overlap.
 
+## TODO: Add flags to skip 'non-primary alignment' reads, 'failed reads', etc.
 ## TODO: Bismark's TLEN computation is incorrect for overlapping reads from a read-pair. Thus it should not be used for inferring that reads overlap. Rewrite any features that rely on inferring read overlaps so as not to rely on the TLEN value. A bug report has been submitted to the developer's of Bismark.
 ## TODO: Fix bug in calculation of overlapping reads - reads overlap if abs(TLEN) < read1.alen + read2.alen
 ## TODO: Fix bug when ignoring reads that have "bad" overlap.

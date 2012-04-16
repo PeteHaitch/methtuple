@@ -12,9 +12,10 @@ import pysam
 
 ## TODO: Add check that TLEN is positive for read1 (read2) if read is informative for OT (OB) strand. This is necessary to ensure read1 (read2) is leftmost compared to read2 (read1) for the OT (OB) strand.
 ## TODO: Add program name and settings to @PG tag in header, rather than as a comment (@CO)
+## TODO: Add argparse options
 
 # Open the old SAM/BAM file
-OLD = pysam.Samfile('coordinate_sorted_bismark.bam', 'rb')
+OLD = pysam.Samfile('trimmed_paired_SRR097428_1_HWI-BRUNOP20X_0637:1.fastq.gz.val_paired_1.fq.gz_bismark_pe.bam', 'rb')
 
 #### Standard Bismark FLAG values
 #  67 - read paired, read mapped in proper pair, first in pair
@@ -33,7 +34,7 @@ OLD = pysam.Samfile('coordinate_sorted_bismark.bam', 'rb')
 # Create new SAM/BAM file
 header = OLD.header
 header['CO'] = ['Bismark SAM/BAM file corrected by correct_Bismark_PE_SAM.py']
-NEW = pysam.Samfile("fixed_bismark.bam", "wb", header = header)
+NEW = pysam.Samfile("fixed_trimmed_paired_SRR097428_1_HWI-BRUNOP20X_0637:1.fastq.gz.val_paired_1.fq.gz_bismark_pe.bam", "wb", header = header)
 
 for read in OLD:
     read.qname = read.qname.rstrip('/[1-2]') # Remove the /1 or /2 suffix attached by Bowtie/Bismark to paired-end reads
@@ -50,10 +51,8 @@ for read in OLD:
         read.flag = 163L
         read.tags = read.tags + [('XS', 'OB')]
     else:
-        sys.exit('Error: Unexpected FLAG/XR/XG combination. Is your sample non-directional? This script only works with for directional-librarires')
+        sys.exit('Error: Unexpected FLAG/XR/XG combination. Is your sample non-directional? This script only works with for directional-librarires.')
     NEW.write(read)
 
 NEW.close()
 OLD.close()
-
-###### THIS STILL HASN'T FIXED THE F.MATE(READ) PROBLEM I'M HAVING WITH PYSAM #######

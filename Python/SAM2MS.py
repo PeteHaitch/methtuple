@@ -72,8 +72,7 @@ import pysam
 ## TODO: Clarifiy how "read.positions" works if there is an insertion or deletion in the read; example read HWI-ST567_0245:2:65:16410:91305#GGCTAC in 46210.bam
 ## TODO: Discuss "random choice of CpGs in a read" with Terry - naive approach results in pairs with intra-pair distance > 40 (< 30%). Prove this analytically. Might choose outermost pair instead.
 ## TODO: Paired-end version. Be careful of orientation of read pairs and stranded-ness for ignore5, ignore3 options and parsing of XM tag
-
-## TODO: (MAJOR UPGRADE) Write Version 2 that looks at read content, rather than XM tag, to determine methylation status. NB: Will need to be very careful with reads aligning to Crick-strand (NB: unmethylated reverse strand reads are A at the G in the CpG and methylated reads are G at the G in the CpG.)
+## TODO: Add flags to skip 'non-primary alignment' reads, 'failed reads', etc.
 
 # Command line passer
 parser = argparse.ArgumentParser(description='Extract the methylation calls for a CpG pair from reads that overlap multiple CpGs from a Bismark SAM/BAM file. The output file contains the positions of the CpG pair using 1-based co-ordinates on the forward strand of the cytosine in each CpG. If a read overlaps more than two CpGs there are several ways to construct the pairs (see the --pairChoice argument). The output of this file can be used for analysing comethylation along a read.')
