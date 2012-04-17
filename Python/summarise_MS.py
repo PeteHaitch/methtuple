@@ -24,7 +24,9 @@ import csv
 ## You should have received a copy of the GNU General Public License
 ## along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-## TODO: Output of this script is sortable by head -n1 summarised.out > sorted_summarised.bed; tail -n+2 summarised.out | sort -k1,1 -k2,2g -k3,3g >> sorted_summarised.bed (adapted from http://cassjohnston.wordpress.com/2011/05/10/unix-sort-bed-file/). This is a lexicographic sort.
+## Output of this script is sortable by head -n1 summarised.out > sorted_summarised.bed; tail -n+2 summarised.out | sort -k1,1 -k2,2g -k3,3g >> sorted_summarised.bed (adapted from http://cassjohnston.wordpress.com/2011/05/10/unix-sort-bed-file/). This is a lexicographic sort.
+
+## TODO: Include "coverage" of CpG pair in output
 ## TODO: See if lor-distance relationship is a function of coverage
 
 # Command line passer
