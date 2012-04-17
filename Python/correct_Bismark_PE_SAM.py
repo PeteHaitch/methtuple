@@ -9,8 +9,6 @@ import pysam
 
 ###### WARNING - CURRENTLY ONLY HANDLE DIRECTIONAL-LIBRARIES ########
 
-## TODO: Add program name and settings to @PG tag in header, rather than as a comment (@CO)
-
 # Command line passer
 parser = argparse.ArgumentParser(description='Fix the FLAG values in a Bismark paired-end SAM file. Specifically, correct the strand information in the FLAG and add a tag (XS:Z:<tag> to encode which DNA-strand the read is informative for, where <tag> = OT, CTOT, OB or CTOB. See accompanying Word document "Paired_end_read_orientation.docx" for details.\nWARNING: Currently only supports directional-libraries.')
 parser.add_argument('infile', metavar = 'in.bam',
@@ -38,7 +36,12 @@ OLD = pysam.Samfile(args.infile)
 
 # Create new SAM/BAM file
 header = OLD.header
-header['CO'] = ['Bismark SAM/BAM file FLAGs corrected by correct_Bismark_PE_SAM.py']
+id = 'correct_Bismark_PE_SAM.py'
+vn = '0.1'
+cl = ' '.join(['python correct_Bismark_PE_SAM.py', args.infile, args.outfile])
+XM_tag_PG = {'ID': id, 'VN': vn, 'CL': cl}
+header['PG'].append(XM_tag_PG)
+header['CO'] = ['Bismark SAM/BAM file strand-FLAGs corrected by correct_Bismark_PE_SAM.py']
 NEW = pysam.Samfile(args.outfile, "wb", header = header)
 
 for read in OLD:
