@@ -27,6 +27,20 @@ import pysam
 ## TODO: Add --ignore5 and --ignore3 options
 ## TODO: Add check if --ignoreDuplicates is set and ignore duplicates if it is set
 
+# Command line passer
+parser = argparse.ArgumentParser(description='Extract the methylation calls for a CpG pair from reads that overlap multiple CpGs from a Bismark SAM/BAM file. The output file contains the positions of the CpG pair using 1-based co-ordinates on the forward strand of the cytosine in each CpG. If a read overlaps more than two CpGs there are several ways to construct the pairs (see the --pairChoice argument). The output of this file can be used for analysing comethylation along a read.')
+parser.add_argument('SAM', metavar = 'SAM',
+                  help='The path to the Bismark SAM/BAM file')
+parser.add_argument('output', type=argparse.FileType('w'), nargs=1,
+                   help='The output filename')
+args = parser.parse_args()
+
+# Create (possibly redundant) pointers to files from command line arguments
+OUT = args.output[0]
+
+# Opens SAM/BAM file
+f = pysam.Samfile(args.SAM) 
+
 # Variable initialisations
 maxReadLength = 150
 CpG_pattern = re.compile(r"[Zz]")
@@ -42,8 +56,8 @@ ignore2 = 0 # The number of bases of read2 to ignore due to overlap between read
 bad_overlap_pairs = 0 # The number of read-pairs where the leftmost position of read2 (read1) is to the left of the leftmost position of read1 (read2) for reads informative for the OT (OB) strand. Such reads are ignored when computing single-strand comethylation as they can violate the assumption that posL < posR.
 
 # Open file handles
-f = pysam.Samfile('fixed_bismark.bam')
-OUT = open('fixed_bismark.MS', 'w')
+#f = pysam.Samfile('DM_ADS-adipose_Bismark_Lister_parameters.bam')
+#OUT = open('DM_ADS-adipose_Bismark_Lister_parameters.ms', 'w')
 # Function to write tab-separated outputfile
 tabWriter = csv.writer(OUT, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
 
