@@ -80,8 +80,10 @@ import pysam
 parser = argparse.ArgumentParser(description='Extract the methylation calls for a CpG pair from reads that overlap multiple CpGs from a Bismark SAM/BAM file. The output file contains the positions of the CpG pair using 1-based co-ordinates on the forward strand of the cytosine in each CpG. If a read overlaps more than two CpGs there are several ways to construct the pairs (see the --pairChoice argument). The output of this file can be used for analysing comethylation along a read.')
 parser.add_argument('SAM', metavar = 'SAM',
                   help='The path to the Bismark SAM/BAM file')
-parser.add_argument('output', type=argparse.FileType('w'), nargs=1,
-                   help='The output filename')
+parser.add_argument('read1_output', type=argparse.FileType('w'), nargs=1,
+                   help='The output filename for read1')
+parser.add_argument('read2_output', type=argparse.FileType('w'), nargs=1,
+                   help='The output filename for read2')
 parser.add_argument('-5', '--ignore5', metavar = '<int>', type = int,
                   default=0,
                   help='Ignore <int> bases from 5\' (left) end of reads (default: 0). WARNING: Parameter value not sanity checked by program.')
@@ -99,7 +101,8 @@ parser.add_argument('--ignoreDuplicates', action='store_true',help='Ignore reads
 args = parser.parse_args()
 
 # Create (possibly redundant) pointers to files from command line arguments
-OUT = args.output[0]
+OUT1 = args.read1_output[0]
+OUT2 = args.read2_output[0]
 maxReadLength = args.maxReadLength
 pairChoice = args.pairChoice
 ignore5 = args.ignore5
@@ -116,8 +119,9 @@ CpG_positions = [0] * maxReadLength # Count how often each position on the read 
 methylated_CpG_positions = [0] * maxReadLength # Count how many times each position on the read was a methylated CpG
 unmethylated_CpG_positions = [0] * maxReadLength # Count how many times each position on the read was an unmethylated CpG
 
-# Function to write tab-separated outputfile
-tabWriter = csv.writer(OUT, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
+# Function to write tab-separated output files
+tabWriter1 = csv.writer(OUT1, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
+tabWriter2 = csv.writer(OUT2, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
 
 # Opens SAM/BAM file
 sam = pysam.Samfile(args.SAM) 
@@ -164,18 +168,23 @@ for read in sam:
                 sys.exit("Error: pairChoice must be one of random, leftmost or outermost. Please retry.")
             index = array(CpG_pair)
             # If a read maps to the reverse strand the Z/z characters in the XM string point to the G in the CpG - I want to point to the C in the CpG so I move the position coordinates 1bp to the left
-            if(read.is_reverse):
+            if read.is_reverse :
                 positions = start + index - 1 # positions are 1-based positions of the cytosines on the forward strand in each CpG
                 strand = "-"
             else:
                 positions = start + index # positions are 1-based positions of the cytosines on the forward strand in each CpG
                 strand = "+"
             output=[chrom, positions[0], positions[1], XM[index[0]], XM[index[1]], strand]
-            tabWriter.writerow(output)
+            if read.is_read1:
+                tabWriter1.writerow(output)
+            elif read.is_read2:
+                tabWriter2.writerow(output)
+                
 
 # Close the file connections
 sam.close()
-OUT.close()
+OUT1.close()
+OUT2.close()
 
 # Print summary statistics to standard output
 print '%d reads processed' % read_counter
