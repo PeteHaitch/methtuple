@@ -4,7 +4,7 @@ import sys
 import csv
 
 ## Summarise output of SAM2MS.py
-## For each unique CpG pair count the number of reads with MM (ZZ), MU (Zz), UM (zZ) and MM (zz) methylation strings and write to file. Also tabulate strand-specific values for these counts
+## For each unique CpG pair count the number of reads with MM (ZZ), MU (Zz), UM (zZ) and UU (zz) methylation strings and write to file. Also tabulate strand-specific values for these counts
 ## Input file is the output of SAM2MS.py. SAM2MS.py can be sorted by using sortBed in BEDtools
 ## Output file is a tab separated file of the form: (chr, pos1, pos2, MM, MU, UM, UU, MM+, MU+, UM+, UU+, MM-, MU, UM, UU-)
 ## R can't handle "+" or "-" characters in header row, thus I use "_OT" = orignal top for "+" strand and "_OB" = original bottom for "-" strand sufixes.
@@ -30,7 +30,7 @@ import csv
 ## TODO: See if lor-distance relationship is a function of coverage
 
 # Command line passer
-parser = argparse.ArgumentParser(description='Summarise the output of SAM2MS.py. For each unique CpG pair count the number of reads with MM (ZZ), MU (Zz), UM (zZ) and MM (zz) methylation strings and write to file. Also tabulate strand-specific values for these counts. The output is unsorted.')
+parser = argparse.ArgumentParser(description='Summarise the output of SAM2MS.py. For each unique CpG pair count the number of reads with MM (ZZ), MU (Zz), UM (zZ) and UU (zz) methylation strings and write to file. Also tabulate strand-specific values for these counts. The output is unsorted.')
 parser.add_argument('MS', type=argparse.FileType('r'), nargs=1,
                    help='The path to the output of SAM2MS.py ')
 parser.add_argument('summarised', type=argparse.FileType('w'), nargs=1,

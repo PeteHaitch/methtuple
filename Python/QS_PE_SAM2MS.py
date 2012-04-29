@@ -21,6 +21,7 @@ import pysam
 
 ### TODOs ###
 ##############################################################################################################################################################################################
+## TODO: Extract strand information from XS tag, rather than relying on read orientation (which is the incorrect way to infer strand information).
 ## TODO: Output all CpG-pairs in a read. Pairs are created using the closest, rightmost CpG; i.e. a read with 2 CpGs has 1 pair, 3 CpGs => 2 pairs, 4 CpGs => 3 pairs, ..., n CpGs => (n-1) pairs
 ## TODO: Check if MarkDuplicates marks both reads of a read-pair as duplicates
 ## TODO: Add a count of the number of CpGs between the CpG-pair to the output for each CpG pair
