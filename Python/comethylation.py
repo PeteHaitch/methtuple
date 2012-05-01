@@ -62,7 +62,7 @@ import pysam
 
 ### TODOs ###
 ############################################################################################################################################################################################
-# TODO: Print WF output as a tab-delimited file
+# TODO: Check that script gives same results as old pipeline
 # TODO: Insert program description in arg.parse
 # TODO: Define AM function
 ############################################################################################################################################################################################
@@ -178,20 +178,20 @@ def SAM2MS_SE(read):
     strand = getStrand(read, "NA")
     # Identify CpGs in read
     CpG_index = [m.start() for m in re.finditer(CpG_pattern, readXM)]
-        # Case A: > 1 CpG in read
+    # Case A: > 1 CpG in read
     if len(CpG_index) > 1:
         if pairChoice == 'outermost':
             CpGL = CpG_index[0] # Leftmost CpG in read
             CpGR = CpG_index[-1] # Rightmost CpG in read
             positionL = start + CpGL
             positionR = start + CpGR
+            if read.is_reverse: # If a read maps in the reverse orientation the Z/z characters in the XM string point to the G in the CpG - I want to point to the C in the CpG on the OT-strand so I move the position coordinates 1bp to the left
+                positionL -= 1
+                positionR -= 1
             output=[chrom, positionL, positionR, readXM[CpGL], readXM[CpGR], strand] # Output is left-to-right, thus read1XM appears before read2XM for OT read-pairs.
             if positionL > positionR:
                 print "ERROR: Case1A posL > posR for single-end read ", read1.qname," with output ", output
                 return None
-            if read.is_reverse: # If a read maps to the reverse strand the Z/z characters in the XM string point to the G in the CpG - I want to point to the C in the CpG so I move the position coordinates 1bp to the left
-                positionL = positionL - 1
-                positionR = positionR - 1
             return output
         else:
             sys.exit('ERROR: Only \'--pairChoice outermost\' is implemented.')
@@ -351,12 +351,33 @@ def getStrand(read1, read2):
             error_message = ''.join(['Read-pair is aligned to both the CT- and GA-converted reference genomes: ', read1.qname]) 
             sys.exit(error_message)
     return strand
+## WFWriter writes a tab-separated output file to the filehandle WF
+WFWriter = csv.writer(WF, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
+## AMWriter writes a tab-separated output file to the filehandle WF
+AMWriter = csv.writer(AM, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
+## writeWF() writes the CpG_pairs object to disk as a tab-separated file.
+def writeWF(CpG_pairs):
+    # Create the header row
+    header = ['chr', 'pos1', 'pos2', 'distance']
+    example_row = CpG_pairs[CpG_pairs.keys()[1]]
+    for key in sorted(example_row.iterkeys()):
+        header.append(key)
+    # Write the header to file
+    WFWriter.writerow(header)
+    # Write each CpG-pair to file
+    for pair in sorted(CpG_pairs.iterkeys()):
+        pair_counts = []
+	for count in sorted(CpG_pairs[pair].iterkeys()):
+		pair_counts.append(CpG_pairs[pair][count])
+        chrom = pair.rsplit(':')[0]
+        pos1 = pair.rsplit(':')[1].rsplit('-')[0]
+        pos2 = pair.rsplit(':')[1].rsplit('-')[1]
+        dist = int(pos2) - int(pos1)
+        row = [chrom, pos1, pos2, dist] + pair_counts
+        WFWriter.writerow(row)
+    
 
-## WFWriter writes a tab-separated output file for the within-fragment methylation
-WFWriter = csv.writer(OUT, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
 
-## AMWriter writes a tab-separated output file for the aggregate methylation values
-AMWriter = csv.writer(OUT, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
 
 #############################################################################################################################################################################################
 
@@ -396,7 +417,8 @@ for read in BAM:
             CpG_pairs[pair_ID] = incrementCount(CpG_pairs[pair_ID], fragment_MS) 
         else: # CpG-pair already seen - increment its count (value)
             CpG_pairs[pair_ID] = incrementCount(CpG_pairs[pair_ID], fragment_MS)
-        
+
+writeWF(CpG_pairs)
 BAM.close()
 WF.close()
 AM.close()
