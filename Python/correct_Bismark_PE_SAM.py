@@ -7,6 +7,7 @@ import pysam
 ## Specifically, correct the strand information in the FLAG and add a tag (XS:Z:<tag> to encode which DNA-strand the read is informative for, where <tag> = OT, CTOT, OB or CTOB.
 ## See accompanying Word document "Paired_end_read_orientation.docx" for details.
 
+## TODO: Add funtion to correct single-end data
 ## TODO: Change XS-tag to XI-tag so it doesn't clash with Bowtie2's XS-tag
 
 ###### WARNING - CURRENTLY ONLY HANDLE DIRECTIONAL-LIBRARIES ########
