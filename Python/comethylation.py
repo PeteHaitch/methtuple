@@ -62,7 +62,7 @@ import pysam
 
 ### TODOs ###
 ############################################################################################################################################################################################
-# TODO: Check that script gives same results as old pipeline
+# TODO: Define trimOverlappingPair() t
 # TODO: Insert program description in arg.parse
 # TODO: Define AM function
 ############################################################################################################################################################################################
@@ -168,6 +168,10 @@ def incrementCount(CpG_pair, fragment_MS):
         exit_msg = ''.join(['Error: Invalid methylation string at line ', str(line)])
         sys.exit(exit_msg)
 
+## trimOverlappingPair() trims XM-tags of reads from an overlapping read-pair. Bases in the overlapping region constitute one data point that are measured twice (once by each read in the read-pair). We only want to count this data point once for the purposes of studying comethylation. We trim the read with the lower aggregate base qualities for the overlap region to remove the overlap. We also check that each read reports the same sequence in the overlap region; if the two reads give conflicting information we exclude the read-pair from the analysis
+def trimOverlappingPair(read1XM, read2XM, absTLEN): # read1XM and read2XM are the XM-tags for read1 and read2, resp. absTLEN is the absolute value of the template length (TLEN).
+    n_overlap = absTLEN - (len(read1XM) + len(read2XM))
+    
 
 ## SAM2MS_SE extracts, summarises and returns the methylation string (MS) information for a read mapped as single-end data
 def SAM2MS_SE(read):
@@ -365,7 +369,7 @@ def writeWF(CpG_pairs):
     # Write the header to file
     WFWriter.writerow(header)
     # Write each CpG-pair to file
-    for pair in sorted(CpG_pairs.iterkeys()):
+    for pair in CpG_pairs.iterkeys():
         pair_counts = []
 	for count in sorted(CpG_pairs[pair].iterkeys()):
 		pair_counts.append(CpG_pairs[pair][count])
@@ -376,11 +380,7 @@ def writeWF(CpG_pairs):
         row = [chrom, pos1, pos2, dist] + pair_counts
         WFWriter.writerow(row)
     
-
-
-
 #############################################################################################################################################################################################
-
 ### The main program. Loops over the BAM file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or read-pair. ###
 ##############################################################################################################################################################################################
 for read in BAM:
