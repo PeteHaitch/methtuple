@@ -67,6 +67,7 @@ import pysam
 ### A note on duplicates
 # True PCR duplicates may be missed by MarkDuplicates if the reads have undergone different amounts of trimming since the start and end co-ordinates of the duplicate reads no longer need coincide even if both reads have the same POS field in the SAM file.
 
+## TODO: Fix ignore5 
 ## TODO: Extract strand information from XS tag, rather than relying on read orientation (which is the incorrect way to infer strand information).
 ## TODO: Add a count of the number of CpGs between the CpG-pair to the output for each CpG pair
 ## TODO: Add normalising factor to "position in read of (un)methylated CpGs" based on number of reads of length n
@@ -147,7 +148,7 @@ for read in sam:
         for i in unmethylated_CpG_index:
             unmethylated_CpG_positions[i] += 1
         # Ignore --ignore5 and --ignore3 bases from read
-        CpG_index = [pos for pos in CpG_index if pos > ignore5 and pos <= (len(XM) - ignore3)]
+        CpG_index = [pos for pos in CpG_index if pos >= ignore5 and pos <= (len(XM) - ignore3)]
         n_CpGs = len(CpG_index) # Update the number of CpGs the read overlaps post-"ignore"
         # If there is more than one CpG in the read then we want to process that read
         if n_CpGs > 1:
