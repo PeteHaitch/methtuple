@@ -31,6 +31,7 @@ import pysam
 # This program brings together the functionality of SAM2MS.py and QS_PE_SAM2MS.py and summarise_MS.py.
 # There are two types of comethylation: (1) Within-fragment co-methylation (WF), which is the dependence of methylation states along a DNA read/fragment/chromosome that contains multiple Cpgs; and (2) correlation of aggregate methylation values (AM). Aggregate methylation values are based on the pileup of reads at each CpG and include beta = M/(U+M) and gamma = log((M + eps)/(U + eps)), where M = the number of methylated Cs, U = the number of unmethylated Cs and esp is a small number to ensure numerical stability of gamma, typically esp = 0.5.
 # co-methylation extracts the necessary information to analyse (1), it does not perform the statistical analysis. A sister program, aggregate_methylation.py, extracts the necessary information to analyse (2).
+# If the reads from a read-pair overlap then, provided the overlapping sequence is identical, we trim the lower quality read until no overlap remains. If the overlapping sequence is not identical then we ignore the read-pair. This behaviour may be altered in future releases.
 ############################################################################################################################################################################################
 
 ### Description of sample.wf ###
@@ -39,15 +40,6 @@ import pysam
 # CpG-pairs can be created in several ways, see comethylation.py --help for details. Each pair is defined as (CpG1, CpG2), where CpG1 is the leftmost CpG in the pair and CpG2 is the rightmost CpG in the pair (with reference to Watson-strand coordinates).
 # The data for each CpG-pair are stratified by which strand the reads aligned to: Original Top (OT) aka Watson-strand aka forward-strand aka "+"-strand; Original Bottom (OB) aka Crick-strand aka reverse-strand aka "-"-strand and combined across strands.
 # The strand information is encoded as a subscript, e.g. MM_OT is the count of reads informative for the OT-strand that are methylated at both CpGs in the CpG-pair, MU_OB is the count of reads informative for the OB-strand that are methylated at CpG1 and unmethylated at CpG2, UU (no subscript) is the count of reads, combined across strands, that are unmethylated at both CpGs in the CpG-pair.
-
-############################################################################################################################################################################################
-
-###### DEPRECATED ########
-### Description of sample.am ###
-############################################################################################################################################################################################
-# Each line corresponds to a single (reference) CpG.
-# The data for each CpG are counts of the number of methylated Cs (M), unmethylated Cs (U) and other bases (other).
-# The data for each CpG are stratified by which strand the read is informative for: Original Top (OT) aka Watson-strand aka forward-strand aka "+"-strand; Original Bottom (OB) aka Crick-strand aka reverse-strand aka "-"-strand and combined across strands.
 ############################################################################################################################################################################################
 
 ### Explanation of XM-tag (methylation string) ###
@@ -63,11 +55,10 @@ import pysam
 
 ### TODOs ###
 ############################################################################################################################################################################################
-# TODO: Re-write ignore3() and ignore5() functions so these can be called outside the Case1 or Case2 loops, i.e. so it is called before entering either of these loops.
-# TODO: Add check that the overlapping sequence is identical; if not decide what to do with read-pair
+# TODO: read.is_paired checks if the read is paired in-sequencing. Problems may arise if the mate of a read that is paired in-sequencing is not present in the SAM/BAM (e.g. if only one read of the read-pair is mapped).
 # TODO: Insert program description in arg.parse
 # TODO: Add option to ignore a different number of bases from the ends of reads depending on whether it is read1 or read2
-# TODO: Learn the different between read.alen, read.qlen and read.rlen; decide which is most appropriate for this script.
+# TODO: Learn the difference between read.alen, read.qlen and read.rlen; decide which is most appropriate for this script.
 ############################################################################################################################################################################################
 
 ### Command line parser ###
@@ -108,23 +99,8 @@ args = parser.parse_args()
 ############################################################################################################################################################################################
 BAM = pysam.Samfile(args.BAM)
 WF = open(".".join([args.sampleName, "wf"]), "w")
-AM = open(".".join([args.sampleName, "am"]), "w")
-
 ############################################################################################################################################################################################
 
-### Variable initialisations ###
-#############################################################################################################################################################################################
-CpG_pattern = re.compile(r"[Zz]")
-if (args.phred64):
-    offset = 64
-else:
-    offset = 33
-minQual = args.minQual
-pairChoice = args.pairChoice
-fragment_counter = 0 # The number of DNA fragments processed by SAM2MS.py. Both one single-end read and one paired-end read contribute a single DNA fragment.
-duplicate_fragment_counter = 0 # The number of duplicate fragments ignore by SAM2MS.py.  Both one single-end read and one paired-end read contribute a single DNA fragment.
-CpG_pairs = {} # Dictionary of CpG pair IDs with keys of form chr_pos1_pos2 and values corresponding to a makeCount object 
-#############################################################################################################################################################################################
 ### Function definitions ###
 #############################################################################################################################################################################################
 ## Ignore the any matches in the CpG_index list that correspond to the 'n' most 3' positions of the read
@@ -161,8 +137,17 @@ def removeLowQualMS(CpG_index, qual, minQual, offset):
             drop.append(i)
     return [x for x in CpG_index if x not in drop]
 
-## trimOverlappingPair() trims XM-tags of reads from an overlapping read-pair. Bases in the overlapping region constitute one data point that are measured twice (once by each read in the read-pair). We only want to count this data point once for the purposes of studying comethylation. We trim the read with the lower aggregate base qualities for the overlap region to remove the overlap. We also check that each read reports the same sequence in the overlap region; if the two reads give conflicting information we exclude the read-pair from the analysis
+## overlappingSeqIdentical() checks that the sequence in the overlapping region of overlapping reads from a read-pair are identical. We may want to exclude read-pairs where the two reads differ in sequence for the overlapping region.
+def overlappingSeqIdentical(seq1, seq2, n_overlap, orientation):
+    if orientation == '+/-':
+        overlapSeq1 = seq1[-n_overlap:]
+        overlapSeq2 = seq2[:n_overlap]
+    else:
+        overlapSeq1 = seq1[:n_overlap]
+        overlapSeq2 = seq2[-n_overlap:]
+    return overlapSeq1 == overlapSeq2, overlapSeq1, overlapSeq2
 
+## removeOverlap() removes overlapping methylation calls that arise from the reads in a read-pair overlapping. Bases in the overlapping region constitute one data point that are measured twice (once by each read in the read-pair). We only want to count this data point once for the purposes of studying comethylation. The methylation calls in the overlapping region from the read with the lower quality scores are removed from consideration..
 def removeOverlap(n_overlap, orientation, index1, index2, qual1, qual2):
     drop = [] # List of CpG-methylation calls to drop
     if orientation == '+/-':
@@ -247,8 +232,12 @@ def incrementCount(CpG_pair, fragment_MS):
 ## SAM2MS_SE extracts, summarises and returns the methylation string (MS) information for a read mapped as single-end data
 def SAM2MS_SE(read):
     chrom = BAM.getrname(read.tid)
+    start = read.pos + 1 # read.pos is 0-based in accordance with BAM file specificiations, regardless of whether the input file is SAM or BAM. I convert this to a 1-based position.
+    strand = getStrand(read, "NA")
     # Store the XM tag for the read.
     readXM = [tag[1] for tag in read.tags if tag[0] == 'XM'][0]
+    # Identify CpGs in read
+    CpG_index = [m.start() for m in re.finditer(CpG_pattern, readXM)]
     # Store the orientation of the read
     if read.is_reverse:
         orientation = '-'
@@ -259,10 +248,6 @@ def SAM2MS_SE(read):
         CpG_index = ignore3(args.ignore3, CpG_index, read.rlen, orientation)
     if args.ignore5 > 0:
         CpG_index = ignore5(args.ignore3, CpG_index, read.rlen, orientation)
-    start = read.pos + 1 # read.pos is 0-based in accordance with BAM file specificiations, regardless of whether the input file is SAM or BAM. I convert this to a 1-based position.
-    strand = getStrand(read, "NA")
-    # Identify CpGs in read
-    CpG_index = [m.start() for m in re.finditer(CpG_pattern, readXM)]
     # Remove low quality CpG-methylation calls from consideration
     CpG_index = removeLowQualMS(CpG_index, read.qual, minQual, offset)
     # Case A: > 1 CpG in read
@@ -290,6 +275,7 @@ def SAM2MS_PE(read1, read2):
     chrom = BAM.getrname(read1.tid)
     start1 = read1.pos + 1 # read1.pos is 0-based in accordance with BAM file specificiations, regardless of whether the input file is SAM or BAM. I convert this to a 1-based position.
     start2 = read2.pos + 1 # read2.pos is 0-based in accordance with BAM file specificiations, regardless of whether the input file is SAM or BAM. I convert this to a 1-based position.
+    strand = getStrand(read1, read2) # strand = OT or OB, the strand for which the read-pair is informative.
     # Store the XM tag for each read. Tags are stored as a Python list of 2-tuples [("TAG_NAME", "TAG_VALUE"), ...]. This assumes there is one, and one only, XM tag per read
     read1XM = [tag[1] for tag in read1.tags if tag[0] == 'XM'][0] 
     read2XM = [tag[1] for tag in read2.tags if tag[0] == 'XM'][0]
@@ -304,24 +290,37 @@ def SAM2MS_PE(read1, read2):
     else:
         print 'ERROR: Unexpected orientation of read-pair', read1.qname
         return None
-    # Trim overlapping reads
+    # Check for overlapping reads from a read-pair. If reads overlap, check that the overlapping sequenced is identical. If the overlapping sequence is identical, ignore the methylation calls in the overlapping region from the lower quality read. If the overlapping sequence is not identical, report a warning and skip the read-pair.
     n_overlap = read1.rlen + read2.rlen - abs(read1.tlen)
     if n_overlap > 0 : # If True, then the reads overlap and we need to ignore any CpG-methylation calls in the overlap from one of the reads using removeOverlap()
-        CpG_index1, CpG_index2 = removeOverlap(n_overlap, orientation, CpG_index1, CpG_index2, read1.qual, read2.qual)
+        identicalOverlap, overlap1, overlap2 = overlappingSeqIdentical(read1.seq, read2.seq, n_overlap, orientation)
+        if identicalOverlap:
+            print 'Identical overlap. Overlap 1 =', overlap1, 'Overlap2 =', overlap2 
+            CpG_index1, CpG_index2 = removeOverlap(n_overlap, orientation, CpG_index1, CpG_index2, read1.qual, read2.qual) # Remove from consideration the methylation calls in the overlapping region from the lower quality read 
+        else:
+            print 'WARNING: Skipping read-pair due to non-identical overlapping sequence', read1.qname
+            print 'Overlap1 =', overlap1, 'Overlap2 =', overlap2
+            return None
     # Remove low quality CpG-methylation calls from consideration
     CpG_index1 = removeLowQualMS(CpG_index1, read1.qual, minQual, offset) 
     CpG_index2 = removeLowQualMS(CpG_index2, read2.qual, minQual, offset)
-    # Case1: Read-pair orientation is +/- (read1/read2)
-    if orientation == '+/-':      
-        # start1 <= start2 by definition for a properly paired OT read from Bismark
-        strand = getStrand(read1, read2)
-        # Remove 'ignore3' and 'ignore5' CpG-methylation calls from consideration 
-        if args.ignore3 > 0:
+    # Remove 'ignore3' and 'ignore5' CpG-methylation calls from consideration
+    if args.ignore3 > 0:
+        if orientation == '+/-':
             CpG_index1 = ignore3(args.ignore3, CpG_index1, read1.rlen, '+')
             CpG_index2 = ignore3(args.ignore3, CpG_index2, read2.rlen, '-')
-        if args.ignore5 > 0:
+        else: # Orientatin is '-/+'
+            CpG_index1 = ignore3(args.ignore3, CpG_index1, read1.rlen, '-')
+            CpG_index2 = ignore3(args.ignore3, CpG_index2, read2.rlen, '+')
+    if args.ignore5 > 0:
+        if orientation == '+/-':
             CpG_index1 = ignore5(args.ignore5, CpG_index1, read1.rlen, '+')
-            CpG_index2 = ignore5(args.ignore5, CpG_index2, read2.rlen, '-') 
+            CpG_index2 = ignore5(args.ignore5, CpG_index2, read2.rlen, '-')
+        else: # Orientation is '-/+'
+            CpG_index1 = ignore5(args.ignore5, CpG_index1, read1.rlen, '-')
+            CpG_index2 = ignore5(args.ignore5, CpG_index2, read2.rlen, '+')            
+    # Case1: Read-pair orientation is +/- (read1/read2)
+    if orientation == '+/-':
         # CaseA: > 0 CpGs in both reads of read-pair    
         if (len(CpG_index1) > 0 and len(CpG_index2) > 0):
             if pairChoice == "outermost":
@@ -370,15 +369,6 @@ def SAM2MS_PE(read1, read2):
             return None
     # Case2: Read-pair orientation is -/+ (read1/read2)
     elif orientation == '-/+':
-        # start1 >= start2 by definition for a properly paired OB read from Bismark
-        strand = getStrand(read1, read2)
-        # Remove 'ignore3' and 'ignore5' CpG-methylation calls from consideration 
-        if args.ignore3 > 0:
-            CpG_index1 = ignore3(args.ignore3, CpG_index1, read1.rlen, '-')
-            CpG_index2 = ignore3(args.ignore3, CpG_index2, read2.rlen, '+')
-        if args.ignore5 > 0:
-            CpG_index1 = ignore5(args.ignore5, CpG_index1, read1.rlen, '-')
-            CpG_index2 = ignore5(args.ignore5, CpG_index2, read2.rlen, '+')
         # CaseA: A CpG in both reads of pair
         if (len(CpG_index1) > 0 and len(CpG_index2) > 0):
             if pairChoice == "outermost":
@@ -444,8 +434,7 @@ def getStrand(read1, read2):
         
 ## WFWriter writes a tab-separated output file to the filehandle WF
 WFWriter = csv.writer(WF, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
-## AMWriter writes a tab-separated output file to the filehandle WF
-AMWriter = csv.writer(AM, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
+
 ## writeWF() writes the CpG_pairs object to disk as a tab-separated file.
 def writeWF(CpG_pairs):
     # Create the header row
@@ -468,6 +457,21 @@ def writeWF(CpG_pairs):
         WFWriter.writerow(row)
     
 #############################################################################################################################################################################################
+
+### Variable initialisations ###
+#############################################################################################################################################################################################
+CpG_pattern = re.compile(r"[Zz]")
+if (args.phred64):
+    offset = 64
+else:
+    offset = 33
+minQual = args.minQual
+pairChoice = args.pairChoice
+n_fragment = 0 # The number of DNA fragments. One single-end read and one paired-end read contribute a single DNA fragment.
+n_comethylation_fragment = 0 #  The number of DNA fragments with a co-methylation measurement. One single-end read and one paired-end read contribute a single DNA fragment.
+CpG_pairs = {} # Dictionary of CpG pair IDs with keys of form chr_pos1_pos2 and values corresponding to a makeCount object 
+#############################################################################################################################################################################################
+
 ### The main program. Loops over the BAM file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or read-pair. ###
 #############################################################################################################################################################################################
 print 'Ignoring', args.ignore3, 'bp from 3\' end of each read'
@@ -476,13 +480,22 @@ print 'Ignoring CpG-methylation calls with base-quality less than', minQual
 for read in BAM:
     fragment_MS = None # Reset the fragment_MS to None to erase values from previous reads/read-pairs
     if args.ignoreDuplicates and read.is_duplicate:
+        if not read.is_paired:
+            n_fragment += 1
+        else:
+            n_fragment += 0.5 # Want to count the number of FRAGMENTS not the number of reads.
+        continue
+    elif read.is_paired and not read.is_proper_pair:
+        print "WARNING: Skipping read ", read.qname, " as it is part of an improper pair."
+        n_fragment += 0.5 # Want to count the number of FRAGMENTS not the number of reads.
         continue
     else:
-        if read.is_read1 and read.is_proper_pair:
+        if read.is_proper_pair and read.is_read1:
             read1 = read
             continue
-        elif read.is_read2 and read.is_proper_pair: 
+        elif read.is_proper_pair and read.is_read2: 
             read2 = read
+            n_fragment += 1
             # Check that read1 and read2 are aligned to the same chromosome and have identical read-names. If not, skip the read-pair.
             if read1.tid == read2.tid and read1.qname == read2.qname:
                 fragment_MS = SAM2MS_PE(read1, read2)
@@ -491,16 +504,14 @@ for read in BAM:
                 continue
             elif read1.qname != read2.qname:
                 print "ERROR: The name of read1 is not identical to to that of read2 for read-pair ", read1.qname, read2.qname, "\nHas your BAM file been sorted in query-name-order with Picard's SortSam function?"
-                break
-            elif read.is_paired and not read.is_proper_pair:
-                print "WARNING: Skipping read ", read.qname, " as it is part of an improper pair."
                 continue
         elif not read.is_paired:  
             fragment_MS = SAM2MS_SE(read)
         else:
             print "Read is neither a single-end read nor part of a paired-end read. Check the SAM flag values are correctly set for read:", read.qname
             continue
-    if fragment_MS is not None: 
+    if fragment_MS is not None:
+        n_comethylation_fragment += 1
         pair_ID = ''.join([fragment_MS[0], ':', str(fragment_MS[1]), '-', str(fragment_MS[2])])
         if not pair_ID in CpG_pairs: # CpG-pair not yet seen - create a dictionary key for it and increment its count (value)
             CpG_pairs[pair_ID] = makeWFCount()
@@ -511,5 +522,7 @@ for read in BAM:
 writeWF(CpG_pairs)
 BAM.close()
 WF.close()
-AM.close()
+
+print 'Number of DNA fragments in file:', n_fragment
+print 'Number of DNA fragments informative for comethylation:', n_comethylation_fragment, '(', round(n_comethylation_fragment / float(n_fragment) * 100, 1), '%)'
 ##############################################################################################################################################################################################
