@@ -55,6 +55,8 @@ import pysam
 
 ### TODOs ###
 ############################################################################################################################################################################################
+# TODO: It's not the orientation but the strand that is important in determining whether the CpG_index points to the C or the G in a CpG. It is coincidental that for single-end data these two concepts give identical answers but for paired-end data the answers can differ.
+# TODO: Extend to 4-strand protocol
 # TODO: read.is_paired checks if the read is paired in-sequencing. Problems may arise if the mate of a read that is paired in-sequencing is not present in the SAM/BAM (e.g. if only one read of the read-pair is mapped).
 # TODO: Insert program description in arg.parse
 # TODO: Add option to ignore a different number of bases from the ends of reads depending on whether it is read1 or read2
@@ -181,8 +183,8 @@ def removeOverlap(n_overlap, orientation, index1, index2, qual1, qual2):
 def makeWFCount():
     return  {'MM': 0, 'MU': 0, 'UM': 0, 'UU': 0, 'MM_OT': 0, 'MU_OT': 0, 'UM_OT': 0, 'UU_OT': 0, 'MM_OB': 0, 'MU_OB': 0, 'UM_OB': 0, 'UU_OB': 0}
 
-## Increment the counts in an makeWFCount() object based on the new information from MS_read, the output of SAM2MS_SE() or SAM2MS_PE().
-def incrementCount(CpG_pair, fragment_MS):
+## Increment the counts in an makeWFCount() object based on the new information from fragment_MS, the output of SAM2MS_SE() or SAM2MS_PE().
+def incrementWFCount(CpG_pair, fragment_MS):
     ms = ''.join(fragment_MS[3:5]) # The CpG methylation state - ZZ, Zz, zZ or zz - for that CpG-pair from that read
     strand = fragment_MS[5]
     if ms == 'ZZ':
@@ -191,9 +193,6 @@ def incrementCount(CpG_pair, fragment_MS):
             CpG_pair['MM_OT'] += 1
         elif strand == 'OB':
             CpG_pair['MM_OB'] +=1
-        else:
-            exit_msg = ''.join(['Error: Invalid strand at line ', str(line)])
-            sys.exit(exit_msg)
         return CpG_pair
     elif ms == 'Zz':
         CpG_pair['MU'] += 1
@@ -201,9 +200,6 @@ def incrementCount(CpG_pair, fragment_MS):
             CpG_pair['MU_OT'] += 1
         elif strand == 'OB':
             CpG_pair['MU_OB'] +=1
-        else:
-            exit_msg = ''.join(['Error: Invalid strand at line ', str(line)])
-            sys.exit(exit_msg)
         return CpG_pair
     elif ms == 'zZ':
         CpG_pair['UM'] += 1
@@ -211,9 +207,6 @@ def incrementCount(CpG_pair, fragment_MS):
             CpG_pair['UM_OT'] += 1
         elif strand == 'OB':
             CpG_pair['UM_OB'] +=1
-        else:
-            exit_msg = ''.join(['Error: Invalid strand at line ', str(line)])
-            sys.exit(exit_msg)
         return CpG_pair
     elif ms == 'zz':
         CpG_pair['UU'] += 1
@@ -221,12 +214,9 @@ def incrementCount(CpG_pair, fragment_MS):
             CpG_pair['UU_OT'] += 1
         elif strand == 'OB':
             CpG_pair['UU_OB'] +=1
-        else:
-            exit_msg = ''.join(['Error: Invalid strand at line ', str(line)])
-            sys.exit(exit_msg)
         return CpG_pair
     else:
-        exit_msg = ''.join(['Error: Invalid methylation string at line ', str(line)])
+        exit_msg = ''.join(['Error: Invalid methylation string (',  fragment_MS, ') for read:', read.qname])
         sys.exit(exit_msg)
  
 ## SAM2MS_SE extracts, summarises and returns the methylation string (MS) information for a read mapped as single-end data
@@ -257,10 +247,10 @@ def SAM2MS_SE(read):
             CpGR = CpG_index[-1] # Rightmost CpG in read
             positionL = start + CpGL
             positionR = start + CpGR
-            if orientation == '-': # If a read maps in the reverse orientation the Z/z characters in the XM string point to the G in the CpG - I want to point to the C in the CpG on the OT-strand so I move the position coordinates 1bp to the left
+            if strand == 'OB': # Translate co-ordinate 1bp to the left so that it points to the C in the CpG on the OT-strand
                 positionL -= 1
                 positionR -= 1
-            output=[chrom, positionL, positionR, readXM[CpGL], readXM[CpGR], strand] # Output is left-to-right, thus read1XM appears before read2XM for OT read-pairs.
+            output = [chrom, positionL, positionR, readXM[CpGL], readXM[CpGR], strand] # Output is left-to-right, thus read1XM appears before read2XM for OT read-pairs.
             if positionL > positionR:
                 print "ERROR: Case1A posL > posR for single-end read ", read1.qname," with output ", output
                 return None
@@ -306,21 +296,13 @@ def SAM2MS_PE(read1, read2):
     CpG_index2 = removeLowQualMS(CpG_index2, read2.qual, minQual, offset)
     # Remove 'ignore3' and 'ignore5' CpG-methylation calls from consideration
     if args.ignore3 > 0:
-        if orientation == '+/-':
-            CpG_index1 = ignore3(args.ignore3, CpG_index1, read1.rlen, '+')
-            CpG_index2 = ignore3(args.ignore3, CpG_index2, read2.rlen, '-')
-        else: # Orientatin is '-/+'
-            CpG_index1 = ignore3(args.ignore3, CpG_index1, read1.rlen, '-')
-            CpG_index2 = ignore3(args.ignore3, CpG_index2, read2.rlen, '+')
+        CpG_index1 = ignore3(args.ignore3, CpG_index1, read1.rlen, orientation.rsplit('/')[0])
+        CpG_index2 = ignore3(args.ignore3, CpG_index2, read2.rlen, orientation.rsplit('/')[1])
     if args.ignore5 > 0:
-        if orientation == '+/-':
-            CpG_index1 = ignore5(args.ignore5, CpG_index1, read1.rlen, '+')
-            CpG_index2 = ignore5(args.ignore5, CpG_index2, read2.rlen, '-')
-        else: # Orientation is '-/+'
-            CpG_index1 = ignore5(args.ignore5, CpG_index1, read1.rlen, '-')
-            CpG_index2 = ignore5(args.ignore5, CpG_index2, read2.rlen, '+')            
-    # Case1: Read-pair orientation is +/- (read1/read2)
-    if orientation == '+/-':
+        CpG_index1 = ignore5(args.ignore5, CpG_index1, read1.rlen, orientation.rsplit('/')[0])
+        CpG_index12= ignore5(args.ignore5, CpG_index2, read1.rlen, orientation.rsplit('/')[1])      
+    # Case1: Read-pair is informative for the OT strand
+    if strand == 'OT':
         # CaseA: > 0 CpGs in both reads of read-pair    
         if (len(CpG_index1) > 0 and len(CpG_index2) > 0):
             if pairChoice == "outermost":
@@ -367,15 +349,15 @@ def SAM2MS_PE(read1, read2):
         else:
             print 'ERROR: Unexpected CpG count for read-pair ', read1.qname
             return None
-    # Case2: Read-pair orientation is -/+ (read1/read2)
-    elif orientation == '-/+':
+    # Case2: Read-pair is informative for the OB strand
+    elif strand == 'OB':
         # CaseA: A CpG in both reads of pair
         if (len(CpG_index1) > 0 and len(CpG_index2) > 0):
             if pairChoice == "outermost":
                 CpGL = CpG_index2[0] # Leftmost CpG in read2
                 CpGR = CpG_index1[-1] # Rightmost CpG in read1
-                positionL = start2 + CpGL - 1 # No need to ignore2 since 3' bases of read2 are rightmost; -1 so as to point to C on the forward strand in the CpG 
-                positionR = start1 + CpGR - 1 # -1 so as to point to C on the forward strand in the CpG
+                positionL = start2 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG 
+                positionR = start1 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
                 output=[chrom, positionL, positionR, read2XM[CpGL], read1XM[CpGR], strand] # Output is left-to-right, thus read2XM appears before read1XM for OB read-pairs.
                 if positionL >= positionR:
                     print "ERROR: Case2A posL >= posR for read-pair ", read1.qname," with output ", output
@@ -387,8 +369,8 @@ def SAM2MS_PE(read1, read2):
             if pairChoice == "outermost":
                 CpGL = CpG_index1[0] # Leftmost CpG in read1
                 CpGR = CpG_index1[-1] # Rightmost CpG in read1
-                positionL = start1 + CpGL - 1 # -1 so as to point to C on the forward strand in the CpG 
-                positionR = start1 + CpGR - 1 # -1 so as to point to C on the forward strand in the CpG
+                positionL = start1 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG 
+                positionR = start1 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
                 output=[chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand]
                 if positionL >= positionR:
                     print "ERROR: Case2B posL >= posR for read ", read1.qname," with output ", output
@@ -400,8 +382,8 @@ def SAM2MS_PE(read1, read2):
             if pairChoice == "outermost":
                 CpGL = CpG_index2[0] # Leftmost CpG in read2
                 CpGR = CpG_index2[-1] # Rightmost CpG in read2
-                positionL = start2 + CpGL - 1 # -1 so as to point to C on the forward strand in the CpG 
-                positionR = start2 + CpGR - 1 # -1 so as to point to C on the forward strand in the CpG
+                positionL = start2 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
+                positionR = start2 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
                 output=[chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand]
                 if positionL >= positionR:
                     print "ERROR: Case2C posL >= posR for read ", read2.qname," with output ", output
@@ -469,7 +451,7 @@ minQual = args.minQual
 pairChoice = args.pairChoice
 n_fragment = 0 # The number of DNA fragments. One single-end read and one paired-end read contribute a single DNA fragment.
 n_comethylation_fragment = 0 #  The number of DNA fragments with a co-methylation measurement. One single-end read and one paired-end read contribute a single DNA fragment.
-CpG_pairs = {} # Dictionary of CpG pair IDs with keys of form chr_pos1_pos2 and values corresponding to a makeCount object 
+CpG_pairs = {} # Dictionary of CpG pair IDs with keys of form chr_pos1_pos2 and values corresponding to a makeWFCount object 
 #############################################################################################################################################################################################
 
 ### The main program. Loops over the BAM file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or read-pair. ###
@@ -515,9 +497,9 @@ for read in BAM:
         pair_ID = ''.join([fragment_MS[0], ':', str(fragment_MS[1]), '-', str(fragment_MS[2])])
         if not pair_ID in CpG_pairs: # CpG-pair not yet seen - create a dictionary key for it and increment its count (value)
             CpG_pairs[pair_ID] = makeWFCount()
-            CpG_pairs[pair_ID] = incrementCount(CpG_pairs[pair_ID], fragment_MS) 
+            CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS) 
         else: # CpG-pair already seen - increment its count (value)
-            CpG_pairs[pair_ID] = incrementCount(CpG_pairs[pair_ID], fragment_MS)
+            CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS)
 
 writeWF(CpG_pairs)
 BAM.close()

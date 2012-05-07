@@ -1,3 +1,4 @@
+## TODO: Check script works correctly for paired-end data; e.g. add XM tag to ADS-adipose data aligned with Bismark and see if the tags match.
 ## TODO: Update @PG tag when making major changes to code.
 ## TODO: Check which position in the XM flag is marked for reads aligned to the reverse strand
 ## TODO: Add counters for mCpG, CpG, mCHG, CHG, mCHH, CHH, reads that couldn't be processed, progress report. See what else Bismark reports in its mapping summary
