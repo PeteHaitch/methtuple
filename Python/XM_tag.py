@@ -1,3 +1,4 @@
+## TODO: Fix up how strand information is determined - cannot rely on read-orientation if the 4-strand protocol is used. For Bismark use the XR and XG tags, for other aligners must determine how to identify which strand a read was aligned against.
 ## TODO: Check script works correctly for paired-end data; e.g. add XM tag to ADS-adipose data aligned with Bismark and see if the tags match.
 ## TODO: Update @PG tag when making major changes to code.
 ## TODO: Check which position in the XM flag is marked for reads aligned to the reverse strand

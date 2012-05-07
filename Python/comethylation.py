@@ -55,7 +55,7 @@ import pysam
 
 ### TODOs ###
 ############################################################################################################################################################################################
-# TODO: It's not the orientation but the strand that is important in determining whether the CpG_index points to the C or the G in a CpG. It is coincidental that for single-end data these two concepts give identical answers but for paired-end data the answers can differ.
+# TODO: Sort output - see aggregate_methylation.py for implementation
 # TODO: Extend to 4-strand protocol
 # TODO: read.is_paired checks if the read is paired in-sequencing. Problems may arise if the mate of a read that is paired in-sequencing is not present in the SAM/BAM (e.g. if only one read of the read-pair is mapped).
 # TODO: Insert program description in arg.parse
