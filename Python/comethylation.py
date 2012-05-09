@@ -55,10 +55,12 @@ import pysam
 
 ### TODOs ###
 ############################################################################################################################################################################################
-# TODO: Sort output - see aggregate_methylation.py for implementation
+# TODO: Print warning messages to a log file. Print errors to standard out?
+# TODO: Fix counters and stdout
 # TODO: Extend to 4-strand protocol
 # TODO: read.is_paired checks if the read is paired in-sequencing. Problems may arise if the mate of a read that is paired in-sequencing is not present in the SAM/BAM (e.g. if only one read of the read-pair is mapped).
 # TODO: Insert program description in arg.parse
+# TODO: Pass "read.qname" to incrementWFCount() so that it is a local rather than global variable for that function.
 # TODO: Add option to ignore a different number of bases from the ends of reads depending on whether it is read1 or read2
 # TODO: Learn the difference between read.alen, read.qlen and read.rlen; decide which is most appropriate for this script.
 ############################################################################################################################################################################################
@@ -89,7 +91,7 @@ parser.add_argument('--minQual', metavar = '<int>',
 parser.add_argument('--pairChoice',
                     metavar = '<string>',
                     default="outermost",
-                    help='Method for constructing CpG-pairs: outermost, random or all (default: outermost)')
+                    help='Method for constructing CpG-pairs: outermost or all (default: outermost)')
 parser.add_argument('--phred64',
                     action='store_true',
                     help='Quality scores are encoded as Phred64 (default: Phred33)')
@@ -183,10 +185,10 @@ def removeOverlap(n_overlap, orientation, index1, index2, qual1, qual2):
 def makeWFCount():
     return  {'MM': 0, 'MU': 0, 'UM': 0, 'UU': 0, 'MM_OT': 0, 'MU_OT': 0, 'UM_OT': 0, 'UU_OT': 0, 'MM_OB': 0, 'MU_OB': 0, 'UM_OB': 0, 'UU_OB': 0}
 
-## Increment the counts in an makeWFCount() object based on the new information from fragment_MS, the output of SAM2MS_SE() or SAM2MS_PE().
-def incrementWFCount(CpG_pair, fragment_MS):
-    ms = ''.join(fragment_MS[3:5]) # The CpG methylation state - ZZ, Zz, zZ or zz - for that CpG-pair from that read
-    strand = fragment_MS[5]
+## Increment the counts in an makeWFCount() object based on the new information from an element of fragment_MS, the output of SAM2MS_SE() or SAM2MS_PE().
+def incrementWFCount(CpG_pair, thisPair): # CpG_pair is the current count of comethylation (a makeWFCount object). thisPair is an element of the list-of-lists fragment_MS, e.g. fragment_MS[0]
+    ms = ''.join(thisPair[3:5]) # The CpG methylation state - ZZ, Zz, zZ or zz - for that CpG-pair from that read
+    strand = thisPair[5]
     if ms == 'ZZ':
         CpG_pair['MM'] += 1
         if strand == 'OT':
@@ -216,10 +218,12 @@ def incrementWFCount(CpG_pair, fragment_MS):
             CpG_pair['UU_OB'] +=1
         return CpG_pair
     else:
-        exit_msg = ''.join(['Error: Invalid methylation string (',  fragment_MS, ') for read:', read.qname])
+        exit_msg = ''.join(['Error: Invalid methylation string (',  thisPair, ') for read:', read.qname]) # WARNING: Exit message uses global variable read.qname
         sys.exit(exit_msg)
  
 ## SAM2MS_SE extracts, summarises and returns the methylation string (MS) information for a read mapped as single-end data
+## The return value is a list-of-lists, with length equal to the number of pairs extracted from the read. Thus a result value with length = 0 means there were no CpGs pairs extracted from that read (or there was an error with the pairs extracted), a result value with length = 0 means one CpG-pair, a result value with length = 2 means two CpG-pairs, etc.
+## NB: strand == 'OT' ('OB') is the same as orientation == '+' ('-') for the two-strand protocol
 def SAM2MS_SE(read):
     chrom = BAM.getrname(read.tid)
     start = read.pos + 1 # read.pos is 0-based in accordance with BAM file specificiations, regardless of whether the input file is SAM or BAM. I convert this to a 1-based position.
@@ -243,6 +247,7 @@ def SAM2MS_SE(read):
     # Case A: > 1 CpG in read
     if len(CpG_index) > 1:
         if pairChoice == 'outermost':
+            output = []
             CpGL = CpG_index[0] # Leftmost CpG in read
             CpGR = CpG_index[-1] # Rightmost CpG in read
             positionL = start + CpGL
@@ -250,15 +255,26 @@ def SAM2MS_SE(read):
             if strand == 'OB': # Translate co-ordinate 1bp to the left so that it points to the C in the CpG on the OT-strand
                 positionL -= 1
                 positionR -= 1
-            output = [chrom, positionL, positionR, readXM[CpGL], readXM[CpGR], strand] # Output is left-to-right, thus read1XM appears before read2XM for OT read-pairs.
+            output.append([chrom, positionL, positionR, readXM[CpGL], readXM[CpGR], strand]) # Output is left-to-right, thus read1XM appears before read2XM for OT read-pairs.
             if positionL > positionR:
-                print "ERROR: Case1A posL > posR for single-end read ", read1.qname," with output ", output
-                return None
-            return output
-        else:
-            sys.exit('ERROR: Only \'--pairChoice outermost\' is implemented.')
+                print "ERROR: Case1A posL > posR for single-end read ", read1.qname," with output ", [chrom, positionL, positionR, readXM[CpGL], readXM[CpGR], strand]
+        elif pairChoice == 'all':
+            output = []
+            for i in range(0, len(CpG_index)):
+                if i < len(CpG_index):
+                    j = i + 1
+                    for k in range(j, len(CpG_index)):
+                        CpGL = CpG_index[i]
+                        CpGR = CpG_index[k]
+                        positionL = start + CpGL
+                        positionR = start + CpGR
+                        if strand == 'OB': # Translate co-ordinate 1bp to the left so that it points to the C in the CpG on the OT-strand
+                            positionL -= 1
+                            positionR -= 1
+                        output.append([chrom, positionL, positionR, readXM[CpGL], readXM[CpGR], strand])
     else: # Less than 2 CpGs in read, therefore no within-fragment comethylation measurement for this read.
-        return None
+        output = []
+    return output
 
 ## SAM2MS_PE extracts, summarises and returns the methylation string (MS) information for a read-pair mapped as paired-end data.
 def SAM2MS_PE(read1, read2):
@@ -279,18 +295,20 @@ def SAM2MS_PE(read1, read2):
         orientation = '-/+'
     else:
         print 'ERROR: Unexpected orientation of read-pair', read1.qname
-        return None
+        output = []
+        return output
     # Check for overlapping reads from a read-pair. If reads overlap, check that the overlapping sequenced is identical. If the overlapping sequence is identical, ignore the methylation calls in the overlapping region from the lower quality read. If the overlapping sequence is not identical, report a warning and skip the read-pair.
     n_overlap = read1.rlen + read2.rlen - abs(read1.tlen)
     if n_overlap > 0 : # If True, then the reads overlap and we need to ignore any CpG-methylation calls in the overlap from one of the reads using removeOverlap()
         identicalOverlap, overlap1, overlap2 = overlappingSeqIdentical(read1.seq, read2.seq, n_overlap, orientation)
         if identicalOverlap:
-            print 'Identical overlap. Overlap 1 =', overlap1, 'Overlap2 =', overlap2 
+            #print 'Identical overlap. Overlap 1 =', overlap1, 'Overlap2 =', overlap2 
             CpG_index1, CpG_index2 = removeOverlap(n_overlap, orientation, CpG_index1, CpG_index2, read1.qual, read2.qual) # Remove from consideration the methylation calls in the overlapping region from the lower quality read 
         else:
-            print 'WARNING: Skipping read-pair due to non-identical overlapping sequence', read1.qname
-            print 'Overlap1 =', overlap1, 'Overlap2 =', overlap2
-            return None
+            #print 'WARNING: Skipping read-pair due to non-identical overlapping sequence', read1.qname
+            #print 'Overlap1 =', overlap1, 'Overlap2 =', overlap2
+            output = []
+            return output
     # Remove low quality CpG-methylation calls from consideration
     CpG_index1 = removeLowQualMS(CpG_index1, read1.qual, minQual, offset) 
     CpG_index2 = removeLowQualMS(CpG_index2, read2.qual, minQual, offset)
@@ -300,102 +318,226 @@ def SAM2MS_PE(read1, read2):
         CpG_index2 = ignore3(args.ignore3, CpG_index2, read2.rlen, orientation.rsplit('/')[1])
     if args.ignore5 > 0:
         CpG_index1 = ignore5(args.ignore5, CpG_index1, read1.rlen, orientation.rsplit('/')[0])
-        CpG_index12= ignore5(args.ignore5, CpG_index2, read1.rlen, orientation.rsplit('/')[1])      
+        CpG_index2 = ignore5(args.ignore5, CpG_index2, read2.rlen, orientation.rsplit('/')[1])      
     # Case1: Read-pair is informative for the OT strand
-    if strand == 'OT':
+    if strand == 'OT': # For the two-strand protocol, strand == 'OT' is the same as orientation == '+/-'
         # CaseA: > 0 CpGs in both reads of read-pair    
         if (len(CpG_index1) > 0 and len(CpG_index2) > 0):
             if pairChoice == "outermost":
+                output = []
                 CpGL = CpG_index1[0] # Leftmost CpG in read1
                 CpGR = CpG_index2[-1] # Rightmost CpG in read2
                 positionL = start1 + CpGL
                 positionR = start2 + CpGR
-                output=[chrom, positionL, positionR, read1XM[CpGL], read2XM[CpGR], strand] # Output is left-to-right, thus read1XM appears before read2XM for OT read-pairs.
+                output.append([chrom, positionL, positionR, read1XM[CpGL], read2XM[CpGR], strand]) # Output is left-to-right, thus read1XM appears before read2XM for OT read-pairs.
                 if positionL >= positionR:
-                    print "ERROR: Case1A posL >= posR for read-pair ", read1.qname," with output ", output
-                    return None
-                else:
-                    return output
+                    print "ERROR: Case1A posL >= posR for read-pair ", read1.qname," with output ", [chrom, positionL, positionR, read1XM[CpGL], read2XM[CpGR], strand]
+                    output = []
+            elif pairChoice == 'all':
+                output = []
+                # First, create all CpG-pairs where CpGL is from read1 and CpGR is from read1
+                if len(CpG_index1) > 1:
+                    for i in range(0, len(CpG_index1)): 
+                        if i < len(CpG_index1):
+                            j = i + 1
+                            for k in range(j, len(CpG_index1)):
+                                CpGL = CpG_index1[i]
+                                CpGR = CpG_index1[k]
+                                positionL = start1 + CpGL
+                                positionR = start1 + CpGR
+                                output.append([chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand])
+                                if positionL >= positionR:
+                                    print "ERROR: Case1A posL >= posR for read-pair ", read1.qname," with output ", [chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand]
+                                    output = []
+                # Next, create all CpG-pairs where CpGL is from read1 and CpGR is from read2
+                for i in range(0, len(CpG_index1)):
+                    for j in range(0, len(CpG_index2)):
+                        CpGL = CpG_index1[i]
+                        CpGR = CpG_index2[j]
+                        positionL = start1 + CpGL
+                        positionR = start2 + CpGR
+                        output.append([chrom, positionL, positionR, read1XM[CpGL], read2XM[CpGR], strand]) # Output is left-to-right, thus read1XM appears before read2XM for OT read-pairs.
+                        if positionL >= positionR:
+                            print "ERROR: Case1A posL >= posR for read-pair ", read1.qname," with output ", [chrom, positionL, positionR, read1XM[CpGL], read2XM[CpGR], strand]
+                            output = []
+                # Finally, create all CpG-pairs where CpGL is from read2 and CpGR is from read2
+                if len(CpG_index2) > 1:
+                    for i in range(0, len(CpG_index2)): 
+                        if i < len(CpG_index2):
+                            j = i + 1
+                            for k in range(j, len(CpG_index2)):
+                                CpGL = CpG_index2[i]
+                                CpGR = CpG_index2[k]
+                                positionL = start2 + CpGL
+                                positionR = start2 + CpGR
+                                output.append([chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand])
+                                if positionL >= positionR:
+                                    print "ERROR: Case1A posL >= posR for read-pair ", read1.qname," with output ", [chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand]
+                                    output = []
         # CaseB: > 1 CpG in read1 but 0 CpGs in read2
         elif (len(CpG_index1) > 1 and len(CpG_index2) == 0):
             if pairChoice == "outermost":
+                output = []
                 CpGL = CpG_index1[0]
                 CpGR = CpG_index1[-1]
                 positionL = start1 + CpGL
                 positionR = start1 + CpGR
-                output=[chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand]
+                output.append([chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand])
                 if positionL >= positionR:
-                    print "ERROR: Case1B posL >= posR for read ", read1.qname," with output ", output
-                    return None
-                else:
-                    return output
+                    print "ERROR: Case1B posL >= posR for read ", read1.qname," with output ", [chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand]
+                    output = []
+            elif pairChoice == 'all':
+                output = []
+                for i in range(0, len(CpG_index1)): 
+                    if i < len(CpG_index1):
+                        j = i + 1
+                        for k in range(j, len(CpG_index1)):
+                            CpGL = CpG_index1[i]
+                            CpGR = CpG_index1[k]
+                            positionL = start1 + CpGL
+                            positionR = start1 + CpGR
+                            output.append([chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand])
+                            if positionL >= positionR:
+                                print "ERROR: Case1B posL >= posR for read ", read1.qname," with output ", [chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand]
+                                output = []
+                
         # CaseC: 0 CpGs in read1 but > 1 CpG in read2
         elif (len(CpG_index1) == 0 and len(CpG_index2) > 1):
             if pairChoice == "outermost":
+                output = []
                 CpGL = CpG_index2[0]
                 CpGR = CpG_index2[-1]
                 positionL = start2 + CpGL
                 positionR = start2 + CpGR
-                output=[chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand]
+                outputa.append([chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand])
                 if positionL >= positionR:
-                    print "ERROR: Case1C posL >= posR for read ", read2.qname," with output ", output
-                    return None
-                else:
-                    return output
+                    print "ERROR: Case1C posL >= posR for read ", read2.qname," with output ", [chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand]
+                    output = []
+            elif pairChoice == 'all':
+                output = []
+                for i in range(0, len(CpG_index2)): 
+                    if i < len(CpG_index2):
+                        j = i + 1
+                        for k in range(j, len(CpG_index2)):
+                            CpGL = CpG_index2[i]
+                            CpGR = CpG_index2[k]
+                            positionL = start2 + CpGL
+                            positionR = start2 + CpGR
+                            output.append([chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand])
         # CaseD: < 2 CpGs in read-pair
         elif (len(CpG_index1) + len(CpG_index2)) < 2:
-            return None
-        # CaseE: Unexpected CpG count in read-pair
-        else:
-            print 'ERROR: Unexpected CpG count for read-pair ', read1.qname
-            return None
+            output = []
     # Case2: Read-pair is informative for the OB strand
-    elif strand == 'OB':
-        # CaseA: A CpG in both reads of pair
+    elif strand == 'OB': # For the two-strand protocol, strand == 'OB' is the same as orientation == '-/+'
+        # CaseA:  > 0 CpGs in both reads of read-pair 
         if (len(CpG_index1) > 0 and len(CpG_index2) > 0):
             if pairChoice == "outermost":
+                output = []
                 CpGL = CpG_index2[0] # Leftmost CpG in read2
                 CpGR = CpG_index1[-1] # Rightmost CpG in read1
                 positionL = start2 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG 
                 positionR = start1 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                output=[chrom, positionL, positionR, read2XM[CpGL], read1XM[CpGR], strand] # Output is left-to-right, thus read2XM appears before read1XM for OB read-pairs.
+                output.append([chrom, positionL, positionR, read2XM[CpGL], read1XM[CpGR], strand]) # Output is left-to-right, thus read2XM appears before read1XM for OB read-pairs.
                 if positionL >= positionR:
-                    print "ERROR: Case2A posL >= posR for read-pair ", read1.qname," with output ", output
-                    return None
-                else:
-                    return output
+                    print "ERROR: Case2A posL >= posR for read-pair ", read1.qname," with output ",  [chrom, positionL, positionR, read2XM[CpGL], read1XM[CpGR], strand]
+                    output = []
+            elif pairChoice == 'all':
+                output = []
+                # First, create all CpG-pairs where CpGL is from read1 and CpGR is from read1
+                if len(CpG_index1) > 1:
+                    for i in range(0, len(CpG_index1)): 
+                        if i < len(CpG_index1):
+                            j = i + 1
+                            for k in range(j, len(CpG_index1)):
+                                CpGL = CpG_index1[i]
+                                CpGR = CpG_index1[k]
+                                positionL = start1 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
+                                positionR = start1 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
+                                output.append([chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand])
+                                if positionL >= positionR:
+                                    print "ERROR: Case2A posL >= posR for read-pair ", read1.qname," with output ", [chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand]
+                                    output = []
+                # Next, create all CpG-pairs where CpGL is from read2 and CpGR if from read1 (recall that the orientation of OB reads is '-/+', hence read2 appears to the left of read1)
+                for i in range(0, len(CpG_index2)):
+                    for j in range(0, len(CpG_index1)):
+                        CpGL = CpG_index2[i]
+                        CpGR = CpG_index1[j]
+                        positionL = start2 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
+                        positionR = start1 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
+                        output.append([chrom, positionL, positionR, read2XM[CpGL], read1XM[CpGR], strand]) # Output is left-to-right, thus read2XM appears before read1XM for OB read-pairs.
+                        if positionL >= positionR:
+                            print "ERROR: Case2A posL >= posR for read-pair ", read1.qname," with output ", [chrom, positionL, positionR, read2XM[CpGL], read1XM[CpGR], strand]
+                            output = []
+                # Finally, create all CpG-pairs where CpGL is from read2 and CpGR is from read2
+                if len(CpG_index2) > 1:
+                    for i in range(0, len(CpG_index2)): 
+                        if i < len(CpG_index2):
+                            j = i + 1
+                            for k in range(j, len(CpG_index2)):
+                                CpGL = CpG_index2[i]
+                                CpGR = CpG_index2[k]
+                                positionL = start2 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
+                                positionR = start2 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
+                                output.append([chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand])
+                                if positionL >= positionR:
+                                    print "ERROR: Case2A posL >= posR for read-pair ", read1.qname," with output ", [chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand]
+                                    output = []
         # CaseB: > 1 CpG in read1 but 0 CpGs in read2
         elif (len(CpG_index1) > 1 and len(CpG_index2) == 0):
             if pairChoice == "outermost":
+                output = []
                 CpGL = CpG_index1[0] # Leftmost CpG in read1
                 CpGR = CpG_index1[-1] # Rightmost CpG in read1
                 positionL = start1 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG 
                 positionR = start1 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                output=[chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand]
+                output.append([chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand])
                 if positionL >= positionR:
-                    print "ERROR: Case2B posL >= posR for read ", read1.qname," with output ", output
-                    return None
-                else:
-                    return output
+                    print "ERROR: Case2B posL >= posR for read ", read1.qname," with output ", [chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand]
+                    output = []
+            elif pairChoice == 'all':
+                output = []
+                for i in range(0, len(CpG_index1)): 
+                    if i < len(CpG_index1):
+                        j = i + 1
+                        for k in range(j, len(CpG_index1)):
+                            CpGL = CpG_index1[i]
+                            CpGR = CpG_index1[k]
+                            positionL = start1 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
+                            positionR = start1 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
+                            output.append([chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand])
+                            if positionL >= positionR:
+                                print "ERROR: Case2B posL >= posR for read-pair ", read1.qname," with output ", [chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand]
+                                output = []
         # CaseC: 0 CpGs in read1 but > 1 CpG in read2
         elif (len(CpG_index1) == 0 and len(CpG_index2) > 1):
             if pairChoice == "outermost":
+                output = []
                 CpGL = CpG_index2[0] # Leftmost CpG in read2
                 CpGR = CpG_index2[-1] # Rightmost CpG in read2
                 positionL = start2 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
                 positionR = start2 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                output=[chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand]
+                output.append([chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand])
                 if positionL >= positionR:
-                    print "ERROR: Case2C posL >= posR for read ", read2.qname," with output ", output
-                    return None
-                else:
-                    return output
+                    print "ERROR: Case2C posL >= posR for read ", read2.qname," with output ", [chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand]
+                    output = []
+            elif pairChoice == 'all':
+                output = []
+                for i in range(0, len(CpG_index2)): 
+                    if i < len(CpG_index2):
+                        j = i + 1
+                        for k in range(j, len(CpG_index2)):
+                            CpGL = CpG_index2[i]
+                            CpGR = CpG_index2[k]
+                            positionL = start2 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
+                            positionR = start2 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
+                            output.append([chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand])
+                            if positionL >= positionR:
+                                print "ERROR: Case2C posL >= posR for read-pair ", read1.qname," with output ", [chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand]
+                                output = []
         # CaseD: < 2 CpGs in read-pair
         elif (len(CpG_index1) + len(CpG_index2)) < 2:
-            return None
-        else:
-            print 'ERROR: Unexpected CpG count for read-pair', read1.qname
-            return None
+            output = []
+    return output
 
 ## getStrand() returns whether the read or read-pair is informative for the OT (original top, Watson) or OB (original bottom, Crick) strand.
 def getStrand(read1, read2):
@@ -413,30 +555,51 @@ def getStrand(read1, read2):
             error_message = ''.join(['Read-pair is aligned to both the CT- and GA-converted reference genomes: ', read1.qname]) 
             sys.exit(error_message)
     return strand
+
+## reorganiseCpGPairs() re-orginises the CpG_pairs object so that it can be iterated in a chromosome- or chromosome/position1- or chromosome/position1/position2-manner
+## reorganiseCpGPairs() dictionary structure:
+## reorganiseCpGPairs()             keys = (chr1, chr2, ..., chrX, chrY), values = chr_wf (the positions of the first CpG in the pair)
+##       chr_wf                     keys = (pos1._1, pos1._2, ..., pos1._m), values = pos2 (the position of the second CpG in the pair)
+##              pos2                keys = (pos12_1, pos12_2, pos21_2, pos31_2, ..., posm2_n), values = 
+##                   makeWFCount    keys = (M, M_OT, M_OB, U, ..., beta, beta_OT, beta_OB, gamma, gamma_OT, gamma_OB), values = 'count'
+def reorganiseCpGPairs(CpG_pairs):
+    CpG_pairs_reorganised = {}
+    for CpG_pair_ID in CpG_pairs.iterkeys():
+        chrom, pos1, pos2 = CpG_pair_ID.rsplit(':') # Split the CpG_ID into the chromosome and positions parts.
+        pos1 = int(pos1) # Convert pos1 from a string to an integer so that it can be sorted numerically
+        pos2 = int(pos2) # Convert pos2 from a string to an integer so that it can be sorted numerically
+        if chrom not in CpG_pairs_reorganised: # No CpG-pairs yet seen for this chromosome - create a dictionary for CpG-pairs on this chromosome
+            CpG_pairs_reorganised[chrom] = {}
+        if pos1 not in CpG_pairs_reorganised[chrom]: # No CpG-pairs yet seen starting at this position - create a dictionary for CpG-pairs starting at this position
+            CpG_pairs_reorganised[chrom][pos1] = {}
+        # Add the comethylation data for this CpG-pair on this chromosome, starting at pos1 and ending at pos2
+        CpG_pairs_reorganised[chrom][pos1][pos2] = CpG_pairs[CpG_pair_ID]
+    return CpG_pairs_reorganised
         
 ## WFWriter writes a tab-separated output file to the filehandle WF
 WFWriter = csv.writer(WF, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
 
-## writeWF() writes the CpG_pairs object to disk as a tab-separated file.
-def writeWF(CpG_pairs):
+## writeWF() writes the CpG_pairs_reorganised object to disk as a tab-separated file.
+def writeWF(CpG_pairs_reorganised):
     # Create the header row
-    header = ['chr', 'pos1', 'pos2', 'distance']
-    example_row = CpG_pairs[CpG_pairs.keys()[1]]
+    header = ['chr', 'pos1', 'pos2']
+    #example_row = CpG_pairs_reorganised[CpG_pairs_reorganised.keys()[0]][CpG_pairs_reorganised[CpG_pairs_reorganised.keys()[0]].keys()[0]][CpG_pairs_reorganised[CpG_pairs_reorganised.keys()[0]][CpG_pairs_reorganised[CpG_pairs_reorganised.keys()[0]].keys()[0]].keys()[0]]
+    example_row = makeWFCount()
     for key in sorted(example_row.iterkeys()):
         header.append(key)
     # Write the header to file
     WFWriter.writerow(header)
     # Write each CpG-pair to file
-    for pair in CpG_pairs.iterkeys():
-        pair_counts = []
-	for count in sorted(CpG_pairs[pair].iterkeys()):
-		pair_counts.append(CpG_pairs[pair][count])
-        chrom = pair.rsplit(':')[0]
-        pos1 = pair.rsplit(':')[1].rsplit('-')[0]
-        pos2 = pair.rsplit(':')[1].rsplit('-')[1]
-        dist = int(pos2) - int(pos1)
-        row = [chrom, pos1, pos2, dist] + pair_counts
-        WFWriter.writerow(row)
+    for chromosome in sorted(CpG_pairs_reorganised.iterkeys()): # Loop over a single chromosome
+        print '\t', chromosome
+        for pos1 in sorted(CpG_pairs_reorganised[chromosome].iterkeys()): # Loop over all pos1 in that chromosome
+            for pos2 in sorted(CpG_pairs_reorganised[chromosome][pos1].iterkeys()): # Loop over all CpG-pairs that start at the current pos1
+                pair_counts = []
+                for count in sorted(CpG_pairs_reorganised[chromosome][pos1][pos2].iterkeys()):
+                    pair_counts.append(CpG_pairs_reorganised[chromosome][pos1][pos2][count])
+                row = [chromosome, pos1, pos2] + pair_counts
+                WFWriter.writerow(row)
+
     
 #############################################################################################################################################################################################
 
@@ -456,9 +619,13 @@ CpG_pairs = {} # Dictionary of CpG pair IDs with keys of form chr_pos1_pos2 and 
 
 ### The main program. Loops over the BAM file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or read-pair. ###
 #############################################################################################################################################################################################
+if pairChoice != 'all' and pairChoice != 'outermost':
+    sys.exit('ERROR: --pairchoice must be one of \'all\' or \'outermost\'')
+print 'Assuming quality scores are Phred', offset
 print 'Ignoring', args.ignore3, 'bp from 3\' end of each read'
 print 'Ignoring', args.ignore5, 'bp from 5\' end of each read'
 print 'Ignoring CpG-methylation calls with base-quality less than', minQual
+print 'Creating', pairChoice, 'CpG-pairs'
 for read in BAM:
     fragment_MS = None # Reset the fragment_MS to None to erase values from previous reads/read-pairs
     if args.ignoreDuplicates and read.is_duplicate:
@@ -492,16 +659,32 @@ for read in BAM:
         else:
             print "Read is neither a single-end read nor part of a paired-end read. Check the SAM flag values are correctly set for read:", read.qname
             continue
-    if fragment_MS is not None:
+    #if fragment_MS is not None:
+    #    n_comethylation_fragment += 1
+    #    pair_ID = ':'.join([fragment_MS[0], str(fragment_MS[1]), str(fragment_MS[2])])
+    #    if not pair_ID in CpG_pairs: # CpG-pair not yet seen - create a dictionary key for it and increment its count (value)
+    #        CpG_pairs[pair_ID] = makeWFCount()
+    #        CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS) 
+    #    else: # CpG-pair already seen - increment its count (value)
+    #        CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS)
+    if len(fragment_MS) > 0: # Check whether there were any CpG-pairs identified in that DNA fragment by SAM2MS_SE() or SAM2MS_PE()
         n_comethylation_fragment += 1
-        pair_ID = ''.join([fragment_MS[0], ':', str(fragment_MS[1]), '-', str(fragment_MS[2])])
-        if not pair_ID in CpG_pairs: # CpG-pair not yet seen - create a dictionary key for it and increment its count (value)
-            CpG_pairs[pair_ID] = makeWFCount()
-            CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS) 
-        else: # CpG-pair already seen - increment its count (value)
-            CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS)
+        for i in range(0, len(fragment_MS)): # Loop over each CpG-pair in fragment_MS
+            pair_ID = ':'.join([fragment_MS[i][0], str(fragment_MS[i][1]), str(fragment_MS[i][2])]) # pair_ID is of form 'chrom:pos1:pos2'
+            if not pair_ID in CpG_pairs: # CpG-pair not yet seen - create a dictionary key for it and increment its count (value)
+                CpG_pairs[pair_ID] = makeWFCount()
+                CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS[i]) 
+            else: # CpG-pair already seen - increment its count (value)
+                CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS[i])
 
-writeWF(CpG_pairs)
+# Store CpG-pairs as a dictionary of dictionaries. The returned object is accessible by chromosome, then position.
+print 'Re-organising CpG-pairs in chromosomes-position order...'
+CpG_pairs_reorganised = reorganiseCpGPairs(CpG_pairs)
+
+# Write results to disk
+print 'Writing CpG-pairs to', WF.name, '...'
+writeWF(CpG_pairs_reorganised)
+
 BAM.close()
 WF.close()
 
