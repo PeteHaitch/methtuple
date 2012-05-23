@@ -1,3 +1,4 @@
+## TODO: Add case where MS = U/u, where sequence context surrounding CpG cannot be extracted, i.e. corresponding to "C[H/N]N" in reference sequence, non CG, CHG or CGG sequence context.
 ## TODO: Update @PG tag when making major changes to code.
 ## TODO: Add counters for mCpG, CpG, mCHG, CHG, mCHH, CHH, reads that couldn't be processed, progress report. See what else Bismark reports in its mapping summary
 
@@ -10,6 +11,19 @@ import pysam
 ## IMPORTANT: This script will not work properly with reads that have been soft-clipped, e.g. reads from Bowtie2. Bismark, when using Bowtie2, only allows end-to-end alignments, i.e. untrimmed and unclipped alignments, and thus avoid the difficulty caused by soft-clipped alignments.
 ## IMPORTANT: This script assumes there is no soft-clipping of bases since it uses the AlignedRead.seq to extract the read sequence rather than AlignedRead.query. The script may not work if AlignedRead.seq is simply changed to AlignedRead.query
 ## IMPORTANT: Reads aligned to the OB-strand have the XM-tag pointing to the C on the OB-strand, therefore we need to -1 (for CpGs, -2 for CHHs and CHGs) for positions to translate these to the Cs on the OT-strand.
+
+### Explanation of XM-tag (methylation string) ###
+############################################################################################################################################################################################
+# . for bases not involving cytosines                       
+# X for methylated C in CHG context (was protected)         
+# x for not methylated C in CHG context (was converted)     
+# H for methylated C in CHH context (was protected)         
+# h for not methylated C in CHH context (was converted)     
+# Z for methylated C in CpG context (was protected)         
+# z for not methylated C in CpG context (was converted)
+# U for methylated C in "unknown" context, e.g. CNN-context, (was protected). Non-standard Bismark XM-tag values; unique to output of XM_tag.py.
+# u for not methylated C in "unknown"-context, e.g. CNN-context, (was converted). Non-standard Bismark XM-tag values; unique to output of XM_tag.py.
+############################################################################################################################################################################################
 
 # Command line passer
 parser = argparse.ArgumentParser(description='Add a methylation tag XM to each read of a SAM/BAM file and write the result to BAM file. The XM tag specification is defined in the Bismark user manual.')
@@ -90,8 +104,13 @@ def makeXMtag(read, refseq, strand): # read is an AlignedRead object, refseq is 
                         XM.append('h')
                     else:
                         XM.append('.')
-                else: # Unable to determine the genomic-context of the cytosines in read
-                    return 0
+                else: # Unable to determine the genomic-context of the cytosines in read - not CG-, CHG- or CHH-event, e.g. a CNN-event  
+                    if read.seq[i] == 'C':
+                        XM.append('U')
+                    elif read.seq[i] == 'T':
+                        XM.append('u')
+                    else:
+                        XM.append('.')
             else: # Not a cytosine
                 XM.append('.')
     elif strand == '-':
@@ -119,8 +138,13 @@ def makeXMtag(read, refseq, strand): # read is an AlignedRead object, refseq is 
                         XM.append('h')
                     else:
                         XM.append('.')
-                else: # Unable to determine the genomic-context of the guanines in read
-                    return 0
+                else: # Unable to determine the genomic-context of the guanine in read - not CG-, CHG- or CHH-event, e.g. a CNN-event  
+                    if read.seq[i] == 'G':
+                        XM.append('U')
+                    elif read.seq[i] == 'A':
+                        XM.append('u')
+                    else:
+                        XM.append('.')
             else: # Not a guanine
                 XM.append('.')
                 
@@ -139,9 +163,6 @@ for read in IN:
         print 'Read skipped: Undefined strand (missing XG-tag) for read', read.qname
         continue
     XM = makeXMtag(read, refseq, strand)
-    if XM == 0:
-        print "Read skipped: Could not extract reference sequence for", read.qname, IN.getrname(read.tid), read.pos
-        continue
     read.tags = read.tags + [('XM', XM)]
     OUT.write(read)
 

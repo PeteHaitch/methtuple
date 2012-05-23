@@ -50,11 +50,14 @@ import pysam
 # H for methylated C in CHH context (was protected)         
 # h for not methylated C in CHH context (was converted)     
 # Z for methylated C in CpG context (was protected)         
-# z for not methylated C in CpG context (was converted)     
+# z for not methylated C in CpG context (was converted)
+# U for methylated C in "unknown" context, e.g. CNN-context, (was protected). Non-standard Bismark XM-tag values; unique to output of XM_tag.py.
+# u for not methylated C in "unknown"-context, e.g. CNN-context, (was converted). Non-standard Bismark XM-tag values; unique to output of XM_tag.py.
 ############################################################################################################################################################################################
 
 ### TODOs ###
 ############################################################################################################################################################################################
+# TODO: Add case where MS = U/u, where sequence context surrounding CpG cannot be extracted, i.e. corresponding to "C[H/N]N" in reference sequence, non CG, CHG or CGG sequence context.
 # TODO: Print warning messages to a log file. Print errors to standard out?
 # TODO: Fix counters and stdout
 # TODO: Extend to 4-strand protocol
