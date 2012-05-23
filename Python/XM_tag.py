@@ -1,4 +1,3 @@
-## TODO: Add case where MS = U/u, where sequence context surrounding CpG cannot be extracted, i.e. corresponding to "C[H/N]N" in reference sequence, non CG, CHG or CGG sequence context.
 ## TODO: Update @PG tag when making major changes to code.
 ## TODO: Add counters for mCpG, CpG, mCHG, CHG, mCHH, CHH, reads that couldn't be processed, progress report. See what else Bismark reports in its mapping summary
 
@@ -41,7 +40,7 @@ IN = pysam.Samfile(args.infile)
 # New BAM file to be created. Need to make header that includes a new @PG tag for the new BAM file.
 header = IN.header
 id = 'XM_tag.py'
-vn = '0.2'
+vn = '0.3'
 cl = ' '.join(['python XM_tag.py', args.infile, args.outfile, args.reference])
 XM_tag_PG = {'ID': id, 'VN': vn, 'CL': cl}
 header['PG'].append(XM_tag_PG)
