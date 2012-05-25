@@ -652,8 +652,8 @@ for read in BAM:
             elif read1.qname != read2.qname:
                 print "ERROR: The name of read1 is not identical to to that of read2 for read-pair ", read1.qname, read2.qname, "\nHas your BAM file been sorted in query-name-order with Picard's SortSam function?"
                 continue
-        elif not read.is_paired
-            n_fragment += 1:  
+        elif not read.is_paired:
+            n_fragment += 1  
             fragment_MS = SAM2MS_SE(read)
         else:
             print "Read is neither a single-end read nor part of a paired-end read. Check the SAM flag values are correctly set for read:", read.qname
