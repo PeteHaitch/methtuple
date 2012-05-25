@@ -1,6 +1,5 @@
 #!/usr/bin/python
 import re
-import random
 from numpy import array
 import argparse
 import sys
@@ -57,20 +56,16 @@ import pysam
 
 ### TODOs ###
 ############################################################################################################################################################################################
-# TODO: Add case where MS = U/u, where sequence context surrounding CpG cannot be extracted, i.e. corresponding to "C[H/N]N" in reference sequence, non CG, CHG or CGG sequence context.
-# TODO: Print warning messages to a log file. Print errors to standard out?
-# TODO: Fix counters and stdout
 # TODO: Extend to 4-strand protocol
 # TODO: read.is_paired checks if the read is paired in-sequencing. Problems may arise if the mate of a read that is paired in-sequencing is not present in the SAM/BAM (e.g. if only one read of the read-pair is mapped).
 # TODO: Insert program description in arg.parse
-# TODO: Pass "read.qname" to incrementWFCount() so that it is a local rather than global variable for that function.
 # TODO: Add option to ignore a different number of bases from the ends of reads depending on whether it is read1 or read2
 # TODO: Learn the difference between read.alen, read.qlen and read.rlen; decide which is most appropriate for this script.
 ############################################################################################################################################################################################
 
 ### Command line parser ###
 ############################################################################################################################################################################################
-parser = argparse.ArgumentParser(description='INSERT PROGRAM DESCRIPTION')
+parser = argparse.ArgumentParser(description='Extract within-fragment co-methylation measurements at CpGs from the aligned reads of a BS-Seq experiment.')
 parser.add_argument('BAM', metavar = 'BAM',
                     help='The path to the SAM/BAM file')
 parser.add_argument('sampleName',
@@ -189,7 +184,7 @@ def makeWFCount():
     return  {'MM': 0, 'MU': 0, 'UM': 0, 'UU': 0, 'MM_OT': 0, 'MU_OT': 0, 'UM_OT': 0, 'UU_OT': 0, 'MM_OB': 0, 'MU_OB': 0, 'UM_OB': 0, 'UU_OB': 0}
 
 ## Increment the counts in an makeWFCount() object based on the new information from an element of fragment_MS, the output of SAM2MS_SE() or SAM2MS_PE().
-def incrementWFCount(CpG_pair, thisPair): # CpG_pair is the current count of comethylation (a makeWFCount object). thisPair is an element of the list-of-lists fragment_MS, e.g. fragment_MS[0]
+def incrementWFCount(CpG_pair, thisPair, readname): # CpG_pair is the current count of comethylation (a makeWFCount object). thisPair is an element of the list-of-lists fragment_MS, e.g. fragment_MS[0]
     ms = ''.join(thisPair[3:5]) # The CpG methylation state - ZZ, Zz, zZ or zz - for that CpG-pair from that read
     strand = thisPair[5]
     if ms == 'ZZ':
@@ -221,7 +216,7 @@ def incrementWFCount(CpG_pair, thisPair): # CpG_pair is the current count of com
             CpG_pair['UU_OB'] +=1
         return CpG_pair
     else:
-        exit_msg = ''.join(['Error: Invalid methylation string (',  thisPair, ') for read:', read.qname]) # WARNING: Exit message uses global variable read.qname
+        exit_msg = ''.join(['Error: Invalid methylation string (',  thisPair, ') for read:', readname])
         sys.exit(exit_msg)
  
 ## SAM2MS_SE extracts, summarises and returns the methylation string (MS) information for a read mapped as single-end data
@@ -657,7 +652,8 @@ for read in BAM:
             elif read1.qname != read2.qname:
                 print "ERROR: The name of read1 is not identical to to that of read2 for read-pair ", read1.qname, read2.qname, "\nHas your BAM file been sorted in query-name-order with Picard's SortSam function?"
                 continue
-        elif not read.is_paired:  
+        elif not read.is_paired
+            n_fragment += 1:  
             fragment_MS = SAM2MS_SE(read)
         else:
             print "Read is neither a single-end read nor part of a paired-end read. Check the SAM flag values are correctly set for read:", read.qname
@@ -667,18 +663,18 @@ for read in BAM:
     #    pair_ID = ':'.join([fragment_MS[0], str(fragment_MS[1]), str(fragment_MS[2])])
     #    if not pair_ID in CpG_pairs: # CpG-pair not yet seen - create a dictionary key for it and increment its count (value)
     #        CpG_pairs[pair_ID] = makeWFCount()
-    #        CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS) 
+    #        CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS, read.qname) 
     #    else: # CpG-pair already seen - increment its count (value)
-    #        CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS)
+    #        CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS, read.qname)
     if len(fragment_MS) > 0: # Check whether there were any CpG-pairs identified in that DNA fragment by SAM2MS_SE() or SAM2MS_PE()
         n_comethylation_fragment += 1
         for i in range(0, len(fragment_MS)): # Loop over each CpG-pair in fragment_MS
             pair_ID = ':'.join([fragment_MS[i][0], str(fragment_MS[i][1]), str(fragment_MS[i][2])]) # pair_ID is of form 'chrom:pos1:pos2'
             if not pair_ID in CpG_pairs: # CpG-pair not yet seen - create a dictionary key for it and increment its count (value)
                 CpG_pairs[pair_ID] = makeWFCount()
-                CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS[i]) 
+                CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS[i], read.qname) 
             else: # CpG-pair already seen - increment its count (value)
-                CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS[i])
+                CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS[i], read.qname)
 
 # Store CpG-pairs as a dictionary of dictionaries. The returned object is accessible by chromosome, then position.
 print 'Re-organising CpG-pairs in chromosomes-position order...'
