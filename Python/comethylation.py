@@ -407,7 +407,7 @@ def SAM2MS_PE(read1, read2):
                 CpGR = CpG_index2[-1]
                 positionL = start2 + CpGL
                 positionR = start2 + CpGR
-                outputa.append([chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand])
+                output.append([chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand])
                 if positionL >= positionR:
                     print "ERROR: Case1C posL >= posR for read ", read2.qname," with output ", [chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand]
                     output = []
