@@ -6,7 +6,7 @@
 # TODO: Fix lor() to allow aggregateByNIC
 # Add all genomic-feature stratified lor-plots
 # Implement strand-specificity in plotLorByLag
-# Plot lors by number of CpGs/separation
+# Stratify lors by number of CpGs/separation or CpG density in surrounding region
 # The construction of genomic-feature GRanges instances, while 99% correct, are are not done to publication-standard. This should be fixed prior to publication of code.
 
 #### Read in command line arguments ####
