@@ -3,3 +3,4 @@
 *.bam.bai
 # Ignore the RData files in the data directory
 data/*.RData
+.Rproj.user
