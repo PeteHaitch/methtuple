@@ -149,7 +149,6 @@ averageMethylationInWindow <- function(x, AM.gr, w){
 
 #### Load WF and AM files ####
 WF.gr <- readWF(sample.name, chromosomes = 'all', pairChoice = 'all')
-# Remove unrequired columns from WF.gr 
 AM <- read.table(str_c('../AM/', sample.name, '.am'), header = TRUE, stringsAsFactors = FALSE, )
 AM.gr <- GRanges(seqnames = AM$chr, ranges = IRanges(start = AM$pos, end = AM$pos + 1), beta = AM$beta, gamma = AM$gamma)
 rm(AM)
