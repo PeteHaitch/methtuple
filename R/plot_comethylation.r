@@ -3,9 +3,10 @@
 # Plots of within-fragment comethylation
 
 #### TODOs ####
+# TODO: Spectral analysis of aggregate lor plot
+# TODO: Have a look at aggregate lor plot for "pairChoice == all" data
 # TODO: Fix lor() to allow aggregateByNIC
-# Add all genomic-feature stratified lor-plots
-# Implement strand-specificity in plotLorByLag
+# Implement strand-specificity in plotAggregatedLorByLag
 # Stratify lors by number of CpGs/separation or CpG density in surrounding region
 # The construction of genomic-feature GRanges instances, while 99% correct, are are not done to publication-standard. This should be fixed prior to publication of code.
 
@@ -18,8 +19,8 @@ n.cores <- args[2]
 # Path to genomic-features.RData object
 path.to.gf <- args[3]
 
-#### Load genomic-features.RData, created by running create_genomic_features
-load(path.to.df)
+#### Load genomic-features.RData, created by running create_genomic_features ####
+load(file = path.to.gf)
 
 #### Load libraries ####
 library(stringr)
@@ -27,7 +28,6 @@ library(GenomicRanges)
 library(plyr)
 library(ggplot2)
 library(doMC)
-library(rtracklayer)
 library(BSgenome)
 library('BSgenome.Hsapiens.UCSC.hg18')
 
@@ -109,7 +109,7 @@ lor <- function(x, strand = 'combined', aggregateByLag = FALSE, aggregateByNIC =
   # Compute lor and its asymptotic standard error (ASE)
   lor <- ifelse(MM == 0.5 & MU == 0.5 & UM == 0.5 & UU == 0.5, NA, log(MM * UU / (MU * UM)))
   ASE <- ifelse(MM == 0.5 & MU == 0.5 & UM == 0.5 & UU == 0.5, NA, sqrt(1/MM + 1/MU + 1/UM + 1/MU))
-  if(aggregate == TRUE){
+  if(aggregateByLag == TRUE){
     return.df <- data.frame(lag = agg.counts$lag, lor = lor, ASE = ASE)
   } else{
     return.df <- data.frame(lor = lor, ASE = ASE)
@@ -130,9 +130,9 @@ plotLorBoxplotByLag <- function(x, ...){
 plotAggregatedLorByLag <- function(x, title, error.bars = TRUE, ...){
   if(error.bars == TRUE){
     error.bars <- aes(ymax = lor + 2*ASE, ymin = lor - 2*ASE)
-    ggplot(data = x, aes(x = lag, y = lor)) + geom_point() + opts(title = title) + scale_x_continuous('Distance between CpGs') + scale_y_continuous(limits = c(0, 7), 'log-odds ratio') + geom_errorbar(error.bars)
+    ggplot(data = x, aes(x = lag, y = lor)) + geom_point() + opts(title = title) + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous(limits = c(-2, 7), 'log-odds ratio') + geom_errorbar(error.bars)
   } else{
-    ggplot(data = x, aes(x = lag, y = lor)) + geom_point() + opts(title = title) + scale_x_continuous('Distance between CpGs') + scale_y_continuous(limits = c(0, 7), 'log-odds ratio') 
+    ggplot(data = x, aes(x = lag, y = lor)) + geom_point() + opts(title = title) + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous(limits = c(-2, 7), 'log-odds ratio') 
   }
 }
 
@@ -147,9 +147,9 @@ WF.gr <- readWF(sample.name, chromosomes = 'all', pairChoice = 'all')
 WF_outermost.gr <- readWF(sample.name, chromosomes = 'all', pairChoice = 'outermost')
 
 #### Compute log-odds ratios for each CpG-pair ####
-elementMetadata(WF.gr)$lor <- lor(WF.gr, strand = 'combined', aggregate = FALSE)$lor
-elementMetadata(WF.gr)$lor_OT <- lor(WF.gr, strand = 'OT', aggregate = FALSE)$lor
-elementMetadata(WF.gr)$lor_OB <- lor(WF.gr, strand = 'OB', aggregate = FALSE)$lor
+elementMetadata(WF.gr)$lor <- lor(WF.gr, strand = 'combined')$lor
+elementMetadata(WF.gr)$lor_OT <- lor(WF.gr, strand = 'OT')$lor
+elementMetadata(WF.gr)$lor_OB <- lor(WF.gr, strand = 'OB')$lor
 
 #### Compute coverage of each CpG-pair ####
 elementMetadata(WF.gr)$cov <- elementMetadata(WF.gr)$MM + elementMetadata(WF.gr)$MU + elementMetadata(WF.gr)$UM + elementMetadata(WF.gr)$UU
@@ -157,19 +157,17 @@ elementMetadata(WF.gr)$cov_OT <- elementMetadata(WF.gr)$MM_OT + elementMetadata(
 elementMetadata(WF.gr)$cov_OB <- elementMetadata(WF.gr)$MM_OB + elementMetadata(WF.gr)$MU_OB + elementMetadata(WF.gr)$UM_OB + elementMetadata(WF.gr)$UU_OB
 
 #### See how coverage affects boxplots ####
-pdf(file = str_c('plots/', sample.name, '_lor_boxplots.pdf'), height = 14, width = 14)
+png(file = str_c('plots/', sample.name, '_lor_boxplots.png'), height = 960, width = 960)
 par(mfrow = c(2,2))
 min.cov <- 1
-plotLorByLag(subset(WF.gr, elementMetadata(WF.gr)$cov >= min.cov), main = str_c(sample.name, ': min.cov = ', min.cov), ylim = c(-6, 6))
+plotLorBoxplotByLag(subset(WF.gr, elementMetadata(WF.gr)$cov >= min.cov), main = str_c(sample.name, ': min.cov = ', min.cov), ylim = c(-6, 6))
 min.cov <- quantile(elementMetadata(WF.gr)$cov, 0.5)
-plotLorByLag(subset(WF.gr, elementMetadata(WF.gr)$cov >= min.cov), main = str_c(sample.name, ': min.cov = ', min.cov, '\n(upper 50% of coverage distribution)'), ylim = c(-6, 6))
+plotLorBoxplotByLag(subset(WF.gr, elementMetadata(WF.gr)$cov >= min.cov), main = str_c(sample.name, ': min.cov = ', min.cov, '\n(upper 50% of coverage distribution)'), ylim = c(-6, 6))
 min.cov <- quantile(elementMetadata(WF.gr)$cov, 0.75)
-plotLorByLag(subset(WF.gr, elementMetadata(WF.gr)$cov >= min.cov), main = str_c(sample.name, ': min.cov = ', min.cov, '\n(upper 25% of coverage distribution)'), ylim = c(-6, 6))
+plotLorBoxplotByLag(subset(WF.gr, elementMetadata(WF.gr)$cov >= min.cov), main = str_c(sample.name, ': min.cov = ', min.cov, '\n(upper 25% of coverage distribution)'), ylim = c(-6, 6))
 min.cov <- quantile(elementMetadata(WF.gr)$cov, 0.9)
-plotLorByLag(subset(WF.gr, elementMetadata(WF.gr)$cov >= min.cov), main = str_c(sample.name, ': min.cov = ', min.cov, '\n(upper 10% of coverage distribution)'), ylim = c(-6, 6))
+plotLorBoxplotByLag(subset(WF.gr, elementMetadata(WF.gr)$cov >= min.cov), main = str_c(sample.name, ': min.cov = ', min.cov, '\n(upper 10% of coverage distribution)'), ylim = c(-6, 6))
 dev.off()
-
-#### 
 
 #### Aggregate-by-number-of-intervening-CpGs ####
 elementMetadata(WF_outermost.gr)$NIC <- countInterveningCpGs(WF_outermost.gr, Hsapiens)
@@ -177,42 +175,119 @@ elementMetadata(WF_outermost.gr)$NIC <- countInterveningCpGs(WF_outermost.gr, Hs
 #### Plot aggregated-by-lag log-odds ratios stratified by various genomic features ####
 # No stratification
 tmp.gr <- WF_outermost.gr
-tmp.lor <- lor(x = tmp.gr, aggregate = TRUE)
+tmp.lor <- lor(x = tmp.gr, aggregateByLag = TRUE)
 plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name), error.bars = FALSE)
-ggsave(str_c('plots/', sample.name, '_aggregated_lor_genome_wide.pdf'))
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_genome_wide.pdf'))
 plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name), error.bars = TRUE)
-ggsave(str_c('plots/', sample.name, '_aggregated_lor_genome_wide_se.pdf'))
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_genome_wide_se.pdf'))
 
 # In CGI
 tmp.gr <- subsetByOverlaps(WF_outermost.gr, CGI, type = 'within')
-tmp.lor <- lor(x = tmp.gr, aggregate = TRUE)
+tmp.lor <- lor(x = tmp.gr, aggregateByLag = TRUE)
 plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs in CGIs'), error.bars = FALSE)
-ggsave(str_c('plots/', sample.name, '_aggregated_lor_in_CGI.pdf'))
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_in_CGI.pdf'))
 plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs in CGIs'), error.bars = TRUE)
-ggsave(str_c('plots/', sample.name, '_aggregated_lor_in_CGI_se.pdf'))
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_in_CGI_se.pdf'))
 
 # Not in CGI
 tmp.gr <- subsetByOverlaps(WF_outermost.gr, outside.CGI, type = 'within')
-tmp.lor <- lor(x = tmp.gr, aggregate = TRUE)
+tmp.lor <- lor(x = tmp.gr, aggregateByLag = TRUE)
 plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs not in CGIs'), error.bars = FALSE)
-ggsave(str_c('plots/', sample.name, '_aggregated_lor_out_CGI.pdf'))
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_out_CGI.pdf'))
 plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs not in CGIs'), error.bars = TRUE)
-ggsave(str_c('plots/', sample.name, '_aggregated_lor_out_CGI_se.pdf'))
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_out_CGI_se.pdf'))
 
 # knownGene aka UCSC genes
 tmp.gr <- subsetByOverlaps(WF_outermost.gr, knownGene, type = 'within')
-tmp.lor <- lor(x = tmp.gr, aggregate = TRUE)
+tmp.lor <- lor(x = tmp.gr, aggregateByLag = TRUE)
 plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs in knownGenes'), error.bars = FALSE)
-ggsave(str_c('plots/', sample.name, '_aggregated_lor_in_knownGene.pdf'))
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_in_knownGene.pdf'))
 plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs in knownGenes'), error.bars = TRUE)
-ggsave(str_c('plots/', sample.name, '_aggregated_lor_in_knownGene_se.pdf'))
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_in_knownGene_se.pdf'))
 
 # Not in knownGene
 tmp.gr <- subsetByOverlaps(WF_outermost.gr, outside.knownGene, type = 'within')
-tmp.lor <- lor(x = tmp.gr, aggregate = TRUE)
+tmp.lor <- lor(x = tmp.gr, aggregateByLag = TRUE)
 plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs not in knownGenes'), error.bars = FALSE)
-ggsave(str_c('plots/', sample.name, '_aggregated_lor_out_knownGene.pdf'))
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_out_knownGene.pdf'))
 plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs not in knownGenes'), error.bars = TRUE)
-ggsave(str_c('plots/', sample.name, '_aggregated_lor_out_knownGene_se.pdf'))
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_out_knownGene_se.pdf'))
 
-# Continue with all the other genomic-features
+# knownGene exons
+tmp.gr <- subsetByOverlaps(WF_outermost.gr, knownGene.exons, type = 'within')
+tmp.lor <- lor(x = tmp.gr, aggregateByLag = TRUE)
+plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs in knownGene exons'), error.bars = FALSE)
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_in_knownGene_exons.pdf'))
+plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs in knownGene exons'), error.bars = TRUE)
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_in_knownGene_exons_se.pdf'))
+
+# Not in knownGene exons
+tmp.gr <- subsetByOverlaps(WF_outermost.gr, outside.knownGene.exons, type = 'within')
+tmp.lor <- lor(x = tmp.gr, aggregateByLag = TRUE)
+plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs not in knownGene exons'), error.bars = FALSE)
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_out_knownGene_exons.pdf'))
+plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs not in knownGene exons'), error.bars = TRUE)
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_out_knownGene_exons_se.pdf'))
+
+# non-exonic knownGene
+tmp.gr <- subsetByOverlaps(WF_outermost.gr, nonexonic.knownGene, type = 'within')
+tmp.lor <- lor(x = tmp.gr, aggregateByLag = TRUE)
+plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs in non-exonic knownGene regions'), error.bars = FALSE)
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_in_nonexonic_knownGene.pdf'))
+plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs in non-exonic knownGene regions'), error.bars = TRUE)
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_in_nonexonic_knownGene_se.pdf'))
+
+# TSS +/- 500bp
+tmp.gr <- subsetByOverlaps(WF_outermost.gr, TSS_500, type = 'within')
+tmp.lor <- lor(x = tmp.gr, aggregateByLag = TRUE)
+plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs in TSS +/- 500bp'), error.bars = FALSE)
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_in_TSS_500.pdf'))
+plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs in TSS +/- 500bp'), error.bars = TRUE)
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_in_TSS_500_se.pdf'))
+
+# TSS +/- 2000bp
+tmp.gr <- subsetByOverlaps(WF_outermost.gr, TSS_2000, type = 'within')
+tmp.lor <- lor(x = tmp.gr, aggregateByLag = TRUE)
+plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs in TSS +/- 2000bp'), error.bars = FALSE)
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_in_TSS_2000.pdf'))
+plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs in TSS +/- 2000bp'), error.bars = TRUE)
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_in_TSS_2000_se.pdf'))
+
+# TES +/- 500bp
+tmp.gr <- subsetByOverlaps(WF_outermost.gr, TES_500, type = 'within')
+tmp.lor <- lor(x = tmp.gr, aggregateByLag = TRUE)
+plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs in TES +/- 500bp'), error.bars = FALSE)
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_in_TES_500.pdf'))
+plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs in TES +/- 500bp'), error.bars = TRUE)
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_in_TES_500_se.pdf'))
+
+# TES +/- 2000bp
+tmp.gr <- subsetByOverlaps(WF_outermost.gr, TES_2000, type = 'within')
+tmp.lor <- lor(x = tmp.gr, aggregateByLag = TRUE)
+plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs in TES +/- 2000bp'), error.bars = FALSE)
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_in_TES_2000.pdf'))
+plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs in TES +/- 2000bp'), error.bars = TRUE)
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_in_TES_2000_se.pdf'))
+
+# CGI shores (+/- 2kb of CGIs)
+tmp.gr <- subsetByOverlaps(WF_outermost.gr, CGI.shore, type = 'within')
+tmp.lor <- lor(x = tmp.gr, aggregateByLag = TRUE)
+plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs in CGI shores'), error.bars = FALSE)
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_in_CGI_shores.pdf'))
+plotAggregatedLorByLag(tmp.lor, title = str_c('Within-fragment comethylation\n', sample.name, ': CpGs in CGI shores'), error.bars = TRUE)
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_in_CGI_shores_se.pdf'))
+
+#### Spectral analysis of genome-wide aggregated log-odds ratios ####
+gw.lor <- lor(x = WF_outermost.gr, aggregateByLag = TRUE)
+
+pdf(file = str_c('plots/', sample.name, '_genome-wide_lor_periodogram.pdf'))
+z <- ts(unlist(gw.lor$lor), start = 2, frequency = 1)
+par(mfrow = c(2,2))
+plot(z, type = "l", ylim = c(0, 5), main = str_c(sample.name, ": genome-wide log-odds ratios"), xlab = 'Distance between CpGs (bp)')
+spectrum(z)
+spectrum(z, span = c(3, 3))
+spectrum(z, span = c(3, 5))
+dev.off()
+
+#### FINISHED ####
+save.image(str_c(sample.name, '_comethylation.RData'))
