@@ -3,6 +3,7 @@
 # Comethylation stratified by level of methylation
 
 #### TODO ####
+# FIX BUG THAT CAUSED LOWLY AND HIGHLY METHYLATED REGIONS TO BE SWITCHED, e.g. line 184
 # Add average methylation level of CGI
 # Remove dependencies on external packages where possible
 # Vary the CpG-density window size to see how it affects the results
@@ -181,11 +182,11 @@ lags <- width(CpG.pairs) - 1
 median.n <- median(elementMetadata(CpG.pairs)$n_500)
 n_500 <- ifelse(elementMetadata(CpG.pairs)$n_500 >= median.n, "CpG-dense", "CpG-sparse")
 beta.groups <- ifelse(elementMetadata(CpG.pairs)$beta_500 >= 0.8, "High methylation (beta)", ifelse(elementMetadata(CpG.pairs)$beta_500 <= 0.2, "Low methylation (beta)", "Intermediate methylation (beta)"))
-beta_500 <- factor(beta.groups, labels = c("beta <= 0.2", expression(paste(0.2 < beta) < 0.8), "beta >= 0.8"))
+beta_500 <- factor(beta.groups, labels = c(expression("beta >= 0.8", paste(0.2 < beta) < 0.8), "beta <= 0.2"))
 
 gamma.tertiles <- quantile(elementMetadata(CpG.pairs)$gamma_500, c(1/3, 2/3))
 gamma.groups <- ifelse(elementMetadata(CpG.pairs)$gamma_500 >= gamma.tertiles[2], "High methylation (gamma)", ifelse(elementMetadata(CpG.pairs)$gamma_500 <= gamma.tertiles[1], "Low methylation (gamma)", "Intermediate methylation (gamma)"))
-gamma_500 <- factor(gamma.groups, labels = c("gamma <= gamma[(1/3)]", expression(paste(gamma[(1/3)] < gamma) < gamma[(2/3)]), "gamma >= gamma[(2/3)]"))
+gamma_500 <- factor(gamma.groups, labels = c( "gamma >= gamma[(2/3)]", expression(paste(gamma[(1/3)] < gamma) < gamma[(2/3)]), "gamma <= gamma[(1/3)]"))
 
 df.beta <- data.frame(lag = lags, n_500 = n_500, beta_500 = beta_500, coverage = elementMetadata(CpG.pairs)$coverage, CGI = elementMetadata(CpG.pairs)$CGI, lor = elementMetadata(CpG.pairs)$lor)
 df.gamma <- data.frame(lag = lags, n_500 = n_500, gamma_500 = gamma_500, coverage = elementMetadata(CpG.pairs)$coverage, CGI = elementMetadata(CpG.pairs)$CGI, lor = elementMetadata(CpG.pairs)$lor)
