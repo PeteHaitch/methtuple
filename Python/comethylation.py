@@ -56,6 +56,8 @@ import pysam
 
 ### TODOs ###
 ############################################################################################################################################################################################
+# TODO: Improve method for ignoring bases at 5' or 3' end of reads. Specifically, it might be good to have option that, for example, trims the last 5 bases of reads if the read is longer than 75nt otherwise the read is left untrimmed.
+# TODO: Remove 'orientation' from code; instead use XG-tag.
 # TODO: Extend to 4-strand protocol
 # TODO: read.is_paired checks if the read is paired in-sequencing. Problems may arise if the mate of a read that is paired in-sequencing is not present in the SAM/BAM (e.g. if only one read of the read-pair is mapped).
 # TODO: Insert program description in arg.parse
@@ -118,7 +120,7 @@ def ignore3(n, index, length, orientation): # n is the number of bases to drop, 
                 drop.append(i)
     return [x for x in index if x not in drop]
 
-## Ignore the any matches in the CpG_index list that correspond to the last 'n' 5' positions of the read
+## Ignore the any matches in the CpG_index list that correspond to the 'n' most 5' positions of the read
 def ignore5(n, index, length, orientation): # n is the number of bases to drop, index is a CpG_index object, length is the read-length, orientation is the read-orientation.
     drop = []
     if orientation == '+':
@@ -239,7 +241,7 @@ def SAM2MS_SE(read):
     if args.ignore3 > 0:
         CpG_index = ignore3(args.ignore3, CpG_index, read.rlen, orientation)
     if args.ignore5 > 0:
-        CpG_index = ignore5(args.ignore3, CpG_index, read.rlen, orientation)
+        CpG_index = ignore5(args.ignore5, CpG_index, read.rlen, orientation)
     # Remove low quality CpG-methylation calls from consideration
     CpG_index = removeLowQualMS(CpG_index, read.qual, minQual, offset)
     # Case A: > 1 CpG in read
