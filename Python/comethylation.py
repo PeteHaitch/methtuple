@@ -58,7 +58,7 @@ import pysam
 ############################################################################################################################################################################################
 # TODO: Improve method for ignoring bases at 5' or 3' end of reads. Specifically, it might be good to have option that, for example, trims the last 5 bases of reads if the read is longer than 75nt otherwise the read is left untrimmed.
 # TODO: Remove 'orientation' from code; instead use XG-tag.
-# TODO: Extend to 4-strand protocol
+# TODO: Extend to 4-strand protocol. This will require the BAM file to have both the XG-tag and the XR-tag specified by Bismark. See "Paired_end_read_orientation.docx" on Google Drive.
 # TODO: read.is_paired checks if the read is paired in-sequencing. Problems may arise if the mate of a read that is paired in-sequencing is not present in the SAM/BAM (e.g. if only one read of the read-pair is mapped).
 # TODO: Insert program description in arg.parse
 # TODO: Add option to ignore a different number of bases from the ends of reads depending on whether it is read1 or read2
@@ -67,7 +67,7 @@ import pysam
 
 ### Command line parser ###
 ############################################################################################################################################################################################
-parser = argparse.ArgumentParser(description='Extract within-fragment co-methylation measurements at CpGs from the aligned reads of a BS-Seq experiment.')
+parser = argparse.ArgumentParser(description='Extract within-fragment co-methylation measurements at CpGs from the aligned reads of a BS-Seq experiment. WARNING: Currently only works for the two-strand BS-seq protocol and requires Bismark-style BAM files.')
 parser.add_argument('BAM', metavar = 'BAM',
                     help='The path to the SAM/BAM file')
 parser.add_argument('sampleName',
@@ -108,47 +108,55 @@ WF = open(".".join([args.sampleName, "wf"]), "w")
 ### Function definitions ###
 #############################################################################################################################################################################################
 ## Ignore the any matches in the CpG_index list that correspond to the 'n' most 3' positions of the read
-def ignore3(n, index, length, orientation): # n is the number of bases to drop, index is a CpG_index object, length is the read-length, orientation is the read-orientation.
+def ignore3(n, index, length, XG, read.qname): # n is the number of bases to drop, index is a CpG_index object, length is the read-length, XG is the read.opt('XG') value.
     drop = []
-    if orientation == '+':
+    if XG == 'CT':
         for i in index:
             if i >= (length - n):
                 drop.append(i)
-    else:
+    elif XG == 'GA':
         for i in index:
             if i < n:
                 drop.append(i)
+    else:
+        print "WARNING: Cannot extract XG-tag (which strand read aligned to) for read ", read.qname
+        index = [] # Set the CpG_index to the empty list, i.e. do not use this read for comethylation analysis
     return [x for x in index if x not in drop]
 
 ## Ignore the any matches in the CpG_index list that correspond to the 'n' most 5' positions of the read
-def ignore5(n, index, length, orientation): # n is the number of bases to drop, index is a CpG_index object, length is the read-length, orientation is the read-orientation.
+def ignore5(n, index, length, XG, read.qname): # n is the number of bases to drop, index is a CpG_index object, length is the read-length, orientation is the read-orientation.
     drop = []
-    if orientation == '+':
+    if XG == 'CT':
         for i in index:
             if i < n:
                 drop.append(i)
-    else:
+    elif XG == 'GA':
         for i in index:
             if i >= (length - n):
                 drop.append(i)
+    else:
+        print "WARNING: Cannot extract XG-tag (which strand read aligned to) for read ", read.qname
+        index = [] # Set the CpG_index to the empty list, i.e. do not use this read for comethylation analysis
     return [x for x in index if x not in drop]
 
 ## removeLowQualMS() removes low quality CpG methylation calls from the XM-tag
-def removeLowQualMS(CpG_index, qual, minQual, offset):
+def removeLowQualMS(CpG_index, qual, minQual, PhredOffset):
     drop = []
     for i in CpG_index:
-        if (ord(qual[i]) - offset) < minQual:
+        if (ord(qual[i]) - PhredOffset) < minQual:
             drop.append(i)
     return [x for x in CpG_index if x not in drop]
 
 ## overlappingSeqIdentical() checks that the sequence in the overlapping region of overlapping reads from a read-pair are identical. We may want to exclude read-pairs where the two reads differ in sequence for the overlapping region.
-def overlappingSeqIdentical(seq1, seq2, n_overlap, orientation):
-    if orientation == '+/-':
+def overlappingSeqIdentical(seq1, seq2, n_overlap, XG):
+    if XG == 'CT':
         overlapSeq1 = seq1[-n_overlap:]
         overlapSeq2 = seq2[:n_overlap]
-    else:
+    elif XG == 'GA':
         overlapSeq1 = seq1[:n_overlap]
         overlapSeq2 = seq2[-n_overlap:]
+    else:
+        
     return overlapSeq1 == overlapSeq2, overlapSeq1, overlapSeq2
 
 ## removeOverlap() removes overlapping methylation calls that arise from the reads in a read-pair overlapping. Bases in the overlapping region constitute one data point that are measured twice (once by each read in the read-pair). We only want to count this data point once for the purposes of studying comethylation. The methylation calls in the overlapping region from the read with the lower quality scores are removed from consideration..
@@ -227,23 +235,16 @@ def incrementWFCount(CpG_pair, thisPair, readname): # CpG_pair is the current co
 def SAM2MS_SE(read):
     chrom = BAM.getrname(read.tid)
     start = read.pos + 1 # read.pos is 0-based in accordance with BAM file specificiations, regardless of whether the input file is SAM or BAM. I convert this to a 1-based position.
-    strand = getStrand(read, "NA")
-    # Store the XM tag for the read.
-    readXM = [tag[1] for tag in read.tags if tag[0] == 'XM'][0]
+    strand = getStrand(read)
     # Identify CpGs in read
-    CpG_index = [m.start() for m in re.finditer(CpG_pattern, readXM)]
-    # Store the orientation of the read
-    if read.is_reverse:
-        orientation = '-'
-    else:
-        orientation = '+'
-    # Remove 'ignore3' and 'ignore5' CpG-methylation calls from consideration 
+    CpG_index = [m.start() for m in re.finditer(CpG_pattern, read.opt('XM'))]
+     # Remove 'ignore3' and 'ignore5' CpG-methylation calls from consideration 
     if args.ignore3 > 0:
-        CpG_index = ignore3(args.ignore3, CpG_index, read.rlen, orientation)
+        CpG_index = ignore3(args.ignore3, CpG_index, read.rlen, read.opt('XG'), read.qname)
     if args.ignore5 > 0:
-        CpG_index = ignore5(args.ignore5, CpG_index, read.rlen, orientation)
+        CpG_index = ignore5(args.ignore5, CpG_index, read.rlen, read.opt('XG'), read.qname)
     # Remove low quality CpG-methylation calls from consideration
-    CpG_index = removeLowQualMS(CpG_index, read.qual, minQual, offset)
+    CpG_index = removeLowQualMS(CpG_index, read.qual, minQual, PhredOffset)
     # Case A: > 1 CpG in read
     if len(CpG_index) > 1:
         if pairChoice == 'outermost':
@@ -252,12 +253,12 @@ def SAM2MS_SE(read):
             CpGR = CpG_index[-1] # Rightmost CpG in read
             positionL = start + CpGL
             positionR = start + CpGR
-            if strand == 'OB': # Translate co-ordinate 1bp to the left so that it points to the C in the CpG on the OT-strand
+            if strand == 'OB': # If read is aligned to OB-strand then translate co-ordinate 1bp to the left so that it points to the C in the CpG on the OT-strand
                 positionL -= 1
                 positionR -= 1
-            output.append([chrom, positionL, positionR, readXM[CpGL], readXM[CpGR], strand]) # Output is left-to-right, thus read1XM appears before read2XM for OT read-pairs.
+            output.append([chrom, positionL, positionR, read.opt('XM')[CpGL], read.opt('XM')[CpGR], strand]) # Output is left-to-right, thus read1XM appears before read2XM for OT read-pairs.
             if positionL > positionR:
-                print "ERROR: Case1A posL > posR for single-end read ", read1.qname," with output ", [chrom, positionL, positionR, readXM[CpGL], readXM[CpGR], strand]
+                print "ERROR: Case1A posL > posR for single-end read ", read1.qname," with output ", [chrom, positionL, positionR, read.opt('XM')[CpGL], read.opt('XM')[CpGR], strand]
         elif pairChoice == 'all':
             output = []
             for i in range(0, len(CpG_index)):
@@ -271,7 +272,7 @@ def SAM2MS_SE(read):
                         if strand == 'OB': # Translate co-ordinate 1bp to the left so that it points to the C in the CpG on the OT-strand
                             positionL -= 1
                             positionR -= 1
-                        output.append([chrom, positionL, positionR, readXM[CpGL], readXM[CpGR], strand])
+                        output.append([chrom, positionL, positionR, read.opt('XM')[CpGL], read.opt('XM')[CpGR], strand])
     else: # Less than 2 CpGs in read, therefore no within-fragment comethylation measurement for this read.
         output = []
     return output
@@ -310,8 +311,8 @@ def SAM2MS_PE(read1, read2):
             output = []
             return output
     # Remove low quality CpG-methylation calls from consideration
-    CpG_index1 = removeLowQualMS(CpG_index1, read1.qual, minQual, offset) 
-    CpG_index2 = removeLowQualMS(CpG_index2, read2.qual, minQual, offset)
+    CpG_index1 = removeLowQualMS(CpG_index1, read1.qual, minQual, PhredOffset) 
+    CpG_index2 = removeLowQualMS(CpG_index2, read2.qual, minQual, PhredOffset)
     # Remove 'ignore3' and 'ignore5' CpG-methylation calls from consideration
     if args.ignore3 > 0:
         CpG_index1 = ignore3(args.ignore3, CpG_index1, read1.rlen, orientation.rsplit('/')[0])
@@ -607,9 +608,9 @@ def writeWF(CpG_pairs_reorganised):
 #############################################################################################################################################################################################
 CpG_pattern = re.compile(r"[Zz]")
 if (args.phred64):
-    offset = 64
+    PhredOffset = 64
 else:
-    offset = 33
+    PhredOffset = 33
 minQual = args.minQual
 pairChoice = args.pairChoice
 n_fragment = 0 # The number of DNA fragments. One single-end read and one paired-end read contribute a single DNA fragment.
@@ -621,7 +622,7 @@ CpG_pairs = {} # Dictionary of CpG pair IDs with keys of form chr_pos1_pos2 and 
 #############################################################################################################################################################################################
 if pairChoice != 'all' and pairChoice != 'outermost':
     sys.exit('ERROR: --pairchoice must be one of \'all\' or \'outermost\'')
-print 'Assuming quality scores are Phred', offset
+print 'Assuming quality scores are Phred', PhredOffset
 print 'Ignoring', args.ignore3, 'bp from 3\' end of each read'
 print 'Ignoring', args.ignore5, 'bp from 5\' end of each read'
 print 'Ignoring CpG-methylation calls with base-quality less than', minQual
