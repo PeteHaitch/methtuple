@@ -373,36 +373,6 @@ def ignore_overlapping_sequence(read_1, read_2, cpg_index_1, cpg_index_2, n_over
         cpg_index_1 = []
         cpg_index_2 = []
     return cpg_index_1, cpg_index_2
-        
-## removeOverlap() removes overlapping methylation calls that arise from the reads in a read-pair overlapping. Bases in the overlapping region constitute one data point that are measured twice (once by each read in the read-pair). We only want to count this data point once for the purposes of studying comethylation. The methylation calls in the overlapping region from the read with the lower quality scores are removed from consideration..
-def removeOverlap(n_overlap, orientation, index1, index2, qual1, qual2):
-    drop = [] # List of CpG-methylation calls to drop
-    if orientation == '+/-':
-        overlapQuals1 = sum([ord(x) for x in qual1[-n_overlap:]]) # The sum of base qualities for the overlapping 3' bases of read_1 (rightmost positions)
-        overlapQuals2 = sum([ord(x) for x in qual2[:n_overlap]]) # The sum of base qualities for the overlapping 3' bases of read_2 (leftmost positions)
-        if overlapQuals1 >= overlapQuals2: # If read_2 has the lower qualities, remove the overlap by ignoring CpG-methylation calls from the 3' end of read_2
-            for i in index2:
-                if i < n_overlap:
-                    drop.append(i)
-            return index1, [x for x in index2 if x not in drop]
-        else: # If read_1 has the lower qualities, remove the overlap by ignoring CpG-methylation calls from the 3' end of read_1
-            for i in index1:
-                if i >= (len(qual1) - n_overlap):
-                    drop.append(i)
-            return [x for x in index1 if x not in drop], index2
-    elif orientation == '-/+':
-        overlapQuals1 = sum([ord(x) for x in qual1[:n_overlap]]) # The sum of base qualities for the overlapping 3' bases of read_1 (leftmost positions)
-        overlapQuals2 = sum([ord(x) for x in qual2[-n_overlap:]]) # The sum of base qualities for the overlapping 3' bases of read_2 (rightmost positions)
-        if overlapQuals1 >= overlapQuals2: # If read_2 has the lower qualities, remove the overlap by ignoring CpG-methylation calls from the 3' end of read_2
-            for i in index2:
-                if i >= (len(qual2) - n_overlap):
-                    drop.append(i)
-            return index1, [x for x in index2 if x not in drop]
-        else: # If read_1 has the lower qualities, remove the overlap by ignoring CpG-methylation calls from the 3' end of read_1
-            for i in index1:
-                if i < n_overlap:
-                    drop.append(i)
-            return [x for x in index1 if x not in drop], index2
 
 ## Create a dictionary of methylation-states for a CpG-pair
 def makeWFCount():
