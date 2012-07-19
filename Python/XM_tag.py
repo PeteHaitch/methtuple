@@ -10,6 +10,7 @@ import pysam
 ## IMPORTANT: This script will not work properly with reads that have been soft-clipped, e.g. reads from Bowtie2. Bismark, when using Bowtie2, only allows end-to-end alignments, i.e. untrimmed and unclipped alignments, and thus avoid the difficulty caused by soft-clipped alignments.
 ## IMPORTANT: This script assumes there is no soft-clipping of bases since it uses the AlignedRead.seq to extract the read sequence rather than AlignedRead.query. The script may not work if AlignedRead.seq is simply changed to AlignedRead.query
 ## IMPORTANT: Reads aligned to the OB-strand have the XM-tag pointing to the C on the OB-strand, therefore we need to -1 (for CpGs, -2 for CHHs and CHGs) for positions to translate these to the Cs on the OT-strand.
+## WARNING: Requires that the input BAM already contains a 'PG' header tag
 
 ### Explanation of XM-tag (methylation string) ###
 ############################################################################################################################################################################################

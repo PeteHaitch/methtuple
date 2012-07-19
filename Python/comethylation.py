@@ -5,6 +5,7 @@ import argparse
 import sys
 import csv
 import pysam
+import warnings
 
 ## This program is Copyright (C) 2012, Peter Hickey (hickey@wehi.edu.au)
 
@@ -31,6 +32,7 @@ import pysam
 # There are two types of comethylation: (1) Within-fragment co-methylation (WF), which is the dependence of methylation states along a DNA read/fragment/chromosome that contains multiple Cpgs; and (2) correlation of aggregate methylation values (AM). Aggregate methylation values are based on the pileup of reads at each CpG and include beta = M/(U+M) and gamma = log((M + eps)/(U + eps)), where M = the number of methylated Cs, U = the number of unmethylated Cs and esp is a small number to ensure numerical stability of gamma, typically esp = 0.5.
 # co-methylation extracts the necessary information to analyse (1), it does not perform the statistical analysis. A sister program, aggregate_methylation.py, extracts the necessary information to analyse (2).
 # If the reads from a read-pair overlap then, provided the overlapping sequence is identical, we trim the lower quality read until no overlap remains. If the overlapping sequence is not identical then we ignore the read-pair. This behaviour may be altered in future releases.
+# WARNING
 ############################################################################################################################################################################################
 
 ### Description of sample.wf ###
@@ -61,13 +63,14 @@ import pysam
 # TODO: Extend to 4-strand protocol. This will require the BAM file to have both the XG-tag and the XR-tag specified by Bismark. See "Paired_end_read_orientation.docx" on Google Drive.
 # TODO: read.is_paired checks if the read is paired in-sequencing. Problems may arise if the mate of a read that is paired in-sequencing is not present in the SAM/BAM (e.g. if only one read of the read-pair is mapped).
 # TODO: Insert program description in arg.parse
-# TODO: Add option to ignore a different number of bases from the ends of reads depending on whether it is read1 or read2
+# TODO: Add option to ignore a different number of bases from the ends of reads depending on whether it is read_1 or read_2
 # TODO: Learn the difference between read.alen, read.qlen and read.rlen; decide which is most appropriate for this script.
+# TODO: Include all WARNINGS in program description
 ############################################################################################################################################################################################
 
 ### Command line parser ###
 ############################################################################################################################################################################################
-parser = argparse.ArgumentParser(description='Extract within-fragment co-methylation measurements at CpGs from the aligned reads of a BS-Seq experiment. WARNING: Currently only works for the two-strand BS-seq protocol and requires Bismark-style BAM files.')
+parser = argparse.ArgumentParser(description='Extract within-fragment co-methylation measurements at CpGs from the aligned reads of a BS-Seq experiment. WARNING: Currently only works for the two-strand BS-seq protocol for reads without soft-clipping or indels and requires Bismark-style BAM files including XG-, XR- and XM-tags.')
 parser.add_argument('BAM', metavar = 'BAM',
                     help='The path to the SAM/BAM file')
 parser.add_argument('sampleName',
@@ -76,18 +79,18 @@ parser.add_argument('sampleName',
 parser.add_argument('--ignoreDuplicates',
                     action='store_true',
                     help='Ignore reads that have been flagged as PCR duplicates by Picard\'s MarkDuplicates function')
-parser.add_argument('-5', '--ignore5', metavar = '<int>',
+parser.add_argument('--ignoreStart', metavar = '<int>',
                     type = int,
                     default=0,
-                    help='Ignore <int> bases from 5\' (left) end of reads (default: 0). WARNING: Parameter value not sanity checked by program.')
-parser.add_argument('-3', '--ignore3', metavar = '<int>',
+                    help='Ignore first <int> bases from start of reads, where start is the first sequenced base not necessarily the leftmost aligned base (default: 0). WARNING: Parameter value not sanity checked by program.')
+parser.add_argument('--ignoreEnd', metavar = '<int>',
                     type = int,
                     default=0,
-                    help='Ignore <int> bases from 3\' (right) end of reads (default: 0). WARNING: Parameter value not sanity checked by program.')
+                    help='Ignore last <int> bases from end of reads, where end is the last sequenced base not necessarily the rightmost aligned base (default: 0). WARNING: Parameter value not sanity checked by program.')
 parser.add_argument('--minQual', metavar = '<int>',
                     type = int,
                     default=0,
-                    help='Minimum base-quality (default: 0)')
+                    help='Minimum base-quality (default: 0). Any base with a lower base-quality is ignored.')
 parser.add_argument('--pairChoice',
                     metavar = '<string>',
                     default="outermost",
@@ -95,6 +98,8 @@ parser.add_argument('--pairChoice',
 parser.add_argument('--phred64',
                     action='store_true',
                     help='Quality scores are encoded as Phred64 (default: Phred33)')
+parser.add_argument('--version',
+                    action='version', version='%(prog)s 2.0')
 
 args = parser.parse_args()
 ############################################################################################################################################################################################
@@ -107,83 +112,293 @@ WF = open(".".join([args.sampleName, "wf"]), "w")
 
 ### Function definitions ###
 #############################################################################################################################################################################################
-## Ignore the any matches in the CpG_index list that correspond to the 'n' most 3' positions of the read
-def ignore3(n, index, length, XG, read.qname): # n is the number of bases to drop, index is a CpG_index object, length is the read-length, XG is the read.opt('XG') value.
-    drop = []
-    if XG == 'CT':
-        for i in index:
-            if i >= (length - n):
-                drop.append(i)
-    elif XG == 'GA':
-        for i in index:
-            if i < n:
-                drop.append(i)
-    else:
-        print "WARNING: Cannot extract XG-tag (which strand read aligned to) for read ", read.qname
-        index = [] # Set the CpG_index to the empty list, i.e. do not use this read for comethylation analysis
-    return [x for x in index if x not in drop]
+def ignore_first_n_cpgs(read, cpg_index, n):
+    """Ignore CpGs occuring in the first n bases of a read that contribtue to a read's cpg_index.
 
-## Ignore the any matches in the CpG_index list that correspond to the 'n' most 5' positions of the read
-def ignore5(n, index, length, XG, read.qname): # n is the number of bases to drop, index is a CpG_index object, length is the read-length, orientation is the read-orientation.
-    drop = []
-    if XG == 'CT':
-        for i in index:
-            if i < n:
-                drop.append(i)
-    elif XG == 'GA':
-        for i in index:
-            if i >= (length - n):
-                drop.append(i)
-    else:
-        print "WARNING: Cannot extract XG-tag (which strand read aligned to) for read ", read.qname
-        index = [] # Set the CpG_index to the empty list, i.e. do not use this read for comethylation analysis
-    return [x for x in index if x not in drop]
+    Args:
+        read: A pysam.AlignedRead instance.
+        cpg_index: A list of zero-based indices.  Each index corresponds to the leftmost aligned position of a CpG in a read. For example:
 
-## removeLowQualMS() removes low quality CpG methylation calls from the XM-tag
-def removeLowQualMS(CpG_index, qual, minQual, PhredOffset):
-    drop = []
-    for i in CpG_index:
-        if (ord(qual[i]) - PhredOffset) < minQual:
-            drop.append(i)
-    return [x for x in CpG_index if x not in drop]
+        [0, 5]
 
-## overlappingSeqIdentical() checks that the sequence in the overlapping region of overlapping reads from a read-pair are identical. We may want to exclude read-pairs where the two reads differ in sequence for the overlapping region.
-def overlappingSeqIdentical(seq1, seq2, n_overlap, XG):
-    if XG == 'CT':
-        overlapSeq1 = seq1[-n_overlap:]
-        overlapSeq2 = seq2[:n_overlap]
-    elif XG == 'GA':
-        overlapSeq1 = seq1[:n_overlap]
-        overlapSeq2 = seq2[-n_overlap:]
+        Corresponds to a read with a CpG at the first and sixth positions of the read.
+        n: The number of bases to exclude from the start of each read. The start of a read is the first *sequenced* base, not the leftmost aligned base.
+
+    Returns:
+        A list of zero-based indices (possibly empty).  Each index corresponds to the leftmost aligned position of a CpG in a read. For example:
+
+        [0, 5]
+
+        corresponds to a read with a CpG at the first and sixth positions of the read.
+    """
+    ignore_these_cpgs = []
+    # Single-end reads
+    if not read.is_paired:
+        # Read aligned to OT-strand |------>
+        if read.opt('XG') == 'CT' and read.opt('XR') == 'CT':
+            for i in cpg_index:
+                if i < n:
+                    ignore_these_cpgs.append(i)
+        # Read aligned to OB-strand <------|
+        elif read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
+            for i in cpg_index:
+                if i >= (read.alen - n):
+                    ignore_these_cpgs.append(i)
+        else:
+            warning_msg = ''.join(['Skipping read ', read.qname, '. Incompatible or missing XG-tag or XR-tag.'])
+            warnings.warn(warning_msg)
+            cpg_index = []
+    # Paired-end reads: read_1
+    elif read.is_paired and read.is_read_1:
+        # read_1 aligned to OT-strand |------>
+        if read.opt('XG') == 'CT' and read.opt('XR') == 'CT':
+            for i in cpg_index:
+                if i < n:
+                    ignore_these_cpgs.append(i)
+        # read_1 aligned to OB-strand <------|
+        elif read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
+            for i in cpg_index:
+                if i >= (read.alen - n):
+                    ignore_these_cpgs.append(i)
+        else:
+            warning_msg = ''.join(['Skipping read ', read.qname, '. Incompatible or missing XG-tag or XR-tag.'])
+            warnings.warn(warning_msg)
+            cpg_index = []
+    # Paired-end reads: read_2
+    elif read.is_paired and read.is_read_2:
+        # read_2 aligned to OT-strand <------|
+        if read.opt('XG') == 'CT' and read.opt('XR') == 'GA':
+            for i in cpg_index:
+                if i >= (read.alen - n):
+                    ignore_these_cpgs.append(i)
+        # read_2 aligned to OB-strand |------>
+        elif read.opt('XG') == 'GA' and read.opt('XR') == 'GA':
+            for i in cpg_index:
+                if i < n:
+                    ignore_these_cpgs.append(i)
+        else:
+            warning_msg = ''.join(['Skipping read ', read.qname, '. Incompatible or missing XG-tag or XR-tag.'])
+            warnings.warn(warning_msg)
+            cpg_index = []
+    # Skipping read because it does not have necessary information to infer whether read is paired or whether the read is read_1 or read_2 of the pair.
     else:
+        warning_msg = ''.join(['Skipping read ', read.qname, '. Missing 0x01, 0x40 or 0x80 FLAG bit (paired-read FLAG information)'])
+        warnings.warn(warning_msg)
+        cpg_index = []
+    return [x for x in cpg_index if x not in ignore_these_cpgs]
+
+def ignore_last_n_cpgs(read, cpg_index, n):
+    """Ignore CpGs occuring in the last n bases of a read that contribute to a read's cpg_index.
+
+    Args:
+        read: A pysam.AlignedRead instance.
+        cpg_index: A list of zero-based indices.  Each index corresponds to the leftmost aligned position of a CpG in a read. For example:
+
+        [0, 5]
+
+        corresponds to a read with a CpG at the first and sixth positions of the read.
+        n: The number of bases to exclude from the start of each read. The start of a read is the first *sequenced* base, not the leftmost aligned base.
+
+    Returns:
+        A list of zero-based indices (possibly empty).  Each index corresponds to the leftmost aligned position of a CpG in a read. For example:
+
+        [0, 5]
+
+        Corresponds to a read with a CpG at the first and sixth positions of the read.
+    """
+    ignore_these_cpgs = []
+    # Single-end reads
+    if not read.is_paired:
+        # Read aligned to OT-strand |------>
+        if read.opt('XG') == 'CT' and read.opt('XR') == 'CT':
+            for i in cpg_index:
+                if i >= (read.alen - n):
+                    ignore_these_cpgs.append(i)
+        # Read aligned to OB-strand <------|
+        elif read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
+            for i in cpg_index:
+                if i < n:
+                    ignore_these_cpgs.append(i)
+        else:
+            warning_msg = ''.join(['Skipping read ', read.qname, '. Incompatible or missing XG-tag or XR-tag.'])
+            warnings.warn(warning_msg)
+            cpg_index = []
+    # Paired-end reads: read_1
+    elif read.is_paired and read.is_read_1:
+        # read_1 aligned to OT-strand |------>
+        if read.opt('XG') == 'CT' and read.opt('XR') == 'CT':
+            for i in cpg_index:
+                if i >= (read.alen - n):
+                    ignore_these_cpgs.append(i)
+        # read_1 aligned to OB-strand <------|
+        elif read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
+            for i in cpg_index:
+                if i < n:
+                    ignore_these_cpgs.append(i)
+        else:
+            warning_msg = ''.join(['Skipping read ', read.qname, '. Incompatible or missing XG-tag or XR-tag.'])
+            warnings.warn(warning_msg)
+            cpg_index = []
+    # Paired-end reads: read_2
+    elif read.is_paired and read.is_read_2:
+        # read_2 aligned to OT-strand <------|
+        if read.opt('XG') == 'CT' and read.opt('XR') == 'GA':
+            for i in cpg_index:
+                if i < n:
+                    ignore_these_cpgs.append(i)
+        # read_2 aligned to OB-strand |------>
+        elif read.opt('XG') == 'GA' and read.opt('XR') == 'GA':
+            for i in cpg_index:
+                if i  >= (read.alen - n):
+                    ignore_these_cpgs.append(i)
+        else:
+            warning_msg = ''.join(['Skipping read ', read.qname, '. Incompatible or missing XG-tag or XR-tag.'])
+            warnings.warn(warning_msg)
+            cpg_index = []
+    # Skipping read because it does not have necessary information to infer whether read is paired or whether the read is read_1 or read_2 of the pair.
+    else:
+        warning_msg = ''.join(['Skipping read ', read.qname, '. Missing 0x01, 0x40 or 0x80 FLAG bit (paired-read FLAG information)'])
+        warnings.warn(warning_msg)
+        cpg_index = []
+    return [x for x in cpg_index if x not in ignore_these_cpgs]
         
-    return overlapSeq1 == overlapSeq2, overlapSeq1, overlapSeq2
+def ignore_low_quality_bases(read, cpg_index, min_qual, phred_offset):
+    """Ignore low quality bases of a read that contribute to a read's cpg_index.
 
+    Args:
+        read: A pysam.AlignedRead instance.
+        cpg_index: A list of zero-based indices.  Each index corresponds to the leftmost aligned position of a CpG in a read. For example:
+
+        [0, 5]
+
+        Corresponds to a read with a CpG at the first and sixth positions of the read.
+        n: The number of bases to exclude from the start of each read. The start of a read is the first *sequenced* base, not the leftmost aligned base.
+        min_qual: The minimum base qualit (integer). All bases with quality < min_qual are excluded from the returned cpg_index object.
+        phred_offset: The Phred offset of the data - 33 or 64.
+
+    Returns:
+        A list of zero-based indices (possibly empty).  Each index corresponds to the leftmost aligned position of a CpG in a read. For example:
+
+        [0, 5]
+
+        Corresponds to a read with a CpG at the first and sixth positions of the read.
+    
+    """
+    ignore_these_cpgs = []
+    for i in cpg_index:
+        if (ord(read.qual[i]) - phred_offset) < min_qual:
+            ignore_these_cpgs.append(i)
+    return [x for x in cpg_index if x not in ignore_these_cpgs]
+
+def is_overlapping_sequence_identical(read_1, read_2, n_overlap):
+    """Check whether the overlapping sequence of read_1 and read_2 is identical.
+
+    Args:
+        read_1: A pysam.AlignedRead instance with read.is_read_1 == true. Must be paired with read_2.
+        read_2: A pysam.AlignedRead instance with read.is_read_2 == true. Must be paired with read_1.
+        n_overlap: The number of bases in the overlap of read_1 and read_2 (must be > 0)
+
+    Returns:
+        True if the overlapping sequence is identical, False otherwise (NB: this means that readpairs that trigger the warning for having mis-specified XG- or XR-tags will also return 'False').
+    """
+    # Readpair aligns to OT-strand
+    if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
+        overlap_1 = read_1.seq[-n_overlap:]
+        overlap_2 = read_2.seq[:n_overlap]
+    # Readpair aligns to OB-strand
+    elif read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
+        overlap_1 = read_1.seq[:n_overlap]
+        overlap_2 = read_2.seq[-n_overlap]
+    else:
+        warning_msg = ''.join(['XG-tags or XR-tags for readpair ', read.qname, ' are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
+        warnings.warn(warning_msg)
+        overlap_1 = True
+        overlap_2 = False
+    return overlap_1 == overlap_2
+
+def ignore_overlapping_sequence(read_1, read_2, cpg_index_1, cpg_index_2, n_overlap):
+    """Ignore the overlapping sequence of read_1 and read_2 from the read with the lower (sum) base qualities in the overlapping region.
+       If base qualities are identical then (arbitrarily) ignore the overlapping bases from read_2.
+
+    Args:
+        read_1: A pysam.AlignedRead instance with read.is_read_1 == true. Must be paired with read_2.
+        read_2: A pysam.AlignedRead instance with read.is_read_2 == true. Must be paired with read_1.
+        cpg_index_1: A list of zero-based indices.  Each index corresponds to the leftmost aligned position of a CpG in read_1. For example:
+
+        [0, 5]
+
+        corresponds to read_1 with a CpG at the first and sixth positions of the read.
+        cpg_index_2: A list of zero-based indices.  Each index corresponds to the leftmost aligned position of a CpG in read_2. For example:
+
+        [0, 5]
+
+        corresponds to read_2 with a CpG at the first and sixth positions of the read.
+        n_overlap: The number of bases in the overlap (must be > 0).
+
+    Returns:
+        cpg_index_1, cpg_index_2: The cpg_indexes corresponding to read_1 and read_2 respectively, post-overlap-removal.
+    """
+    ignore_these_cpgs = []
+    # Readpair aligns to OT-strand
+    if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
+        overlap_quals_1 = sum([ord(x) for x in read_1.qual[-n_overlap:]])
+        overlap_quals_2 = sum([ord(x) for x in read_2.qual[-n_overlap:]])
+        if overlap_quals_1 >= overlap_quals_2:
+            for i in cpg_index_2:
+                if i < n_overlap:
+                    ignore_these_cpgs.append(i)
+                    cpg_index_2 = [x for x in cpg_index_2 if x not in ignore_these_cpgs]
+        else:
+            for i in cpg_index_1:
+                if i >= (read.alen - n_overlap):
+                    ignore_these_cpgs.append(i)
+                    cpg_index_1 = [x for x in cpg_index_1 if x not in ignore_these_cpgs]
+    # Readpair aligns to OB-strand
+    elif read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
+        overlap_quals_1 = sum([ord(x) for x in read_1.qual[:n_overlap]])
+        overlap_quals_2 = sum([ord(x) for x in read_2.qual[-n_overlap:]])
+        if overlap_quals_1 >= overlap_quals_2:
+            for i in cpg_index_2:
+                if i >= (read_2.alen - n_overlap):
+                    ignore_these_cpgs.append(i)
+                    cpg_index_2 = [x for x in cpg_index_2 if x not in ignore_these_cpgs]
+        else:
+            for i in cpg_index_1:
+                if i < n_overlap:
+                    ignore_these_cpgs.append(i)
+                    cpg_index_1 = [x for x in cpg_index_1 if x not in ignore_these_cpgs]
+    else:
+        warning_msg = ''.join(['Skipping readpair ', read.qname, ' as XG-tags or XR-tags are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
+        warnings.warn(warning_msg)
+        cpg_index_1 = []
+        cpg_index_2 = []
+    return cpg_index_1, cpg_index_2
+        
 ## removeOverlap() removes overlapping methylation calls that arise from the reads in a read-pair overlapping. Bases in the overlapping region constitute one data point that are measured twice (once by each read in the read-pair). We only want to count this data point once for the purposes of studying comethylation. The methylation calls in the overlapping region from the read with the lower quality scores are removed from consideration..
 def removeOverlap(n_overlap, orientation, index1, index2, qual1, qual2):
     drop = [] # List of CpG-methylation calls to drop
     if orientation == '+/-':
-        overlapQuals1 = sum([ord(x) for x in qual1[-n_overlap:]]) # The sum of base qualities for the overlapping 3' bases of read1 (rightmost positions)
-        overlapQuals2 = sum([ord(x) for x in qual2[:n_overlap]]) # The sum of base qualities for the overlapping 3' bases of read2 (leftmost positions)
-        if overlapQuals1 >= overlapQuals2: # If read2 has the lower qualities, remove the overlap by ignoring CpG-methylation calls from the 3' end of read2
+        overlapQuals1 = sum([ord(x) for x in qual1[-n_overlap:]]) # The sum of base qualities for the overlapping 3' bases of read_1 (rightmost positions)
+        overlapQuals2 = sum([ord(x) for x in qual2[:n_overlap]]) # The sum of base qualities for the overlapping 3' bases of read_2 (leftmost positions)
+        if overlapQuals1 >= overlapQuals2: # If read_2 has the lower qualities, remove the overlap by ignoring CpG-methylation calls from the 3' end of read_2
             for i in index2:
                 if i < n_overlap:
                     drop.append(i)
             return index1, [x for x in index2 if x not in drop]
-        else: # If read1 has the lower qualities, remove the overlap by ignoring CpG-methylation calls from the 3' end of read1
+        else: # If read_1 has the lower qualities, remove the overlap by ignoring CpG-methylation calls from the 3' end of read_1
             for i in index1:
                 if i >= (len(qual1) - n_overlap):
                     drop.append(i)
             return [x for x in index1 if x not in drop], index2
     elif orientation == '-/+':
-        overlapQuals1 = sum([ord(x) for x in qual1[:n_overlap]]) # The sum of base qualities for the overlapping 3' bases of read1 (leftmost positions)
-        overlapQuals2 = sum([ord(x) for x in qual2[-n_overlap:]]) # The sum of base qualities for the overlapping 3' bases of read2 (rightmost positions)
-        if overlapQuals1 >= overlapQuals2: # If read2 has the lower qualities, remove the overlap by ignoring CpG-methylation calls from the 3' end of read2
+        overlapQuals1 = sum([ord(x) for x in qual1[:n_overlap]]) # The sum of base qualities for the overlapping 3' bases of read_1 (leftmost positions)
+        overlapQuals2 = sum([ord(x) for x in qual2[-n_overlap:]]) # The sum of base qualities for the overlapping 3' bases of read_2 (rightmost positions)
+        if overlapQuals1 >= overlapQuals2: # If read_2 has the lower qualities, remove the overlap by ignoring CpG-methylation calls from the 3' end of read_2
             for i in index2:
                 if i >= (len(qual2) - n_overlap):
                     drop.append(i)
             return index1, [x for x in index2 if x not in drop]
-        else: # If read1 has the lower qualities, remove the overlap by ignoring CpG-methylation calls from the 3' end of read1
+        else: # If read_1 has the lower qualities, remove the overlap by ignoring CpG-methylation calls from the 3' end of read_1
             for i in index1:
                 if i < n_overlap:
                     drop.append(i)
@@ -256,9 +471,9 @@ def SAM2MS_SE(read):
             if strand == 'OB': # If read is aligned to OB-strand then translate co-ordinate 1bp to the left so that it points to the C in the CpG on the OT-strand
                 positionL -= 1
                 positionR -= 1
-            output.append([chrom, positionL, positionR, read.opt('XM')[CpGL], read.opt('XM')[CpGR], strand]) # Output is left-to-right, thus read1XM appears before read2XM for OT read-pairs.
+            output.append([chrom, positionL, positionR, read.opt('XM')[CpGL], read.opt('XM')[CpGR], strand]) # Output is left-to-right, thus read_1XM appears before read_2XM for OT read-pairs.
             if positionL > positionR:
-                print "ERROR: Case1A posL > posR for single-end read ", read1.qname," with output ", [chrom, positionL, positionR, read.opt('XM')[CpGL], read.opt('XM')[CpGR], strand]
+                print "ERROR: Case1A posL > posR for single-end read ", read_1.qname," with output ", [chrom, positionL, positionR, read.opt('XM')[CpGL], read.opt('XM')[CpGR], strand]
         elif pairChoice == 'all':
             output = []
             for i in range(0, len(CpG_index)):
@@ -278,65 +493,65 @@ def SAM2MS_SE(read):
     return output
 
 ## SAM2MS_PE extracts, summarises and returns the methylation string (MS) information for a read-pair mapped as paired-end data.
-def SAM2MS_PE(read1, read2):
-    chrom = BAM.getrname(read1.tid)
-    start1 = read1.pos + 1 # read1.pos is 0-based in accordance with BAM file specificiations, regardless of whether the input file is SAM or BAM. I convert this to a 1-based position.
-    start2 = read2.pos + 1 # read2.pos is 0-based in accordance with BAM file specificiations, regardless of whether the input file is SAM or BAM. I convert this to a 1-based position.
-    strand = getStrand(read1, read2) # strand = OT or OB, the strand for which the read-pair is informative.
+def SAM2MS_PE(read_1, read_2):
+    chrom = BAM.getrname(read_1.tid)
+    start1 = read_1.pos + 1 # read_1.pos is 0-based in accordance with BAM file specificiations, regardless of whether the input file is SAM or BAM. I convert this to a 1-based position.
+    start2 = read_2.pos + 1 # read_2.pos is 0-based in accordance with BAM file specificiations, regardless of whether the input file is SAM or BAM. I convert this to a 1-based position.
+    strand = getStrand(read_1, read_2) # strand = OT or OB, the strand for which the read-pair is informative.
     # Store the XM tag for each read. Tags are stored as a Python list of 2-tuples [("TAG_NAME", "TAG_VALUE"), ...]. This assumes there is one, and one only, XM tag per read
-    read1XM = [tag[1] for tag in read1.tags if tag[0] == 'XM'][0] 
-    read2XM = [tag[1] for tag in read2.tags if tag[0] == 'XM'][0]
-    # Identify CpGs in read1 and read2
-    CpG_index1 = [m.start() for m in re.finditer(CpG_pattern, read1XM)]
-    CpG_index2 = [m.start() for m in re.finditer(CpG_pattern, read2XM)]
+    read_1XM = [tag[1] for tag in read_1.tags if tag[0] == 'XM'][0] 
+    read_2XM = [tag[1] for tag in read_2.tags if tag[0] == 'XM'][0]
+    # Identify CpGs in read_1 and read_2
+    CpG_index1 = [m.start() for m in re.finditer(CpG_pattern, read_1XM)]
+    CpG_index2 = [m.start() for m in re.finditer(CpG_pattern, read_2XM)]
     # Orientation of read-pair
-    if not read1.is_reverse and read2.is_reverse:
+    if not read_1.is_reverse and read_2.is_reverse:
         orientation = '+/-'
-    elif read1.is_reverse and not read2.is_reverse:
+    elif read_1.is_reverse and not read_2.is_reverse:
         orientation = '-/+'
     else:
-        print 'ERROR: Unexpected orientation of read-pair', read1.qname
+        print 'ERROR: Unexpected orientation of read-pair', read_1.qname
         output = []
         return output
     # Check for overlapping reads from a read-pair. If reads overlap, check that the overlapping sequenced is identical. If the overlapping sequence is identical, ignore the methylation calls in the overlapping region from the lower quality read. If the overlapping sequence is not identical, report a warning and skip the read-pair.
-    n_overlap = read1.rlen + read2.rlen - abs(read1.tlen)
+    n_overlap = read_1.rlen + read_2.rlen - abs(read_1.tlen)
     if n_overlap > 0 : # If True, then the reads overlap and we need to ignore any CpG-methylation calls in the overlap from one of the reads using removeOverlap()
-        identicalOverlap, overlap1, overlap2 = overlappingSeqIdentical(read1.seq, read2.seq, n_overlap, orientation)
+        identicalOverlap, overlap1, overlap2 = overlappingSeqIdentical(read_1.seq, read_2.seq, n_overlap, orientation)
         if identicalOverlap:
             #print 'Identical overlap. Overlap 1 =', overlap1, 'Overlap2 =', overlap2 
-            CpG_index1, CpG_index2 = removeOverlap(n_overlap, orientation, CpG_index1, CpG_index2, read1.qual, read2.qual) # Remove from consideration the methylation calls in the overlapping region from the lower quality read 
+            CpG_index1, CpG_index2 = removeOverlap(n_overlap, orientation, CpG_index1, CpG_index2, read_1.qual, read_2.qual) # Remove from consideration the methylation calls in the overlapping region from the lower quality read 
         else:
-            #print 'WARNING: Skipping read-pair due to non-identical overlapping sequence', read1.qname
+            #print 'WARNING: Skipping read-pair due to non-identical overlapping sequence', read_1.qname
             #print 'Overlap1 =', overlap1, 'Overlap2 =', overlap2
             output = []
             return output
     # Remove low quality CpG-methylation calls from consideration
-    CpG_index1 = removeLowQualMS(CpG_index1, read1.qual, minQual, PhredOffset) 
-    CpG_index2 = removeLowQualMS(CpG_index2, read2.qual, minQual, PhredOffset)
+    CpG_index1 = removeLowQualMS(CpG_index1, read_1.qual, minQual, PhredOffset) 
+    CpG_index2 = removeLowQualMS(CpG_index2, read_2.qual, minQual, PhredOffset)
     # Remove 'ignore3' and 'ignore5' CpG-methylation calls from consideration
     if args.ignore3 > 0:
-        CpG_index1 = ignore3(args.ignore3, CpG_index1, read1.rlen, orientation.rsplit('/')[0])
-        CpG_index2 = ignore3(args.ignore3, CpG_index2, read2.rlen, orientation.rsplit('/')[1])
+        CpG_index1 = ignore3(args.ignore3, CpG_index1, read_1.rlen, orientation.rsplit('/')[0])
+        CpG_index2 = ignore3(args.ignore3, CpG_index2, read_2.rlen, orientation.rsplit('/')[1])
     if args.ignore5 > 0:
-        CpG_index1 = ignore5(args.ignore5, CpG_index1, read1.rlen, orientation.rsplit('/')[0])
-        CpG_index2 = ignore5(args.ignore5, CpG_index2, read2.rlen, orientation.rsplit('/')[1])      
+        CpG_index1 = ignore5(args.ignore5, CpG_index1, read_1.rlen, orientation.rsplit('/')[0])
+        CpG_index2 = ignore5(args.ignore5, CpG_index2, read_2.rlen, orientation.rsplit('/')[1])      
     # Case1: Read-pair is informative for the OT strand
     if strand == 'OT': # For the two-strand protocol, strand == 'OT' is the same as orientation == '+/-'
         # CaseA: > 0 CpGs in both reads of read-pair    
         if (len(CpG_index1) > 0 and len(CpG_index2) > 0):
             if pairChoice == "outermost":
                 output = []
-                CpGL = CpG_index1[0] # Leftmost CpG in read1
-                CpGR = CpG_index2[-1] # Rightmost CpG in read2
+                CpGL = CpG_index1[0] # Leftmost CpG in read_1
+                CpGR = CpG_index2[-1] # Rightmost CpG in read_2
                 positionL = start1 + CpGL
                 positionR = start2 + CpGR
-                output.append([chrom, positionL, positionR, read1XM[CpGL], read2XM[CpGR], strand]) # Output is left-to-right, thus read1XM appears before read2XM for OT read-pairs.
+                output.append([chrom, positionL, positionR, read_1XM[CpGL], read_2XM[CpGR], strand]) # Output is left-to-right, thus read_1XM appears before read_2XM for OT read-pairs.
                 if positionL >= positionR:
-                    print "ERROR: Case1A posL >= posR for read-pair ", read1.qname," with output ", [chrom, positionL, positionR, read1XM[CpGL], read2XM[CpGR], strand]
+                    print "ERROR: Case1A posL >= posR for read-pair ", read_1.qname," with output ", [chrom, positionL, positionR, read_1XM[CpGL], read_2XM[CpGR], strand]
                     output = []
             elif pairChoice == 'all':
                 output = []
-                # First, create all CpG-pairs where CpGL is from read1 and CpGR is from read1
+                # First, create all CpG-pairs where CpGL is from read_1 and CpGR is from read_1
                 if len(CpG_index1) > 1:
                     for i in range(0, len(CpG_index1)): 
                         if i < len(CpG_index1):
@@ -346,22 +561,22 @@ def SAM2MS_PE(read1, read2):
                                 CpGR = CpG_index1[k]
                                 positionL = start1 + CpGL
                                 positionR = start1 + CpGR
-                                output.append([chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand])
+                                output.append([chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand])
                                 if positionL >= positionR:
-                                    print "ERROR: Case1A posL >= posR for read-pair ", read1.qname," with output ", [chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand]
+                                    print "ERROR: Case1A posL >= posR for read-pair ", read_1.qname," with output ", [chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand]
                                     output = []
-                # Next, create all CpG-pairs where CpGL is from read1 and CpGR is from read2
+                # Next, create all CpG-pairs where CpGL is from read_1 and CpGR is from read_2
                 for i in range(0, len(CpG_index1)):
                     for j in range(0, len(CpG_index2)):
                         CpGL = CpG_index1[i]
                         CpGR = CpG_index2[j]
                         positionL = start1 + CpGL
                         positionR = start2 + CpGR
-                        output.append([chrom, positionL, positionR, read1XM[CpGL], read2XM[CpGR], strand]) # Output is left-to-right, thus read1XM appears before read2XM for OT read-pairs.
+                        output.append([chrom, positionL, positionR, read_1XM[CpGL], read_2XM[CpGR], strand]) # Output is left-to-right, thus read_1XM appears before read_2XM for OT read-pairs.
                         if positionL >= positionR:
-                            print "ERROR: Case1A posL >= posR for read-pair ", read1.qname," with output ", [chrom, positionL, positionR, read1XM[CpGL], read2XM[CpGR], strand]
+                            print "ERROR: Case1A posL >= posR for read-pair ", read_1.qname," with output ", [chrom, positionL, positionR, read_1XM[CpGL], read_2XM[CpGR], strand]
                             output = []
-                # Finally, create all CpG-pairs where CpGL is from read2 and CpGR is from read2
+                # Finally, create all CpG-pairs where CpGL is from read_2 and CpGR is from read_2
                 if len(CpG_index2) > 1:
                     for i in range(0, len(CpG_index2)): 
                         if i < len(CpG_index2):
@@ -371,11 +586,11 @@ def SAM2MS_PE(read1, read2):
                                 CpGR = CpG_index2[k]
                                 positionL = start2 + CpGL
                                 positionR = start2 + CpGR
-                                output.append([chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand])
+                                output.append([chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand])
                                 if positionL >= positionR:
-                                    print "ERROR: Case1A posL >= posR for read-pair ", read1.qname," with output ", [chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand]
+                                    print "ERROR: Case1A posL >= posR for read-pair ", read_1.qname," with output ", [chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand]
                                     output = []
-        # CaseB: > 1 CpG in read1 but 0 CpGs in read2
+        # CaseB: > 1 CpG in read_1 but 0 CpGs in read_2
         elif (len(CpG_index1) > 1 and len(CpG_index2) == 0):
             if pairChoice == "outermost":
                 output = []
@@ -383,9 +598,9 @@ def SAM2MS_PE(read1, read2):
                 CpGR = CpG_index1[-1]
                 positionL = start1 + CpGL
                 positionR = start1 + CpGR
-                output.append([chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand])
+                output.append([chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand])
                 if positionL >= positionR:
-                    print "ERROR: Case1B posL >= posR for read ", read1.qname," with output ", [chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand]
+                    print "ERROR: Case1B posL >= posR for read ", read_1.qname," with output ", [chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand]
                     output = []
             elif pairChoice == 'all':
                 output = []
@@ -397,12 +612,12 @@ def SAM2MS_PE(read1, read2):
                             CpGR = CpG_index1[k]
                             positionL = start1 + CpGL
                             positionR = start1 + CpGR
-                            output.append([chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand])
+                            output.append([chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand])
                             if positionL >= positionR:
-                                print "ERROR: Case1B posL >= posR for read ", read1.qname," with output ", [chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand]
+                                print "ERROR: Case1B posL >= posR for read ", read_1.qname," with output ", [chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand]
                                 output = []
                 
-        # CaseC: 0 CpGs in read1 but > 1 CpG in read2
+        # CaseC: 0 CpGs in read_1 but > 1 CpG in read_2
         elif (len(CpG_index1) == 0 and len(CpG_index2) > 1):
             if pairChoice == "outermost":
                 output = []
@@ -410,9 +625,9 @@ def SAM2MS_PE(read1, read2):
                 CpGR = CpG_index2[-1]
                 positionL = start2 + CpGL
                 positionR = start2 + CpGR
-                output.append([chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand])
+                output.append([chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand])
                 if positionL >= positionR:
-                    print "ERROR: Case1C posL >= posR for read ", read2.qname," with output ", [chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand]
+                    print "ERROR: Case1C posL >= posR for read ", read_2.qname," with output ", [chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand]
                     output = []
             elif pairChoice == 'all':
                 output = []
@@ -424,7 +639,7 @@ def SAM2MS_PE(read1, read2):
                             CpGR = CpG_index2[k]
                             positionL = start2 + CpGL
                             positionR = start2 + CpGR
-                            output.append([chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand])
+                            output.append([chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand])
         # CaseD: < 2 CpGs in read-pair
         elif (len(CpG_index1) + len(CpG_index2)) < 2:
             output = []
@@ -434,17 +649,17 @@ def SAM2MS_PE(read1, read2):
         if (len(CpG_index1) > 0 and len(CpG_index2) > 0):
             if pairChoice == "outermost":
                 output = []
-                CpGL = CpG_index2[0] # Leftmost CpG in read2
-                CpGR = CpG_index1[-1] # Rightmost CpG in read1
+                CpGL = CpG_index2[0] # Leftmost CpG in read_2
+                CpGR = CpG_index1[-1] # Rightmost CpG in read_1
                 positionL = start2 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG 
                 positionR = start1 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                output.append([chrom, positionL, positionR, read2XM[CpGL], read1XM[CpGR], strand]) # Output is left-to-right, thus read2XM appears before read1XM for OB read-pairs.
+                output.append([chrom, positionL, positionR, read_2XM[CpGL], read_1XM[CpGR], strand]) # Output is left-to-right, thus read_2XM appears before read_1XM for OB read-pairs.
                 if positionL >= positionR:
-                    print "ERROR: Case2A posL >= posR for read-pair ", read1.qname," with output ",  [chrom, positionL, positionR, read2XM[CpGL], read1XM[CpGR], strand]
+                    print "ERROR: Case2A posL >= posR for read-pair ", read_1.qname," with output ",  [chrom, positionL, positionR, read_2XM[CpGL], read_1XM[CpGR], strand]
                     output = []
             elif pairChoice == 'all':
                 output = []
-                # First, create all CpG-pairs where CpGL is from read1 and CpGR is from read1
+                # First, create all CpG-pairs where CpGL is from read_1 and CpGR is from read_1
                 if len(CpG_index1) > 1:
                     for i in range(0, len(CpG_index1)): 
                         if i < len(CpG_index1):
@@ -454,22 +669,22 @@ def SAM2MS_PE(read1, read2):
                                 CpGR = CpG_index1[k]
                                 positionL = start1 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
                                 positionR = start1 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                                output.append([chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand])
+                                output.append([chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand])
                                 if positionL >= positionR:
-                                    print "ERROR: Case2A posL >= posR for read-pair ", read1.qname," with output ", [chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand]
+                                    print "ERROR: Case2A posL >= posR for read-pair ", read_1.qname," with output ", [chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand]
                                     output = []
-                # Next, create all CpG-pairs where CpGL is from read2 and CpGR if from read1 (recall that the orientation of OB reads is '-/+', hence read2 appears to the left of read1)
+                # Next, create all CpG-pairs where CpGL is from read_2 and CpGR if from read_1 (recall that the orientation of OB reads is '-/+', hence read_2 appears to the left of read_1)
                 for i in range(0, len(CpG_index2)):
                     for j in range(0, len(CpG_index1)):
                         CpGL = CpG_index2[i]
                         CpGR = CpG_index1[j]
                         positionL = start2 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
                         positionR = start1 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                        output.append([chrom, positionL, positionR, read2XM[CpGL], read1XM[CpGR], strand]) # Output is left-to-right, thus read2XM appears before read1XM for OB read-pairs.
+                        output.append([chrom, positionL, positionR, read_2XM[CpGL], read_1XM[CpGR], strand]) # Output is left-to-right, thus read_2XM appears before read_1XM for OB read-pairs.
                         if positionL >= positionR:
-                            print "ERROR: Case2A posL >= posR for read-pair ", read1.qname," with output ", [chrom, positionL, positionR, read2XM[CpGL], read1XM[CpGR], strand]
+                            print "ERROR: Case2A posL >= posR for read-pair ", read_1.qname," with output ", [chrom, positionL, positionR, read_2XM[CpGL], read_1XM[CpGR], strand]
                             output = []
-                # Finally, create all CpG-pairs where CpGL is from read2 and CpGR is from read2
+                # Finally, create all CpG-pairs where CpGL is from read_2 and CpGR is from read_2
                 if len(CpG_index2) > 1:
                     for i in range(0, len(CpG_index2)): 
                         if i < len(CpG_index2):
@@ -479,21 +694,21 @@ def SAM2MS_PE(read1, read2):
                                 CpGR = CpG_index2[k]
                                 positionL = start2 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
                                 positionR = start2 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                                output.append([chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand])
+                                output.append([chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand])
                                 if positionL >= positionR:
-                                    print "ERROR: Case2A posL >= posR for read-pair ", read1.qname," with output ", [chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand]
+                                    print "ERROR: Case2A posL >= posR for read-pair ", read_1.qname," with output ", [chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand]
                                     output = []
-        # CaseB: > 1 CpG in read1 but 0 CpGs in read2
+        # CaseB: > 1 CpG in read_1 but 0 CpGs in read_2
         elif (len(CpG_index1) > 1 and len(CpG_index2) == 0):
             if pairChoice == "outermost":
                 output = []
-                CpGL = CpG_index1[0] # Leftmost CpG in read1
-                CpGR = CpG_index1[-1] # Rightmost CpG in read1
+                CpGL = CpG_index1[0] # Leftmost CpG in read_1
+                CpGR = CpG_index1[-1] # Rightmost CpG in read_1
                 positionL = start1 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG 
                 positionR = start1 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                output.append([chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand])
+                output.append([chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand])
                 if positionL >= positionR:
-                    print "ERROR: Case2B posL >= posR for read ", read1.qname," with output ", [chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand]
+                    print "ERROR: Case2B posL >= posR for read ", read_1.qname," with output ", [chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand]
                     output = []
             elif pairChoice == 'all':
                 output = []
@@ -505,21 +720,21 @@ def SAM2MS_PE(read1, read2):
                             CpGR = CpG_index1[k]
                             positionL = start1 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
                             positionR = start1 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                            output.append([chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand])
+                            output.append([chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand])
                             if positionL >= positionR:
-                                print "ERROR: Case2B posL >= posR for read-pair ", read1.qname," with output ", [chrom, positionL, positionR, read1XM[CpGL], read1XM[CpGR], strand]
+                                print "ERROR: Case2B posL >= posR for read-pair ", read_1.qname," with output ", [chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand]
                                 output = []
-        # CaseC: 0 CpGs in read1 but > 1 CpG in read2
+        # CaseC: 0 CpGs in read_1 but > 1 CpG in read_2
         elif (len(CpG_index1) == 0 and len(CpG_index2) > 1):
             if pairChoice == "outermost":
                 output = []
-                CpGL = CpG_index2[0] # Leftmost CpG in read2
-                CpGR = CpG_index2[-1] # Rightmost CpG in read2
+                CpGL = CpG_index2[0] # Leftmost CpG in read_2
+                CpGR = CpG_index2[-1] # Rightmost CpG in read_2
                 positionL = start2 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
                 positionR = start2 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                output.append([chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand])
+                output.append([chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand])
                 if positionL >= positionR:
-                    print "ERROR: Case2C posL >= posR for read ", read2.qname," with output ", [chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand]
+                    print "ERROR: Case2C posL >= posR for read ", read_2.qname," with output ", [chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand]
                     output = []
             elif pairChoice == 'all':
                 output = []
@@ -531,9 +746,9 @@ def SAM2MS_PE(read1, read2):
                             CpGR = CpG_index2[k]
                             positionL = start2 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
                             positionR = start2 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                            output.append([chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand])
+                            output.append([chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand])
                             if positionL >= positionR:
-                                print "ERROR: Case2C posL >= posR for read-pair ", read1.qname," with output ", [chrom, positionL, positionR, read2XM[CpGL], read2XM[CpGR], strand]
+                                print "ERROR: Case2C posL >= posR for read-pair ", read_1.qname," with output ", [chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand]
                                 output = []
         # CaseD: < 2 CpGs in read-pair
         elif (len(CpG_index1) + len(CpG_index2)) < 2:
@@ -541,19 +756,19 @@ def SAM2MS_PE(read1, read2):
     return output
 
 ## getStrand() returns whether the read or read-pair is informative for the OT (original top, Watson) or OB (original bottom, Crick) strand.
-def getStrand(read1, read2):
-    if read2 == "NA": # Single-end data
-        if read1.opt('XG') == 'CT': # Read aligned to CT-converted reference genome and therefore informative for the OT-strand
+def getStrand(read_1, read_2):
+    if read_2 == "NA": # Single-end data
+        if read_1.opt('XG') == 'CT': # Read aligned to CT-converted reference genome and therefore informative for the OT-strand
             strand = 'OT'
-        elif read1.opt('XG') == 'GA': # Read aligned to GA-converted reference genome and therefore informative for the OB-strand
+        elif read_1.opt('XG') == 'GA': # Read aligned to GA-converted reference genome and therefore informative for the OB-strand
             strand = 'OB'
     else: # Paired-end data
-        if read1.opt('XG') == 'CT' and read2.opt('XG') == 'CT': # Read-pair aligned to CT-converted reference genome and therefore informative for the OT-strand
+        if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT': # Read-pair aligned to CT-converted reference genome and therefore informative for the OT-strand
             strand = 'OT'
-        elif read1.opt('XG') == 'GA' and read2.opt('XG') == 'GA' : # Read-pair aligned to GA-converted reference genome and therefore informative for the OB-strand
+        elif read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' : # Read-pair aligned to GA-converted reference genome and therefore informative for the OB-strand
             strand = 'OB'
         else:
-            error_message = ''.join(['Read-pair is aligned to both the CT- and GA-converted reference genomes: ', read1.qname]) 
+            error_message = ''.join(['Read-pair is aligned to both the CT- and GA-converted reference genomes: ', read_1.qname]) 
             sys.exit(error_message)
     return strand
 
@@ -640,20 +855,20 @@ for read in BAM:
         n_fragment += 0.5 # Want to count the number of FRAGMENTS not the number of reads.
         continue
     else:
-        if read.is_proper_pair and read.is_read1:
-            read1 = read
+        if read.is_proper_pair and read.is_read_1:
+            read_1 = read
             continue
-        elif read.is_proper_pair and read.is_read2: 
-            read2 = read
+        elif read.is_proper_pair and read.is_read_2: 
+            read_2 = read
             n_fragment += 1
-            # Check that read1 and read2 are aligned to the same chromosome and have identical read-names. If not, skip the read-pair.
-            if read1.tid == read2.tid and read1.qname == read2.qname:
-                fragment_MS = SAM2MS_PE(read1, read2)
-            elif read1.tid != read2.tid:
-                print "ERROR: Reads in pair aligned to different chromosomes: ", read1.qname, BAM.getrname(read1.tid), read2.qname, BAM.getrname(read2.tid)
+            # Check that read_1 and read_2 are aligned to the same chromosome and have identical read-names. If not, skip the read-pair.
+            if read_1.tid == read_2.tid and read_1.qname == read_2.qname:
+                fragment_MS = SAM2MS_PE(read_1, read_2)
+            elif read_1.tid != read_2.tid:
+                print "ERROR: Reads in pair aligned to different chromosomes: ", read_1.qname, BAM.getrname(read_1.tid), read_2.qname, BAM.getrname(read_2.tid)
                 continue
-            elif read1.qname != read2.qname:
-                print "ERROR: The name of read1 is not identical to to that of read2 for read-pair ", read1.qname, read2.qname, "\nHas your BAM file been sorted in query-name-order with Picard's SortSam function?"
+            elif read_1.qname != read_2.qname:
+                print "ERROR: The name of read_1 is not identical to to that of read_2 for read-pair ", read_1.qname, read_2.qname, "\nHas your BAM file been sorted in query-name-order with Picard's SortSam function?"
                 continue
         elif not read.is_paired:
             n_fragment += 1  
