@@ -32,7 +32,6 @@ import warnings
 # There are two types of comethylation: (1) Within-fragment co-methylation (WF), which is the dependence of methylation states along a DNA read/fragment/chromosome that contains multiple Cpgs; and (2) correlation of aggregate methylation values (AM). Aggregate methylation values are based on the pileup of reads at each CpG and include beta = M/(U+M) and gamma = log((M + eps)/(U + eps)), where M = the number of methylated Cs, U = the number of unmethylated Cs and esp is a small number to ensure numerical stability of gamma, typically esp = 0.5.
 # co-methylation extracts the necessary information to analyse (1), it does not perform the statistical analysis. A sister program, aggregate_methylation.py, extracts the necessary information to analyse (2).
 # If the reads from a read-pair overlap then, provided the overlapping sequence is identical, we trim the lower quality read until no overlap remains. If the overlapping sequence is not identical then we ignore the read-pair. This behaviour may be altered in future releases.
-# WARNING
 ############################################################################################################################################################################################
 
 ### Description of sample.wf ###
@@ -58,14 +57,7 @@ import warnings
 
 ### TODOs ###
 ############################################################################################################################################################################################
-# TODO: Improve method for ignoring bases at 5' or 3' end of reads. Specifically, it might be good to have option that, for example, trims the last 5 bases of reads if the read is longer than 75nt otherwise the read is left untrimmed.
-# TODO: Remove 'orientation' from code; instead use XG-tag.
-# TODO: Extend to 4-strand protocol. This will require the BAM file to have both the XG-tag and the XR-tag specified by Bismark. See "Paired_end_read_orientation.docx" on Google Drive.
-# TODO: read.is_paired checks if the read is paired in-sequencing. Problems may arise if the mate of a read that is paired in-sequencing is not present in the SAM/BAM (e.g. if only one read of the read-pair is mapped).
-# TODO: Insert program description in arg.parse
-# TODO: Add option to ignore a different number of bases from the ends of reads depending on whether it is read_1 or read_2
-# TODO: Learn the difference between read.alen, read.qlen and read.rlen; decide which is most appropriate for this script.
-# TODO: Include all WARNINGS in program description
+# See Google Docs "Issue tracker - comethylation.py v2" (https://docs.google.com/spreadsheet/ccc?key=0Au0uDiAd9OV9dHN1SUZPc1Ixa2oyTjZnQVlEYVZ1QlE)
 ############################################################################################################################################################################################
 
 ### Command line parser ###
@@ -95,6 +87,10 @@ parser.add_argument('--pairChoice',
                     metavar = '<string>',
                     default="outermost",
                     help='Method for constructing CpG-pairs: outermost or all (default: outermost)')
+parser.add_argument('--methylationType',
+                    metavar = '<string>',
+                    default="CpG",
+                    help='The type of methylation sites to study: CpG, CGG, CHH or CNN (default: CpG)')
 parser.add_argument('--phred64',
                     action='store_true',
                     help='Quality scores are encoded as Phred64 (default: Phred33)')
@@ -112,183 +108,171 @@ WF = open(".".join([args.sampleName, "wf"]), "w")
 
 ### Function definitions ###
 #############################################################################################################################################################################################
-def ignore_first_n_cpgs(read, cpg_index, n):
-    """Ignore CpGs occuring in the first n bases of a read that contribtue to a read's cpg_index.
+def ignore_first_n_bases(read, methylation_index, n):
+    """Ignore methylation sites occuring in the first n bases of a read. A methylation site may be one of CpG, CHH, CHG or CNN.
 
     Args:
         read: A pysam.AlignedRead instance.
-        cpg_index: A list of zero-based indices.  Each index corresponds to the leftmost aligned position of a CpG in a read. For example:
+        methylation_index: A list of zero-based indices. Each index corresponds to the leftmost aligned position of a methylation site in a read. For example:
 
         [0, 5]
 
-        Corresponds to a read with a CpG at the first and sixth positions of the read.
+        corresponds to a read with a methylation site at the first and sixth positions of the read.
         n: The number of bases to exclude from the start of each read. The start of a read is the first *sequenced* base, not the leftmost aligned base.
 
     Returns:
-        A list of zero-based indices (possibly empty).  Each index corresponds to the leftmost aligned position of a CpG in a read. For example:
-
-        [0, 5]
-
-        corresponds to a read with a CpG at the first and sixth positions of the read.
+        An updated version of methylation_index.
     """
-    ignore_these_cpgs = []
+    ignore_these_bases = []
     # Single-end reads
     if not read.is_paired:
         # Read aligned to OT-strand |------>
         if read.opt('XG') == 'CT' and read.opt('XR') == 'CT':
-            for i in cpg_index:
+            for i in methylation_index:
                 if i < n:
-                    ignore_these_cpgs.append(i)
+                    ignore_these_bases.append(i)
         # Read aligned to OB-strand <------|
         elif read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
-            for i in cpg_index:
+            for i in methylation_index:
                 if i >= (read.alen - n):
-                    ignore_these_cpgs.append(i)
+                    ignore_these_bases.append(i)
         else:
             warning_msg = ''.join(['Skipping read ', read.qname, '. Incompatible or missing XG-tag or XR-tag.'])
             warnings.warn(warning_msg)
-            cpg_index = []
+            methylation_index = []
     # Paired-end reads: read_1
     elif read.is_paired and read.is_read_1:
         # read_1 aligned to OT-strand |------>
         if read.opt('XG') == 'CT' and read.opt('XR') == 'CT':
-            for i in cpg_index:
+            for i in methylation_index:
                 if i < n:
-                    ignore_these_cpgs.append(i)
+                    ignore_these_bases.append(i)
         # read_1 aligned to OB-strand <------|
         elif read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
-            for i in cpg_index:
+            for i in methylation_index:
                 if i >= (read.alen - n):
-                    ignore_these_cpgs.append(i)
+                    ignore_these_bases.append(i)
         else:
             warning_msg = ''.join(['Skipping read ', read.qname, '. Incompatible or missing XG-tag or XR-tag.'])
             warnings.warn(warning_msg)
-            cpg_index = []
+            methylation_index = []
     # Paired-end reads: read_2
     elif read.is_paired and read.is_read_2:
         # read_2 aligned to OT-strand <------|
         if read.opt('XG') == 'CT' and read.opt('XR') == 'GA':
-            for i in cpg_index:
+            for i in methylation_index:
                 if i >= (read.alen - n):
-                    ignore_these_cpgs.append(i)
+                    ignore_these_bases.append(i)
         # read_2 aligned to OB-strand |------>
         elif read.opt('XG') == 'GA' and read.opt('XR') == 'GA':
-            for i in cpg_index:
+            for i in methylation_index:
                 if i < n:
-                    ignore_these_cpgs.append(i)
+                    ignore_these_bases.append(i)
         else:
             warning_msg = ''.join(['Skipping read ', read.qname, '. Incompatible or missing XG-tag or XR-tag.'])
             warnings.warn(warning_msg)
-            cpg_index = []
+            methylation_index = []
     # Skipping read because it does not have necessary information to infer whether read is paired or whether the read is read_1 or read_2 of the pair.
     else:
         warning_msg = ''.join(['Skipping read ', read.qname, '. Missing 0x01, 0x40 or 0x80 FLAG bit (paired-read FLAG information)'])
         warnings.warn(warning_msg)
-        cpg_index = []
-    return [x for x in cpg_index if x not in ignore_these_cpgs]
+        methylation_index = []
+    return [x for x in methylation_index if x not in ignore_these_bases]
 
-def ignore_last_n_cpgs(read, cpg_index, n):
-    """Ignore CpGs occuring in the last n bases of a read that contribute to a read's cpg_index.
+def ignore_last_n_bases(read, methylation_index, n):
+    """Ignore methylation sites occuring in the last n bases of a read. A methylation site may be one of CpG, CHH, CHG or CNN.
 
     Args:
         read: A pysam.AlignedRead instance.
-        cpg_index: A list of zero-based indices.  Each index corresponds to the leftmost aligned position of a CpG in a read. For example:
+        methylation_index: A list of zero-based indices. Each index corresponds to the leftmost aligned position of a methylation site in a read. For example:
 
         [0, 5]
 
-        corresponds to a read with a CpG at the first and sixth positions of the read.
+        corresponds to a read with a methylation site at the first and sixth positions of the read.
         n: The number of bases to exclude from the start of each read. The start of a read is the first *sequenced* base, not the leftmost aligned base.
 
     Returns:
-        A list of zero-based indices (possibly empty).  Each index corresponds to the leftmost aligned position of a CpG in a read. For example:
-
-        [0, 5]
-
-        Corresponds to a read with a CpG at the first and sixth positions of the read.
+        An updated version of methylation_index.
     """
-    ignore_these_cpgs = []
+    ignore_these_bases = []
     # Single-end reads
     if not read.is_paired:
         # Read aligned to OT-strand |------>
         if read.opt('XG') == 'CT' and read.opt('XR') == 'CT':
-            for i in cpg_index:
+            for i in methylation_index:
                 if i >= (read.alen - n):
-                    ignore_these_cpgs.append(i)
+                    ignore_these_bases.append(i)
         # Read aligned to OB-strand <------|
         elif read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
-            for i in cpg_index:
+            for i in methylation_index:
                 if i < n:
-                    ignore_these_cpgs.append(i)
+                    ignore_these_bases.append(i)
         else:
             warning_msg = ''.join(['Skipping read ', read.qname, '. Incompatible or missing XG-tag or XR-tag.'])
             warnings.warn(warning_msg)
-            cpg_index = []
+            methylation_index = []
     # Paired-end reads: read_1
     elif read.is_paired and read.is_read_1:
         # read_1 aligned to OT-strand |------>
         if read.opt('XG') == 'CT' and read.opt('XR') == 'CT':
-            for i in cpg_index:
+            for i in methylation_index:
                 if i >= (read.alen - n):
-                    ignore_these_cpgs.append(i)
+                    ignore_these_bases.append(i)
         # read_1 aligned to OB-strand <------|
         elif read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
-            for i in cpg_index:
+            for i in methylation_index:
                 if i < n:
-                    ignore_these_cpgs.append(i)
+                    ignore_these_bases.append(i)
         else:
             warning_msg = ''.join(['Skipping read ', read.qname, '. Incompatible or missing XG-tag or XR-tag.'])
             warnings.warn(warning_msg)
-            cpg_index = []
+            methylation_index = []
     # Paired-end reads: read_2
     elif read.is_paired and read.is_read_2:
         # read_2 aligned to OT-strand <------|
         if read.opt('XG') == 'CT' and read.opt('XR') == 'GA':
-            for i in cpg_index:
+            for i in methylation_index:
                 if i < n:
-                    ignore_these_cpgs.append(i)
+                    ignore_these_bases.append(i)
         # read_2 aligned to OB-strand |------>
         elif read.opt('XG') == 'GA' and read.opt('XR') == 'GA':
-            for i in cpg_index:
+            for i in methylation_index:
                 if i  >= (read.alen - n):
-                    ignore_these_cpgs.append(i)
+                    ignore_these_bases.append(i)
         else:
             warning_msg = ''.join(['Skipping read ', read.qname, '. Incompatible or missing XG-tag or XR-tag.'])
             warnings.warn(warning_msg)
-            cpg_index = []
+            methylation_index = []
     # Skipping read because it does not have necessary information to infer whether read is paired or whether the read is read_1 or read_2 of the pair.
     else:
         warning_msg = ''.join(['Skipping read ', read.qname, '. Missing 0x01, 0x40 or 0x80 FLAG bit (paired-read FLAG information)'])
         warnings.warn(warning_msg)
-        cpg_index = []
-    return [x for x in cpg_index if x not in ignore_these_cpgs]
+        methylation_index = []
+    return [x for x in methylation_index if x not in ignore_these_bases]
         
-def ignore_low_quality_bases(read, cpg_index, min_qual, phred_offset):
-    """Ignore low quality bases of a read that contribute to a read's cpg_index.
+def ignore_low_quality_bases(read, methylation_index, min_qual, phred_offset):
+    """Ignore low quality bases of a read that contribute to a read's methylation_index.
 
     Args:
         read: A pysam.AlignedRead instance.
-        cpg_index: A list of zero-based indices.  Each index corresponds to the leftmost aligned position of a CpG in a read. For example:
+        methylation_index: A list of zero-based indices. Each index corresponds to the leftmost aligned position of a methylation site in a read. For example:
 
         [0, 5]
 
-        Corresponds to a read with a CpG at the first and sixth positions of the read.
+        corresponds to a read with a methylation site at the first and sixth positions of the read.
         n: The number of bases to exclude from the start of each read. The start of a read is the first *sequenced* base, not the leftmost aligned base.
-        min_qual: The minimum base qualit (integer). All bases with quality < min_qual are excluded from the returned cpg_index object.
-        phred_offset: The Phred offset of the data - 33 or 64.
+        min_qual: The minimum base quality (integer). All bases with quality < min_qual are excluded from the returned methylation_index instance.
+        phred_offset: The Phred offset of the data (33 or 64).
 
     Returns:
-        A list of zero-based indices (possibly empty).  Each index corresponds to the leftmost aligned position of a CpG in a read. For example:
-
-        [0, 5]
-
-        Corresponds to a read with a CpG at the first and sixth positions of the read.
+        An updated version of methylation_index.
     
     """
-    ignore_these_cpgs = []
-    for i in cpg_index:
+    ignore_these_bases = []
+    for i in methylation_index:
         if (ord(read.qual[i]) - phred_offset) < min_qual:
-            ignore_these_cpgs.append(i)
-    return [x for x in cpg_index if x not in ignore_these_cpgs]
+            ignore_these_bases.append(i)
+    return [x for x in methylation_index if x not in ignore_these_bases]
 
 def is_overlapping_sequence_identical(read_1, read_2, n_overlap):
     """Check whether the overlapping sequence of read_1 and read_2 is identical.
@@ -316,152 +300,241 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap):
         overlap_2 = False
     return overlap_1 == overlap_2
 
-def ignore_overlapping_sequence(read_1, read_2, cpg_index_1, cpg_index_2, n_overlap):
+def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap):
     """Ignore the overlapping sequence of read_1 and read_2 from the read with the lower (sum) base qualities in the overlapping region.
        If base qualities are identical then (arbitrarily) ignore the overlapping bases from read_2.
 
     Args:
         read_1: A pysam.AlignedRead instance with read.is_read_1 == true. Must be paired with read_2.
         read_2: A pysam.AlignedRead instance with read.is_read_2 == true. Must be paired with read_1.
-        cpg_index_1: A list of zero-based indices.  Each index corresponds to the leftmost aligned position of a CpG in read_1. For example:
+        methylation_index_1: A list of zero-based indices.  Each index corresponds to the leftmost aligned position of a methylation site in read_1. For example:
 
         [0, 5]
 
-        corresponds to read_1 with a CpG at the first and sixth positions of the read.
-        cpg_index_2: A list of zero-based indices.  Each index corresponds to the leftmost aligned position of a CpG in read_2. For example:
-
-        [0, 5]
-
-        corresponds to read_2 with a CpG at the first and sixth positions of the read.
+        corresponds to read_1 with a methylation site at the first and sixth positions of the read.
+        methylation_index_2: As for methylation_index_1 but informative for read_2.
         n_overlap: The number of bases in the overlap (must be > 0).
 
     Returns:
-        cpg_index_1, cpg_index_2: The cpg_indexes corresponding to read_1 and read_2 respectively, post-overlap-removal.
+        Updated versions of methylation_index_1 and methylation_index_2.
     """
-    ignore_these_cpgs = []
+    ignore_these_bases = []
     # Readpair aligns to OT-strand
     if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
         overlap_quals_1 = sum([ord(x) for x in read_1.qual[-n_overlap:]])
         overlap_quals_2 = sum([ord(x) for x in read_2.qual[-n_overlap:]])
         if overlap_quals_1 >= overlap_quals_2:
-            for i in cpg_index_2:
+            for i in methylation_index_2:
                 if i < n_overlap:
-                    ignore_these_cpgs.append(i)
-                    cpg_index_2 = [x for x in cpg_index_2 if x not in ignore_these_cpgs]
+                    ignore_these_bases.append(i)
+                    methylation_index_2 = [x for x in methylation_index_2 if x not in ignore_these_bases]
         else:
-            for i in cpg_index_1:
+            for i in methylation_index_1:
                 if i >= (read.alen - n_overlap):
-                    ignore_these_cpgs.append(i)
-                    cpg_index_1 = [x for x in cpg_index_1 if x not in ignore_these_cpgs]
+                    ignore_these_bases.append(i)
+                    methylation_index_1 = [x for x in methylation_index_1 if x not in ignore_these_bases]
     # Readpair aligns to OB-strand
     elif read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
         overlap_quals_1 = sum([ord(x) for x in read_1.qual[:n_overlap]])
         overlap_quals_2 = sum([ord(x) for x in read_2.qual[-n_overlap:]])
         if overlap_quals_1 >= overlap_quals_2:
-            for i in cpg_index_2:
+            for i in methylation_index_2:
                 if i >= (read_2.alen - n_overlap):
-                    ignore_these_cpgs.append(i)
-                    cpg_index_2 = [x for x in cpg_index_2 if x not in ignore_these_cpgs]
+                    ignore_these_bases.append(i)
+                    methylation_index_2 = [x for x in methylation_index_2 if x not in ignore_these_bases]
         else:
-            for i in cpg_index_1:
+            for i in methylation_index_1:
                 if i < n_overlap:
-                    ignore_these_cpgs.append(i)
-                    cpg_index_1 = [x for x in cpg_index_1 if x not in ignore_these_cpgs]
+                    ignore_these_bases.append(i)
+                    methylation_index_1 = [x for x in methylation_index_1 if x not in ignore_these_bases]
     else:
         warning_msg = ''.join(['Skipping readpair ', read.qname, ' as XG-tags or XR-tags are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
         warnings.warn(warning_msg)
-        cpg_index_1 = []
-        cpg_index_2 = []
-    return cpg_index_1, cpg_index_2
+        methylation_index_1 = []
+        methylation_index_2 = []
+    return methylation_index_1, methylation_index_2
 
-## Create a dictionary of methylation-states for a CpG-pair
-def makeWFCount():
-    return  {'MM': 0, 'MU': 0, 'UM': 0, 'UU': 0, 'MM_OT': 0, 'MU_OT': 0, 'UM_OT': 0, 'UU_OT': 0, 'MM_OB': 0, 'MU_OB': 0, 'UM_OB': 0, 'UU_OB': 0}
+class WithinFragmentComethylationPair:
+    """A WithinFragmentComethylationPair instance stores the within-fragment comethylation counts for a single pair of methylation sites, e.g. a CpG-pair.
+    
+    Attributes:
+        chromosome: The chromosome containing the pair.
+        position_1 = The 1-based position of the leftmost methylation site in the pair (with reference to the OT-strand). NB: position_1 < position_2 by definition.
+        position_2 = The 1-based position of the rightmost methylation site in the pair (with reference to the OT-strand). NB: position_1 < position_2 by definition.
+        counts: A dictionary storing the counts for each of the four comethylation states stratified by the strand (2 levels) or combined across strand (1 level), giving a total of twelve keys and associated values (counts).
+    """
+    def __init__(self, chromosome, position_1, position_2, methylation_type):
+        """Initiates WithinFragmentComethylationPair for a single pair of methylation events with co-ordinates given by arguments (chromosome, position_1, position_2) and sets all counts to zero."""
+        self.methylation_type = methylation_type
+        self.chromosome = chromosome
+        self.position_1 = position_1
+        self.position_2 = position_2
+        self.counts = {'MM': 0, 'MU': 0, 'UM': 0, 'UU': 0, 'MM_OT': 0, 'MU_OT': 0, 'UM_OT': 0, 'UU_OT': 0, 'MM_OB': 0, 'MU_OB': 0, 'UM_OB': 0, 'UU_OB': 0}
+    def display(self):
+        """Display a WithinFragmentComethylationPair instance."""
+        print ''.join(['Methylation type = ', self.methylation_type])
+        print ''.join(['Position = ', self.chromosome, ':', str(self.position_1), '-', str(self.position_2)])
+        print 'Counts =', self.counts
+    def increment_count(self, comethylation_state, read_1, read_2):
+        """Increment the counts attribute based on the comethylation_state that has been extracted from read_1 and read_2. NB: read_2 should be set to None if data is single-end."""
+        # Single-end
+        if read_2 is None:
+            # Read aligns to OT-strand
+            if read_1.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and not read_1.is_paired:
+                if comethylation_state == MM:
+                    self.counts['MM'] += 1
+                    self.counts['MM_OT'] += 1
+                elif comethylation_state == MU:
+                    self.counts['MU'] += 1
+                    self.counts['MU_OT'] += 1
+                elif comethylation_state == UM:
+                    self.counts['UM'] += 1
+                    self.counts['UM_OT'] += 1
+                elif comethylation_state == UU:
+                    self.counts['UU'] += 1
+                    self.counts['UU_OT'] += 1
+                else:
+                    exit_msg = ''.join(['Error: Invalid methylation string (',  comethylation_state, ') for read:', read_1.qname])
+                    sys.exit(exit_msg)
+            # Read aligns to OB-strand
+            elif read_1.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and not read_1.is_paired:
+                if comethylation_state == MM:
+                    self.counts['MM'] += 1
+                    self.counts['MM_OB'] += 1
+                elif comethylation_state == MU:
+                    self.counts['MU'] += 1
+                    self.counts['MU_OB'] += 1
+                elif comethylation_state == UM:
+                    self.counts['UM'] += 1
+                    self.counts['UM_OB'] += 1
+                elif comethylation_state == UU:
+                    self.counts['UU'] += 1
+                    self.counts['UU_OB'] += 1
+                else:
+                    exit_msg = ''.join(['Error: Invalid methylation string (',  comethylation_state, ') for read:', read_1.qname])
+                    sys.exit(exit_msg)
+            # Read does not align to either OT-strand or OB-strand so skip it.
+            else:
+                warning_msg = ''.join(['Skipping read ', read.qname, ' as XG-tags or XR-tags are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
+                warnings.warn(warning_msg)
+        else:
+            # Readpair aligns to OT-strand
+            if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA' and read_1.is_paired and read_2.is_paired:
+                if comethylation_state == MM:
+                    self.counts['MM'] += 1
+                    self.counts['MM_OT'] += 1
+                elif comethylation_state == MU:
+                    self.counts['MU'] += 1
+                    self.counts['MU_OT'] += 1
+                elif comethylation_state == UM:
+                    self.counts['UM'] += 1
+                    self.counts['UM_OT'] += 1
+                elif comethylation_state == UU:
+                    self.counts['UU'] += 1
+                    self.counts['UU_OT'] += 1
+                else:
+                    exit_msg = ''.join(['Error: Invalid methylation string (',  comethylation_state, ') for readpair:', read_1.qname])
+                    sys.exit(exit_msg)
+            # Readpair aligns to OB-strand
+            if read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA' and read_1.is_paired and read_2.is_paired:
+                if comethylation_state == MM:
+                    self.counts['MM'] += 1
+                    self.counts['MM_OB'] += 1
+                elif comethylation_state == MU:
+                    self.counts['MU'] += 1
+                    self.counts['MU_OB'] += 1
+                elif comethylation_state == UM:
+                    self.counts['UM'] += 1
+                    self.counts['UM_OB'] += 1
+                elif comethylation_state == UU:
+                    self.counts['UU'] += 1
+                    self.counts['UU_OB'] += 1
+                else:
+                    exit_msg = ''.join(['Error: Invalid methylation string (',  comethylation_state, ') for readpair:', read_1.qname])
+                    sys.exit(exit_msg)
+            # Readpair (paired-end) or read (single-end) does not align to either OT-strand or OB-strand so skip it.
+            else:
+                warning_msg = ''.join(['Skipping readpair ', read.qname, ' as XG-tags or XR-tags are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
+                warnings.warn(warning_msg)             
 
-## Increment the counts in an makeWFCount() object based on the new information from an element of fragment_MS, the output of SAM2MS_SE() or SAM2MS_PE().
-def incrementWFCount(CpG_pair, thisPair, readname): # CpG_pair is the current count of comethylation (a makeWFCount object). thisPair is an element of the list-of-lists fragment_MS, e.g. fragment_MS[0]
-    ms = ''.join(thisPair[3:5]) # The CpG methylation state - ZZ, Zz, zZ or zz - for that CpG-pair from that read
-    strand = thisPair[5]
-    if ms == 'ZZ':
-        CpG_pair['MM'] += 1
-        if strand == 'OT':
-            CpG_pair['MM_OT'] += 1
-        elif strand == 'OB':
-            CpG_pair['MM_OB'] +=1
-        return CpG_pair
-    elif ms == 'Zz':
-        CpG_pair['MU'] += 1
-        if strand == 'OT':
-            CpG_pair['MU_OT'] += 1
-        elif strand == 'OB':
-            CpG_pair['MU_OB'] +=1
-        return CpG_pair
-    elif ms == 'zZ':
-        CpG_pair['UM'] += 1
-        if strand == 'OT':
-            CpG_pair['UM_OT'] += 1
-        elif strand == 'OB':
-            CpG_pair['UM_OB'] +=1
-        return CpG_pair
-    elif ms == 'zz':
-        CpG_pair['UU'] += 1
-        if strand == 'OT':
-            CpG_pair['UU_OT'] += 1
-        elif strand == 'OB':
-            CpG_pair['UU_OB'] +=1
-        return CpG_pair
-    else:
-        exit_msg = ''.join(['Error: Invalid methylation string (',  thisPair, ') for read:', readname])
-        sys.exit(exit_msg)
- 
-## SAM2MS_SE extracts, summarises and returns the methylation string (MS) information for a read mapped as single-end data
-## The return value is a list-of-lists, with length equal to the number of pairs extracted from the read. Thus a result value with length = 0 means there were no CpGs pairs extracted from that read (or there was an error with the pairs extracted), a result value with length = 0 means one CpG-pair, a result value with length = 2 means two CpG-pairs, etc.
-## NB: strand == 'OT' ('OB') is the same as orientation == '+' ('-') for the two-strand protocol
-def SAM2MS_SE(read):
-    chrom = BAM.getrname(read.tid)
-    start = read.pos + 1 # read.pos is 0-based in accordance with BAM file specificiations, regardless of whether the input file is SAM or BAM. I convert this to a 1-based position.
-    strand = getStrand(read)
-    # Identify CpGs in read
-    CpG_index = [m.start() for m in re.finditer(CpG_pattern, read.opt('XM'))]
-     # Remove 'ignore3' and 'ignore5' CpG-methylation calls from consideration 
-    if args.ignore3 > 0:
-        CpG_index = ignore3(args.ignore3, CpG_index, read.rlen, read.opt('XG'), read.qname)
-    if args.ignore5 > 0:
-        CpG_index = ignore5(args.ignore5, CpG_index, read.rlen, read.opt('XG'), read.qname)
-    # Remove low quality CpG-methylation calls from consideration
-    CpG_index = removeLowQualMS(CpG_index, read.qual, minQual, PhredOffset)
-    # Case A: > 1 CpG in read
-    if len(CpG_index) > 1:
-        if pairChoice == 'outermost':
-            output = []
-            CpGL = CpG_index[0] # Leftmost CpG in read
-            CpGR = CpG_index[-1] # Rightmost CpG in read
-            positionL = start + CpGL
-            positionR = start + CpGR
-            if strand == 'OB': # If read is aligned to OB-strand then translate co-ordinate 1bp to the left so that it points to the C in the CpG on the OT-strand
-                positionL -= 1
-                positionR -= 1
-            output.append([chrom, positionL, positionR, read.opt('XM')[CpGL], read.opt('XM')[CpGR], strand]) # Output is left-to-right, thus read_1XM appears before read_2XM for OT read-pairs.
-            if positionL > positionR:
-                print "ERROR: Case1A posL > posR for single-end read ", read_1.qname," with output ", [chrom, positionL, positionR, read.opt('XM')[CpGL], read.opt('XM')[CpGR], strand]
-        elif pairChoice == 'all':
-            output = []
-            for i in range(0, len(CpG_index)):
-                if i < len(CpG_index):
+
+def extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_pairs, pair_choice):
+    """Extracts pairs of methylation sites from a single-end read and adds the comethylation states to the methylation_pairs object.
+    
+    Args:
+        read: An AlignedRead instance corresponding to a single-end read.
+        BAM: The Samfile instance corresponding to the sample. Required in order to extract chromosome names from read.
+        methylation_pairs: A dictionary storing all observed pairs of methylation events and their WithinFragmentComethylationPair instance. An exmaple of a pair of methylation sites is a CpG-pair. 
+        pair_choice: A string indicating how the pairs of methylation sites are to be constructed: "all" (all possible pairs) or "outermost" (the pair with the largest intra-pair distance). NB: "outermost" ensures each read is only used once in the within-fragment comethylation analysis.
+    Returns:
+        methylation_pairs: An updated version of methylation_pairs
+        n_methylation_sites: The number of methylation sites extracted from the read.
+    """
+    # Identify methylation events in read, e.g. CpGs or CHHs. The methylation_pattern is specified by a command line argument (e.g. Z/z corresponds to CpG)
+    methylation_index = [m.start() for m in re.finditer(methylation_pattern, read.opt('XM'))]
+    # Ignore any start or end positions of read, as specified by command line arguments
+    if args.ignoreStart > 0:
+        methylation_index = ignore_first_n_bases(read, methylation_index, args.ignoreStart)
+    if args.ignoreEnd > 0:
+        methylation_index = ignore_last_n_bases(read, methylation_index, args.ignoreEnd)
+    # Ignore any positions with a base quality less than the min_qual, as specified by command line arguments
+    methylation_index = ignore_low_quality_bases(read, methylation_index, args.minQual, phred_offset)
+    n_methylation_sites = len(methylation_index)
+    # Case A: > 1 methylation site in the read
+    if n_methylation_sites > 1:
+        if pair_choice == 'outermost':
+            pair_correctly_ordered = True
+            methylation_leftmost = methylation_index[0]
+            methylation_rightmost = methylation_index[-1]
+            position_leftmost = read.pos + methylation_leftmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
+            position_rightmost = read.pos + methylation_rightmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
+            # If read is aligned to OB-strand then translate co-ordinate "ob_strand_offset" bases to the left so that it points to the C on the OT-strand of the methylation site.
+            if read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
+                position_leftmost -= ob_strand_offset
+                position_rightmost -= ob_strand_offset
+            if position_leftmost > position_rightmost:
+                warning_msg = ' '.join(["ERROR (Case A): Skipping single-end read",  read.qname,  "as position_leftmost > position_rightmost. Details: ", BAM.getrname(read.tid), str(position_leftmost), str(position_rightmost), read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]])
+                warnings.warn(warning_msg)
+                pair_correctly_ordered = False
+            if pair_correctly_ordered:
+                # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
+                pair_id = ':'.join([BAM.getrname(read.tid), str(position_leftmost), str(position_rightmost)])
+                # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
+                if not pair_id in methylation_pairs:
+                    methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read.tid), position_leftmost, position_rightmost, args.methylationType)
+                    methylation_pairs[pair_id].increment_count(''.join([read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]]), read, None)
+                else:
+                    methylation_pairs[pair_id].increment_count(''.join([read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]]), read, None)
+        elif pair_choice == 'all':
+            pair_correctly_ordered = True
+            for i in range(0, len(methylation_index)):
+                if i < len(methylation_index):
                     j = i + 1
-                    for k in range(j, len(CpG_index)):
-                        CpGL = CpG_index[i]
-                        CpGR = CpG_index[k]
-                        positionL = start + CpGL
-                        positionR = start + CpGR
-                        if strand == 'OB': # Translate co-ordinate 1bp to the left so that it points to the C in the CpG on the OT-strand
-                            positionL -= 1
-                            positionR -= 1
-                        output.append([chrom, positionL, positionR, read.opt('XM')[CpGL], read.opt('XM')[CpGR], strand])
-    else: # Less than 2 CpGs in read, therefore no within-fragment comethylation measurement for this read.
-        output = []
-    return output
-
+                    for k in range(j, len(methylation_index)):
+                        methylation_leftmost = methylation_index[i]
+                        methylation_rightmost = methylation_index[k]
+                        position_leftmost = read.pos + methylation_leftmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
+                        position_rightmost = read.pos + methylation_rightmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
+                        # If read is aligned to OB-strand then translate co-ordinate "ob_strand_offset" bases to the left so that it points to the C on the OT-strand of the methylation site.
+                        if read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
+                            position_leftmost -= ob_strand_offset
+                            position_rightmost -= ob_strand_offset
+                        if position_leftmost > position_rightmost:
+                            warning_msg = ' '.join(["ERROR (Case A): Skipping single-end read",  read.qname,  "as position_leftmost > position_rightmost. Details: ", BAM.getrname(read.tid), str(position_leftmost), str(position_rightmost), read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]])
+                            warnings.warn(warning_msg)
+                            pair_correctly_ordered = False
+                            if pair_correctly_ordered:
+                                # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
+                                pair_id = ':'.join([BAM.getrname(read.tid), str(position_leftmost), str(position_rightmost)])
+                                # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
+                                if not pair_id in methylation_pairs:
+                                    methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read.tid), position_leftmost, position_rightmost, args.methylationType)
+                                    methylation_pairs[pair_id].increment_count(''.join([read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]]), read, None)
+                                else:
+                                    methylation_pairs[pair_id].increment_count(''.join([read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]]), read, None)
+    return methylation_pairs, n_methylation_sites
+    
+    
 ## SAM2MS_PE extracts, summarises and returns the methylation string (MS) information for a read-pair mapped as paired-end data.
 def SAM2MS_PE(read_1, read_2):
     chrom = BAM.getrname(read_1.tid)
@@ -724,23 +797,6 @@ def SAM2MS_PE(read_1, read_2):
         elif (len(CpG_index1) + len(CpG_index2)) < 2:
             output = []
     return output
-
-## getStrand() returns whether the read or read-pair is informative for the OT (original top, Watson) or OB (original bottom, Crick) strand.
-def getStrand(read_1, read_2):
-    if read_2 == "NA": # Single-end data
-        if read_1.opt('XG') == 'CT': # Read aligned to CT-converted reference genome and therefore informative for the OT-strand
-            strand = 'OT'
-        elif read_1.opt('XG') == 'GA': # Read aligned to GA-converted reference genome and therefore informative for the OB-strand
-            strand = 'OB'
-    else: # Paired-end data
-        if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT': # Read-pair aligned to CT-converted reference genome and therefore informative for the OT-strand
-            strand = 'OT'
-        elif read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' : # Read-pair aligned to GA-converted reference genome and therefore informative for the OB-strand
-            strand = 'OB'
-        else:
-            error_message = ''.join(['Read-pair is aligned to both the CT- and GA-converted reference genomes: ', read_1.qname]) 
-            sys.exit(error_message)
-    return strand
 
 ## reorganiseCpGPairs() re-orginises the CpG_pairs object so that it can be iterated in a chromosome- or chromosome/position1- or chromosome/position1/position2-manner
 ## reorganiseCpGPairs() dictionary structure:
