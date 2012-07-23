@@ -90,7 +90,7 @@ parser.add_argument('--pairChoice',
 parser.add_argument('--methylationType',
                     metavar = '<string>',
                     default="CpG",
-                    help='The type of methylation sites to study: CpG, CGG, CHH or CNN (default: CpG)')
+                    help='The type of methylation sites to study: CG, CHG, CHH or CNN (default: CG)')
 parser.add_argument('--phred64',
                     action='store_true',
                     help='Quality scores are encoded as Phred64 (default: Phred33)')
@@ -483,7 +483,6 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
     # Case A: > 1 methylation site in the read
     if n_methylation_sites > 1:
         if pair_choice == 'outermost':
-            pair_correctly_ordered = True
             methylation_leftmost = methylation_index[0]
             methylation_rightmost = methylation_index[-1]
             position_leftmost = read.pos + methylation_leftmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
@@ -492,11 +491,12 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
             if read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
                 position_leftmost -= ob_strand_offset
                 position_rightmost -= ob_strand_offset
+            # Skip readpair if methylation sites are incorrectly ordered and report a warning.
+            # Else add the pair of methylation sites to the methylation_pairs instance.
             if position_leftmost > position_rightmost:
-                warning_msg = ' '.join(["ERROR (Case A): Skipping single-end read",  read.qname,  "as position_leftmost > position_rightmost. Details: ", BAM.getrname(read.tid), str(position_leftmost), str(position_rightmost), read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]])
+                warning_msg = ' '.join(["Skipping single-end read",  read.qname,  "as position_leftmost > position_rightmost (Case A). Details: ", BAM.getrname(read.tid), str(position_leftmost), str(position_rightmost), read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]])
                 warnings.warn(warning_msg)
-                pair_correctly_ordered = False
-            if pair_correctly_ordered:
+            else:
                 # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
                 pair_id = ':'.join([BAM.getrname(read.tid), str(position_leftmost), str(position_rightmost)])
                 # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
@@ -506,7 +506,6 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
                 else:
                     methylation_pairs[pair_id].increment_count(''.join([read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]]), read, None)
         elif pair_choice == 'all':
-            pair_correctly_ordered = True
             for i in range(0, len(methylation_index)):
                 if i < len(methylation_index):
                     j = i + 1
@@ -519,284 +518,427 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
                         if read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
                             position_leftmost -= ob_strand_offset
                             position_rightmost -= ob_strand_offset
+                        # Skip readpair if methylation sites are incorrectly ordered and report a warning.
+                        # Else add the pair of methylation sites to the methylation_pairs instance.
                         if position_leftmost > position_rightmost:
                             warning_msg = ' '.join(["ERROR (Case A): Skipping single-end read",  read.qname,  "as position_leftmost > position_rightmost. Details: ", BAM.getrname(read.tid), str(position_leftmost), str(position_rightmost), read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]])
                             warnings.warn(warning_msg)
-                            pair_correctly_ordered = False
-                            if pair_correctly_ordered:
+                        else:
+                            # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
+                            pair_id = ':'.join([BAM.getrname(read.tid), str(position_leftmost), str(position_rightmost)])
+                            # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
+                            if not pair_id in methylation_pairs:
+                                methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read.tid), position_leftmost, position_rightmost, args.methylationType)
+                                methylation_pairs[pair_id].increment_count(''.join([read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]]), read, None)
+                            else:
+                                methylation_pairs[pair_id].increment_count(''.join([read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]]), read, None)
+    return methylation_pairs, n_methylation_sites
+
+def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_pairs, pair_choice):
+    """Extracts pairs of methylation sites from a readpair and adds the comethylation states to the methylation_pairs object.
+    
+    Args:
+        read_1: An AlignedRead instance corresponding to read_1 of the readpair.
+        read_2: An AlignedRead instance corresponding to read_2 of the readpair.
+        BAM: The Samfile instance corresponding to the sample. Required in order to extract chromosome names from read.
+        methylation_pairs: A dictionary storing all observed pairs of methylation events and their WithinFragmentComethylationPair instance. An exmaple of a pair of methylation sites is a CpG-pair. 
+        pair_choice: A string indicating how the pairs of methylation sites are to be constructed: "all" (all possible pairs) or "outermost" (the pair with the largest intra-pair distance). NB: "outermost" ensures each read is only used once in the within-fragment comethylation analysis.
+    Returns:
+        methylation_pairs: An updated version of methylation_pairs
+        n_methylation_sites: The number of methylation sites extracted from the read.
+    """
+    # Identify methylation events in read, e.g. CpGs or CHHs. The methylation_pattern is specified by a command line argument (e.g. Z/z corresponds to CpG)
+    methylation_index_1 = [m.start() for m in re.finditer(methylation_pattern, read_1.opt('XM'))]
+    # Ignore any start or end positions of read, as specified by command line arguments
+    if args.ignoreStart > 0:
+        methylation_index_1 = ignore_first_n_bases(read_1, methylation_index_1, args.ignoreStart)
+        methylation_index_2 = ignore_first_n_bases(read_2, methylation_index_2, args.ignoreStart)
+    if args.ignoreEnd > 0:
+        methylation_index_1 = ignore_last_n_bases(read_1, methylation_index_1, args.ignoreEnd)
+        methylation_index_2 = ignore_last_n_bases(read_2, methylation_index_2, args.ignoreEnd)
+    # Ignore any positions with a base quality less than the min_qual, as specified by command line arguments
+    methylation_index_1 = ignore_low_quality_bases(read_1, methylation_index_1, args.minQual, phred_offset)
+    methylation_index_2 = ignore_low_quality_bases(read_2, methylation_index_2, args.minQual, phred_offset)
+    # Check for overlapping reads from a readpair.
+    # If reads overlap check whether the overlapping sequence is identical
+    # If the overlapping sequence is not identical report a warning and skip the readpair.
+    n_overlap = read_1.alen + read_2.alen - abs(read_1.tlen)
+    if n_overlap > 0:
+        if is_overlapping_sequence_identical(read_1, read_2, n_overlap):
+            methylation_index_1, methylation_index_2 = ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap)
+        else:
+            warning_msg = ''.join(['Skipping readpair ', read.qname, ' as overlapping sequence is not identical'])
+            warnings.warn(warning_msg)
+            methylation_index_1 = []
+            methylation_index_2 = []
+    # Case 1: Readpair aligns to OT-strand
+    if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
+        # Case A: > 0 CpGs in both reads of the readpair.
+        if len(methylation_index_1) > 0 and len(methylation_index_2) > 0:
+            if pair_choice == 'outermost':
+                methylation_leftmost = methylation_index_1[0]
+                methylation_rightmost = methylation_index_2[-1]
+                position_leftmost = read_1.pos + methylation_leftmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
+                position_rightmost = read_2.pos + methylation_rightmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
+                # Skip readpair if methylation sites are incorrectly ordered and report a warning.
+                # Else add the pair of methylation sites to the methylation_pairs instance.
+                if position_leftmost > position_rightmost:
+                    warning_msg = ' '.join(["Skipping readpair",  read_1.qname,  "as position_leftmost > position_rightmost (Case 1A). Details: ", BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost), read_1.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]])
+                    warnings.warn(warning_msg)
+                else:
+                    # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
+                    pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
+                    # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
+                    if not pair_id in methylation_pairs:
+                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                        methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                    else:
+                        methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
+            elif pair_choice == 'all':
+                # First, create all pairs of methylation sites where each site is from read_1.
+                if len(methylation_index_1) > 1:
+                    for i in range(0, len(methylation_index_1)):
+                        if i < len(methylation_index_1):
+                            j = i + 1
+                            for k in range(j, len(methylation_index_1)):
+                                methylation_leftmost = methylation_index_1[i]
+                                methylation_rightmost = methylation_index_1[k]
+                                position_leftmost = read_1.pos + methylation_leftmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
+                                position_rightmost = read_1.pos + methylation_rightmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
+                                # Skip readpair if methylation sites are incorrectly ordered and report a warning.
+                                # Else add the pair of methylation sites to the methylation_pairs instance.
+                                if position_leftmost > position_rightmost:
+                                    warning_msg = ' '.join(["Skipping readpair",  read_1.qname,  "as position_leftmost > position_rightmost (Case 1A). Details: ", BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost), read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]])
+                                    warnings.warn(warning_msg)
+                                else:
+                                    # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
+                                    pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
+                                    # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
+                                    if not pair_id in methylation_pairs:
+                                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                        methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                                    else:
+                                        methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                # Second, create all pairs of methylation sites where the leftmost event is from read_1 and the rightmost event is from read_2.
+                for i in range(0, len(methylation_index_1)):
+                    for j in range(0, len(methylation_index_2)):
+                        methylation_leftmost = methylation_index_1[i]
+                        methylation_rightmost = methylation_index_2[j]
+                        position_leftmost = read_1.pos + methylation_leftmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
+                        position_rightmost = read_2.pos + methylation_rightmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
+                        # Skip readpair if methylation sites are incorrectly ordered and report a warning.
+                        # Else add the pair of methylation sites to the methylation_pairs instance.
+                        if position_leftmost > position_rightmost:
+                            warning_msg = ' '.join(["Skipping readpair",  read_1.qname,  "as position_leftmost > position_rightmost (Case 1A). Details: ", BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost), read_1.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]])
+                            warnings.warn(warning_msg)
+                        else:
+                            # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
+                            pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
+                            # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
+                            if not pair_id in methylation_pairs:
+                                methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                            else:
+                                methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                # Finally, create all pairs of methylation sites where both sites are from read_2
+                if len(methylation_index_2) > 1:
+                    for i in range(0, len(methylation_index_2)): 
+                        if i < len(methylation_index_2):
+                            j = i + 1
+                            for k in range(j, len(methylation_index_2)):
+                                methylation_leftmost = methylation_index_2[i]
+                                methylation_rightmost = methylation_index_2[k]
+                                positionL = read_2.pos + methylation_leftmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
+                                positionR = read_2.pos + methylation_rightmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
+                                # Skip readpair if methylation sites are incorrectly ordered and report a warning.
+                                # Else add the pair of methylation sites to the methylation_pairs instance.
+                                if position_leftmost > position_rightmost:
+                                    warning_msg = ' '.join(["Skipping readpair",  read_1.qname,  "as position_leftmost > position_rightmost (Case 1A). Details: ", BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost), read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]])
+                                    warnings.warn(warning_msg)
+                                else:
+                                    # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
+                                    pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
+                                    # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
+                                    if not pair_id in methylation_pairs:
+                                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                        methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                                    else:
+                                        methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
+        # CaseB: > 1 methylation site in read_1 but 0 methylation sites in read_2.
+        elif len(methylation_index_1) > 1 and len(methylation_index_2) == 0:
+            if pair_choice == 'outermost':
+                methylation_leftmost = methylation_index_1[0]
+                methylation_rightmost = methylation_index_1[-1]
+                position_leftmost = read_1.pos + methylation_leftmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
+                position_rightmost = read_1.pos + methylation_rightmost +1 # +1 to transform from 0-based to 1-based co-ordinates
+                # Skip readpair if methylation sites are incorrectly ordered and report a warning.
+                # Else add the pair of methylation sites to the methylation_pairs instance.
+                if position_leftmost > position_rightmost:
+                    warning_msg = ' '.join(["Skipping readpair",  read_1.qname,  "as position_leftmost > position_rightmost (Case 1B). Details: ", BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost), read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]])
+                    warnings.warn(warning_msg)
+                else:
+                    # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
+                    pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
+                    # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
+                    if not pair_id in methylation_pairs:
+                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                        methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                    else:
+                        methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
+            elif pair_choice == 'all':
+                for i in range(0, len(methylation_index_1)):
+                    if i < len(methylation_index_1):
+                        j = i + 1
+                        for k in range(j, len(methylation_index_1)):
+                            methylation_leftmost = methylation_index_1[i]
+                            methylation_rightmost = methylation_index_1[k]
+                            position_leftmost = read_1.pos + methylation_leftmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
+                            position_rightmost = read_1.pos + methylation_rightmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
+                            # Skip readpair if methylation sites are incorrectly ordered and report a warning.
+                            # Else add the pair of methylation sites to the methylation_pairs instance.
+                            if position_leftmost > position_rightmost:
+                                warning_msg = ' '.join(["Skipping readpair",  read_1.qname,  "as position_leftmost > position_rightmost (Case 1B). Details: ", BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost), read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]])
+                                warnings.warn(warning_msg)
+                            else:
                                 # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
-                                pair_id = ':'.join([BAM.getrname(read.tid), str(position_leftmost), str(position_rightmost)])
+                                pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
                                 # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                                 if not pair_id in methylation_pairs:
-                                    methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read.tid), position_leftmost, position_rightmost, args.methylationType)
-                                    methylation_pairs[pair_id].increment_count(''.join([read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]]), read, None)
+                                    methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                    methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
                                 else:
-                                    methylation_pairs[pair_id].increment_count(''.join([read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]]), read, None)
-    return methylation_pairs, n_methylation_sites
-    
-    
-## SAM2MS_PE extracts, summarises and returns the methylation string (MS) information for a read-pair mapped as paired-end data.
-def SAM2MS_PE(read_1, read_2):
-    chrom = BAM.getrname(read_1.tid)
-    start1 = read_1.pos + 1 # read_1.pos is 0-based in accordance with BAM file specificiations, regardless of whether the input file is SAM or BAM. I convert this to a 1-based position.
-    start2 = read_2.pos + 1 # read_2.pos is 0-based in accordance with BAM file specificiations, regardless of whether the input file is SAM or BAM. I convert this to a 1-based position.
-    strand = getStrand(read_1, read_2) # strand = OT or OB, the strand for which the read-pair is informative.
-    # Store the XM tag for each read. Tags are stored as a Python list of 2-tuples [("TAG_NAME", "TAG_VALUE"), ...]. This assumes there is one, and one only, XM tag per read
-    read_1XM = [tag[1] for tag in read_1.tags if tag[0] == 'XM'][0] 
-    read_2XM = [tag[1] for tag in read_2.tags if tag[0] == 'XM'][0]
-    # Identify CpGs in read_1 and read_2
-    CpG_index1 = [m.start() for m in re.finditer(CpG_pattern, read_1XM)]
-    CpG_index2 = [m.start() for m in re.finditer(CpG_pattern, read_2XM)]
-    # Orientation of read-pair
-    if not read_1.is_reverse and read_2.is_reverse:
-        orientation = '+/-'
-    elif read_1.is_reverse and not read_2.is_reverse:
-        orientation = '-/+'
-    else:
-        print 'ERROR: Unexpected orientation of read-pair', read_1.qname
-        output = []
-        return output
-    # Check for overlapping reads from a read-pair. If reads overlap, check that the overlapping sequenced is identical. If the overlapping sequence is identical, ignore the methylation calls in the overlapping region from the lower quality read. If the overlapping sequence is not identical, report a warning and skip the read-pair.
-    n_overlap = read_1.rlen + read_2.rlen - abs(read_1.tlen)
-    if n_overlap > 0 : # If True, then the reads overlap and we need to ignore any CpG-methylation calls in the overlap from one of the reads using removeOverlap()
-        identicalOverlap, overlap1, overlap2 = overlappingSeqIdentical(read_1.seq, read_2.seq, n_overlap, orientation)
-        if identicalOverlap:
-            #print 'Identical overlap. Overlap 1 =', overlap1, 'Overlap2 =', overlap2 
-            CpG_index1, CpG_index2 = removeOverlap(n_overlap, orientation, CpG_index1, CpG_index2, read_1.qual, read_2.qual) # Remove from consideration the methylation calls in the overlapping region from the lower quality read 
-        else:
-            #print 'WARNING: Skipping read-pair due to non-identical overlapping sequence', read_1.qname
-            #print 'Overlap1 =', overlap1, 'Overlap2 =', overlap2
-            output = []
-            return output
-    # Remove low quality CpG-methylation calls from consideration
-    CpG_index1 = removeLowQualMS(CpG_index1, read_1.qual, minQual, PhredOffset) 
-    CpG_index2 = removeLowQualMS(CpG_index2, read_2.qual, minQual, PhredOffset)
-    # Remove 'ignore3' and 'ignore5' CpG-methylation calls from consideration
-    if args.ignore3 > 0:
-        CpG_index1 = ignore3(args.ignore3, CpG_index1, read_1.rlen, orientation.rsplit('/')[0])
-        CpG_index2 = ignore3(args.ignore3, CpG_index2, read_2.rlen, orientation.rsplit('/')[1])
-    if args.ignore5 > 0:
-        CpG_index1 = ignore5(args.ignore5, CpG_index1, read_1.rlen, orientation.rsplit('/')[0])
-        CpG_index2 = ignore5(args.ignore5, CpG_index2, read_2.rlen, orientation.rsplit('/')[1])      
-    # Case1: Read-pair is informative for the OT strand
-    if strand == 'OT': # For the two-strand protocol, strand == 'OT' is the same as orientation == '+/-'
-        # CaseA: > 0 CpGs in both reads of read-pair    
-        if (len(CpG_index1) > 0 and len(CpG_index2) > 0):
-            if pairChoice == "outermost":
-                output = []
-                CpGL = CpG_index1[0] # Leftmost CpG in read_1
-                CpGR = CpG_index2[-1] # Rightmost CpG in read_2
-                positionL = start1 + CpGL
-                positionR = start2 + CpGR
-                output.append([chrom, positionL, positionR, read_1XM[CpGL], read_2XM[CpGR], strand]) # Output is left-to-right, thus read_1XM appears before read_2XM for OT read-pairs.
-                if positionL >= positionR:
-                    print "ERROR: Case1A posL >= posR for read-pair ", read_1.qname," with output ", [chrom, positionL, positionR, read_1XM[CpGL], read_2XM[CpGR], strand]
-                    output = []
-            elif pairChoice == 'all':
-                output = []
-                # First, create all CpG-pairs where CpGL is from read_1 and CpGR is from read_1
-                if len(CpG_index1) > 1:
-                    for i in range(0, len(CpG_index1)): 
-                        if i < len(CpG_index1):
-                            j = i + 1
-                            for k in range(j, len(CpG_index1)):
-                                CpGL = CpG_index1[i]
-                                CpGR = CpG_index1[k]
-                                positionL = start1 + CpGL
-                                positionR = start1 + CpGR
-                                output.append([chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand])
-                                if positionL >= positionR:
-                                    print "ERROR: Case1A posL >= posR for read-pair ", read_1.qname," with output ", [chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand]
-                                    output = []
-                # Next, create all CpG-pairs where CpGL is from read_1 and CpGR is from read_2
-                for i in range(0, len(CpG_index1)):
-                    for j in range(0, len(CpG_index2)):
-                        CpGL = CpG_index1[i]
-                        CpGR = CpG_index2[j]
-                        positionL = start1 + CpGL
-                        positionR = start2 + CpGR
-                        output.append([chrom, positionL, positionR, read_1XM[CpGL], read_2XM[CpGR], strand]) # Output is left-to-right, thus read_1XM appears before read_2XM for OT read-pairs.
-                        if positionL >= positionR:
-                            print "ERROR: Case1A posL >= posR for read-pair ", read_1.qname," with output ", [chrom, positionL, positionR, read_1XM[CpGL], read_2XM[CpGR], strand]
-                            output = []
-                # Finally, create all CpG-pairs where CpGL is from read_2 and CpGR is from read_2
-                if len(CpG_index2) > 1:
-                    for i in range(0, len(CpG_index2)): 
-                        if i < len(CpG_index2):
-                            j = i + 1
-                            for k in range(j, len(CpG_index2)):
-                                CpGL = CpG_index2[i]
-                                CpGR = CpG_index2[k]
-                                positionL = start2 + CpGL
-                                positionR = start2 + CpGR
-                                output.append([chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand])
-                                if positionL >= positionR:
-                                    print "ERROR: Case1A posL >= posR for read-pair ", read_1.qname," with output ", [chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand]
-                                    output = []
-        # CaseB: > 1 CpG in read_1 but 0 CpGs in read_2
-        elif (len(CpG_index1) > 1 and len(CpG_index2) == 0):
-            if pairChoice == "outermost":
-                output = []
-                CpGL = CpG_index1[0]
-                CpGR = CpG_index1[-1]
-                positionL = start1 + CpGL
-                positionR = start1 + CpGR
-                output.append([chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand])
-                if positionL >= positionR:
-                    print "ERROR: Case1B posL >= posR for read ", read_1.qname," with output ", [chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand]
-                    output = []
-            elif pairChoice == 'all':
-                output = []
-                for i in range(0, len(CpG_index1)): 
-                    if i < len(CpG_index1):
+                                    methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
+        # Case C: 0 methylation sites in read_1 but > 1 methylation site in read_2.
+        elif len(methylation_index_1) == 0 and len(methylation_index_2) > 1:
+            if pair_choice == 'outermost':
+                methylation_leftmost = methylation_index_2[0]
+                methylation_rightmost = methylation_index_2[-1]
+                position_leftmost = read_2.pos + methylation_leftmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
+                position_rightmost = read_2.pos + methylation_leftmost +1 # +1 to transform from 0-based to 1-based co-ordinates
+                # Skip readpair if methylation sites are incorrectly ordered and report a warning.
+                # Else add the pair of methylation sites to the methylation_pairs instance.
+                if position_leftmost > position_rightmost:
+                    warning_msg = ' '.join(["Skipping readpair",  read_1.qname,  "as position_leftmost > position_rightmost (Case 1C). Details: ", BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost), read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]])
+                    warnings.warn(warning_msg)
+                else:
+                    # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
+                    pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
+                    # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
+                    if not pair_id in methylation_pairs:
+                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                        methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                    else:
+                        methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
+            elif pair_choice == 'all':
+                for i in range(0, len(methylation_index_2)):
+                    if i < len(methylation_index_2):
                         j = i + 1
-                        for k in range(j, len(CpG_index1)):
-                            CpGL = CpG_index1[i]
-                            CpGR = CpG_index1[k]
-                            positionL = start1 + CpGL
-                            positionR = start1 + CpGR
-                            output.append([chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand])
-                            if positionL >= positionR:
-                                print "ERROR: Case1B posL >= posR for read ", read_1.qname," with output ", [chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand]
-                                output = []
-                
-        # CaseC: 0 CpGs in read_1 but > 1 CpG in read_2
-        elif (len(CpG_index1) == 0 and len(CpG_index2) > 1):
-            if pairChoice == "outermost":
-                output = []
-                CpGL = CpG_index2[0]
-                CpGR = CpG_index2[-1]
-                positionL = start2 + CpGL
-                positionR = start2 + CpGR
-                output.append([chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand])
-                if positionL >= positionR:
-                    print "ERROR: Case1C posL >= posR for read ", read_2.qname," with output ", [chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand]
-                    output = []
-            elif pairChoice == 'all':
-                output = []
-                for i in range(0, len(CpG_index2)): 
-                    if i < len(CpG_index2):
-                        j = i + 1
-                        for k in range(j, len(CpG_index2)):
-                            CpGL = CpG_index2[i]
-                            CpGR = CpG_index2[k]
-                            positionL = start2 + CpGL
-                            positionR = start2 + CpGR
-                            output.append([chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand])
-        # CaseD: < 2 CpGs in read-pair
-        elif (len(CpG_index1) + len(CpG_index2)) < 2:
-            output = []
-    # Case2: Read-pair is informative for the OB strand
-    elif strand == 'OB': # For the two-strand protocol, strand == 'OB' is the same as orientation == '-/+'
-        # CaseA:  > 0 CpGs in both reads of read-pair 
-        if (len(CpG_index1) > 0 and len(CpG_index2) > 0):
-            if pairChoice == "outermost":
-                output = []
-                CpGL = CpG_index2[0] # Leftmost CpG in read_2
-                CpGR = CpG_index1[-1] # Rightmost CpG in read_1
-                positionL = start2 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG 
-                positionR = start1 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                output.append([chrom, positionL, positionR, read_2XM[CpGL], read_1XM[CpGR], strand]) # Output is left-to-right, thus read_2XM appears before read_1XM for OB read-pairs.
-                if positionL >= positionR:
-                    print "ERROR: Case2A posL >= posR for read-pair ", read_1.qname," with output ",  [chrom, positionL, positionR, read_2XM[CpGL], read_1XM[CpGR], strand]
-                    output = []
-            elif pairChoice == 'all':
-                output = []
-                # First, create all CpG-pairs where CpGL is from read_1 and CpGR is from read_1
-                if len(CpG_index1) > 1:
-                    for i in range(0, len(CpG_index1)): 
-                        if i < len(CpG_index1):
+                        for k in range(j, len(methylation_index_2)):
+                            methylation_leftmost = methylation_index_2[i]
+                            methylation_rightmost = methylation_index_2[k]
+                            position_leftmost = read_2.pos + methylation_leftmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
+                            position_rightmost = read_2.pos + methylation_rightmost + 1 # +1 to transform from 0-based to 1-based co-ordinates
+                            # Skip readpair if methylation sites are incorrectly ordered and report a warning.
+                            # Else add the pair of methylation sites to the methylation_pairs instance.
+                            if position_leftmost > position_rightmost:
+                                warning_msg = ' '.join(["Skipping readpair",  read_1.qname,  "as position_leftmost > position_rightmost (Case 2C). Details: ", BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost), read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]])
+                                warnings.warn(warning_msg)
+                            else:
+                                # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
+                                pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
+                                # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
+                                if not pair_id in methylation_pairs:
+                                    methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                    methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                                else:
+                                    methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                                    
+    # Case 2: Readpair aligns to OB-strand
+    elif read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
+        # Case A: > 0 methylation site in both reads of the readpair.
+        if len(methylation_index_1) > 0 and len(methylation_index_2) > 0:
+            if pair_choice == 'outermost':
+                methylation_leftmost = methylation_index_2[0]
+                methylation_rightmost = methylation_index_1[-1]
+                position_leftmost = read_2.pos + methylation_leftmost + 1 - ob_strand_offset # +1 to transform from 0-based to 1-based co-ordinates, -ob_strand_offset to point to C on OT-strand for the methylation site.
+                position_rightmost = read_1.pos + methylation_rightmost + 1 - ob_strand_offset # +1 to transform from 0-based to 1-based co-ordinates, -ob_strand_offset to point to C on OT-strand for the methylation site.
+                # Skip readpair if methylation sites are incorrectly ordered and report a warning.
+                # Else add the pair of methylation sites to the methylation_pairs instance.
+                if position_leftmost > position_rightmost:
+                    warning_msg = ' '.join(["Skipping readpair",  read_1.qname,  "as position_leftmost > position_rightmost (Case 2A). Details: ", BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost), read_2.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]])
+                    warnings.warn(warning_msg)
+                else:
+                    # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
+                    pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
+                    # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
+                    if not pair_id in methylation_pairs:
+                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                        methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                    else:
+                        methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
+            elif pair_choice == 'all':
+                # First, create all pairs of methylation sites where each site is from read_1
+                if len(methylation_index_1) > 1:
+                    for i in range(0, len(methylation_index_1)):
+                        if i < len(methylation_index_1):
                             j = i + 1
-                            for k in range(j, len(CpG_index1)):
-                                CpGL = CpG_index1[i]
-                                CpGR = CpG_index1[k]
-                                positionL = start1 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
-                                positionR = start1 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                                output.append([chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand])
-                                if positionL >= positionR:
-                                    print "ERROR: Case2A posL >= posR for read-pair ", read_1.qname," with output ", [chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand]
-                                    output = []
-                # Next, create all CpG-pairs where CpGL is from read_2 and CpGR if from read_1 (recall that the orientation of OB reads is '-/+', hence read_2 appears to the left of read_1)
-                for i in range(0, len(CpG_index2)):
-                    for j in range(0, len(CpG_index1)):
-                        CpGL = CpG_index2[i]
-                        CpGR = CpG_index1[j]
-                        positionL = start2 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
-                        positionR = start1 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                        output.append([chrom, positionL, positionR, read_2XM[CpGL], read_1XM[CpGR], strand]) # Output is left-to-right, thus read_2XM appears before read_1XM for OB read-pairs.
-                        if positionL >= positionR:
-                            print "ERROR: Case2A posL >= posR for read-pair ", read_1.qname," with output ", [chrom, positionL, positionR, read_2XM[CpGL], read_1XM[CpGR], strand]
-                            output = []
-                # Finally, create all CpG-pairs where CpGL is from read_2 and CpGR is from read_2
-                if len(CpG_index2) > 1:
-                    for i in range(0, len(CpG_index2)): 
-                        if i < len(CpG_index2):
+                            for k in range(j, len(methylation_index_1)):
+                                methylation_leftmost = methylation_index_1[i]
+                                methylation_rightmost = methylation_index_1[k]
+                                position_leftmost = read_1.pos + methylation_leftmost + 1 - ob_strand_offset # +1 to transform from 0-based to 1-based co-ordinates, -ob_strand_offset to point to C on OT-strand for the methylation site.
+                                position_rightmost = read_1.pos + methylation_rightmost + 1 - ob_strand_offset # +1 to transform from 0-based to 1-based co-ordinates, -ob_strand_offset to point to C on OT-strand for the methylation site.
+                                # Skip readpair if methylation sites are incorrectly ordered and report a warning.
+                                # Else add the pair of methylation sites to the methylation_pairs instance.
+                                if position_leftmost > position_rightmost:
+                                    warning_msg = ' '.join(["Skipping readpair",  read_1.qname,  "as position_leftmost > position_rightmost (Case 2A). Details: ", BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost), read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]])
+                                    warnings.warn(warning_msg)
+                                else:
+                                    # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
+                                    pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
+                                    # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
+                                    if not pair_id in methylation_pairs:
+                                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                        methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                                    else:
+                                        methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                # Second, create all pairs of methylation sites where the leftmost event is from read_2 and the rightmost event is from read_1.
+                for i in range(0, len(methylation_index_2)):
+                    for j in range(0, len(methylation_index_1)):
+                        methylation_leftmost = methylation_index_2[i]
+                        methylation_rightmost = methylation_index_1[j]
+                        position_leftmost = read_2.pos + methylation_leftmost + 1 - ob_strand_offset # +1 to transform from 0-based to 1-based co-ordinates, -ob_strand_offset to point to C on OT-strand for the methylation site.
+                        position_rightmost = read_1.pos + methylation_rightmost + 1 - ob_strand_offset # +1 to transform from 0-based to 1-based co-ordinates, -ob_strand_offset to point to C on OT-strand for the methylation site.
+                        # Skip readpair if methylation sites are incorrectly ordered and report a warning.
+                        # Else add the pair of methylation sites to the methylation_pairs instance.
+                        if position_leftmost > position_rightmost:
+                            warning_msg = ' '.join(["Skipping readpair",  read_1.qname,  "as position_leftmost > position_rightmost (Case 2A). Details: ", BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost), read_2.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]])
+                            warnings.warn(warning_msg)
+                        else:
+                            # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
+                            pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
+                            # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
+                            if not pair_id in methylation_pairs:
+                                methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                            else:
+                                methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                 # Finally, create all pairs of methylation sites where both sites are from read_2
+                if len(methylation_index_2) > 1:
+                    for i in range(0, len(methylation_index_2)): 
+                        if i < len(methylation_index_2):
                             j = i + 1
-                            for k in range(j, len(CpG_index2)):
-                                CpGL = CpG_index2[i]
-                                CpGR = CpG_index2[k]
-                                positionL = start2 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
-                                positionR = start2 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                                output.append([chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand])
-                                if positionL >= positionR:
-                                    print "ERROR: Case2A posL >= posR for read-pair ", read_1.qname," with output ", [chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand]
-                                    output = []
-        # CaseB: > 1 CpG in read_1 but 0 CpGs in read_2
-        elif (len(CpG_index1) > 1 and len(CpG_index2) == 0):
-            if pairChoice == "outermost":
-                output = []
-                CpGL = CpG_index1[0] # Leftmost CpG in read_1
-                CpGR = CpG_index1[-1] # Rightmost CpG in read_1
-                positionL = start1 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG 
-                positionR = start1 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                output.append([chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand])
-                if positionL >= positionR:
-                    print "ERROR: Case2B posL >= posR for read ", read_1.qname," with output ", [chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand]
-                    output = []
-            elif pairChoice == 'all':
-                output = []
-                for i in range(0, len(CpG_index1)): 
-                    if i < len(CpG_index1):
+                            for k in range(j, len(methylation_index_2)):
+                                methylation_leftmost = methylation_index_2[i]
+                                methylation_rightmost = methylation_index_2[k]
+                                position_leftmost = read_2.pos + methylation_leftmost + 1 - ob_strand_offset # +1 to transform from 0-based to 1-based co-ordinates, -ob_strand_offset to point to C on OT-strand for the methylation site.
+                                position_rightmost = read_2.pos + methylation_rightmost + 1 - ob_strand_offset # +1 to transform from 0-based to 1-based co-ordinates, -ob_strand_offset to point to C on OT-strand for the methylation site.
+                                # Skip readpair if methylation sites are incorrectly ordered and report a warning.
+                                # Else add the pair of methylation sites to the methylation_pairs instance.
+                                if position_leftmost > position_rightmost:
+                                    warning_msg = ' '.join(["Skipping readpair",  read_1.qname,  "as position_leftmost > position_rightmost (Case 2A). Details: ", BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost), read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]])
+                                    warnings.warn(warning_msg)
+                                else:
+                                    # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
+                                    pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
+                                    # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
+                                    if not pair_id in methylation_pairs:
+                                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                        methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                                    else:
+                                        methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
+        # CaseB: > 1 methylation site in read_1 but 0 methylation sites in read_2.
+        elif len(methylation_index_1) > 1 and len(methylation_index_2) == 0:
+            if pair_choice == 'outermost':
+                methylation_leftmost = methylation_index_1[0]
+                methylation_rightmost = methylation_index_1[-1]
+                position_leftmost = read_1.pos + methylation_leftmost + 1 - ob_strand_offset # +1 to transform from 0-based to 1-based co-ordinates, -ob_strand_offset to point to C on OT-strand for the methylation site.
+                position_rightmost = read_1.pos + methylation_rightmost + 1 - ob_strand_offset # +1 to transform from 0-based to 1-based co-ordinates, -ob_strand_offset to point to C on OT-strand for the methylation site.
+                # Skip readpair if methylation sites are incorrectly ordered and report a warning.
+                # Else add the pair of methylation sites to the methylation_pairs instance.
+                if position_leftmost > position_rightmost:
+                    warning_msg = ' '.join(["Skipping readpair",  read_1.qname,  "as position_leftmost > position_rightmost (Case 2B). Details: ", BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost), read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]])
+                    warnings.warn(warning_msg)
+                else:
+                    # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
+                    pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
+                    # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
+                    if not pair_id in methylation_pairs:
+                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                        methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                    else:
+                        methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
+            elif pair_choice == 'all':
+                for i in range(0, len(methylation_index_1)):
+                    if i < len(methylation_index_1):
                         j = i + 1
-                        for k in range(j, len(CpG_index1)):
-                            CpGL = CpG_index1[i]
-                            CpGR = CpG_index1[k]
-                            positionL = start1 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
-                            positionR = start1 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                            output.append([chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand])
-                            if positionL >= positionR:
-                                print "ERROR: Case2B posL >= posR for read-pair ", read_1.qname," with output ", [chrom, positionL, positionR, read_1XM[CpGL], read_1XM[CpGR], strand]
-                                output = []
-        # CaseC: 0 CpGs in read_1 but > 1 CpG in read_2
-        elif (len(CpG_index1) == 0 and len(CpG_index2) > 1):
-            if pairChoice == "outermost":
-                output = []
-                CpGL = CpG_index2[0] # Leftmost CpG in read_2
-                CpGR = CpG_index2[-1] # Rightmost CpG in read_2
-                positionL = start2 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
-                positionR = start2 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                output.append([chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand])
-                if positionL >= positionR:
-                    print "ERROR: Case2C posL >= posR for read ", read_2.qname," with output ", [chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand]
-                    output = []
-            elif pairChoice == 'all':
-                output = []
-                for i in range(0, len(CpG_index2)): 
-                    if i < len(CpG_index2):
+                        for k in range(j, len(methylation_index_1)):
+                            methylation_leftmost = methylation_index_1[i]
+                            methylation_rightmost = methylation_index_1[k]
+                            position_leftmost = read_1.pos + methylation_leftmost + 1 - ob_strand_offset # +1 to transform from 0-based to 1-based co-ordinates, -ob_strand_offset to point to C on OT-strand for the methylation site.
+                            position_rightmost = read_1.pos + methylation_rightmost + 1 - ob_strand_offset # +1 to transform from 0-based to 1-based co-ordinates, -ob_strand_offset to point to C on OT-strand for the methylation site.
+                            # Skip readpair if methylation sites are incorrectly ordered and report a warning.
+                            # Else add the pair of methylation sites to the methylation_pairs instance.
+                            if position_leftmost > position_rightmost:
+                                warning_msg = ' '.join(["Skipping readpair",  read_1.qname,  "as position_leftmost > position_rightmost (Case 2B). Details: ", BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost), read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]])
+                                warnings.warn(warning_msg)
+                            else:
+                                # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
+                                pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
+                                # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
+                                if not pair_id in methylation_pairs:
+                                    methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                    methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                                else:
+                                    methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
+        # Case C: 0 methylation sites in read_1 but > 1 methylation site in read_2.
+        elif len(methylation_index_1) == 0 and len(methylation_index_2) > 1:
+            if pair_choice == 'outermost':
+                methylation_leftmost = methylation_index_2[0]
+                methylation_rightmost = methylation_index_2[-1]
+                position_leftmost = read_2.pos + methylation_leftmost + 1 - ob_strand_offset # +1 to transform from 0-based to 1-based co-ordinates, -ob_strand_offset to point to C on OT-strand for the methylation site.
+                position_rightmost = read_2.pos + methylation_rightmost + 1 - ob_strand_offset # +1 to transform from 0-based to 1-based co-ordinates, -ob_strand_offset to point to C on OT-strand for the methylation site.
+                # Skip readpair if methylation sites are incorrectly ordered and report a warning.
+                # Else add the pair of methylation sites to the methylation_pairs instance.
+                if position_leftmost > position_rightmost:
+                    warning_msg = ' '.join(["Skipping readpair",  read_1.qname,  "as position_leftmost > position_rightmost (Case 2C). Details: ", BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost), read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]])
+                    warnings.warn(warning_msg)
+                else:
+                    # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
+                    pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
+                    # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
+                    if not pair_id in methylation_pairs:
+                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                        methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                    else:
+                        methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
+            elif pair_choice == 'all':
+                for i in range(0, len(methylation_index_2)):
+                    if i < len(methylation_index_2):
                         j = i + 1
-                        for k in range(j, len(CpG_index2)):
-                            CpGL = CpG_index2[i]
-                            CpGR = CpG_index2[k]
-                            positionL = start2 + CpGL - 1 # -1 so as to point to C on the OT strand in the CpG
-                            positionR = start2 + CpGR - 1 # -1 so as to point to C on the OT strand in the CpG
-                            output.append([chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand])
-                            if positionL >= positionR:
-                                print "ERROR: Case2C posL >= posR for read-pair ", read_1.qname," with output ", [chrom, positionL, positionR, read_2XM[CpGL], read_2XM[CpGR], strand]
-                                output = []
-        # CaseD: < 2 CpGs in read-pair
-        elif (len(CpG_index1) + len(CpG_index2)) < 2:
-            output = []
-    return output
+                        for k in range(j, len(methylation_index_2)):
+                            methylation_leftmost = methylation_index_2[i]
+                            methylation_rightmost = methylation_index_2[k]
+                            position_leftmost = read_2.pos + methylation_leftmost + 1 - ob_strand_offset # +1 to transform from 0-based to 1-based co-ordinates, -ob_strand_offset to point to C on OT-strand for the methylation site.
+                            position_rightmost = read_2.pos + methylation_rightmost + 1 - ob_strand_offset # +1 to transform from 0-based to 1-based co-ordinates, -ob_strand_offset to point to C on OT-strand for the methylation site.
+                            # Skip readpair if methylation sites are incorrectly ordered and report a warning.
+                            # Else add the pair of methylation sites to the methylation_pairs instance.
+                            if position_leftmost > position_rightmost:
+                                warning_msg = ' '.join(["Skipping readpair",  read_1.qname,  "as position_leftmost > position_rightmost (Case 2C). Details: ", BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost), read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]])
+                                warnings.warn(warning_msg)
+                            else:
+                                # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
+                                pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
+                                # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
+                                if not pair_id in methylation_pairs:
+                                    methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                    methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
+                                else:
+                                    methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
+
+
+
+
+                                    
 
 ## reorganiseCpGPairs() re-orginises the CpG_pairs object so that it can be iterated in a chromosome- or chromosome/position1- or chromosome/position1/position2-manner
 ## reorganiseCpGPairs() dictionary structure:
