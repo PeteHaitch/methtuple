@@ -64,13 +64,13 @@ import warnings
 ############################################################################################################################################################################################
 parser = argparse.ArgumentParser(description='Extract within-fragment co-methylation measurements at CpGs from the aligned reads of a BS-Seq experiment. WARNING: Currently only works for the two-strand BS-seq protocol for reads without soft-clipping or indels and requires Bismark-style BAM files including XG-, XR- and XM-tags.')
 parser.add_argument('BAM', metavar = 'BAM',
-                    help='The path to the SAM/BAM file')
+                    help ='The path to the SAM/BAM file')
 parser.add_argument('sampleName',
                     metavar = 'sampleName',
-                    help='The name of the sample. All output files will have this prefix.')
+                    help = 'The name of the sample. All output files will have this prefix.')
 parser.add_argument('--ignoreDuplicates',
-                    action='store_true',
-                    help='Ignore reads that have been flagged as PCR duplicates by Picard\'s MarkDuplicates function')
+                    action = 'store_true',
+                    help ='Ignore reads that have been flagged as PCR duplicates by Picard\'s MarkDuplicates function')
 parser.add_argument('--ignoreStart', metavar = '<int>',
                     type = int,
                     default=0,
@@ -85,15 +85,18 @@ parser.add_argument('--minQual', metavar = '<int>',
                     help='Minimum base-quality (default: 0). Any base with a lower base-quality is ignored.')
 parser.add_argument('--pairChoice',
                     metavar = '<string>',
-                    default="outermost",
+                    default ="outermost",
                     help='Method for constructing CpG-pairs: outermost or all (default: outermost)')
 parser.add_argument('--methylationType',
                     metavar = '<string>',
-                    default="CpG",
-                    help='The type of methylation sites to study: CG, CHG, CHH or CNN (default: CG)')
+                    default ="CpG",
+                    help='The type of methylation sites to study: CG or CHH (default: CG)')
 parser.add_argument('--phred64',
-                    action='store_true',
+                    action = 'store_true',
                     help='Quality scores are encoded as Phred64 (default: Phred33)')
+parser.add_argument('--skipIdenticalOverlapCheck',
+                    action = 'store_true',
+                    help = 'Skip the check of whether the overlapping sequences from an overlapping readpair are identical.')
 parser.add_argument('--version',
                     action='version', version='%(prog)s 2.0')
 
@@ -141,7 +144,7 @@ def ignore_first_n_bases(read, methylation_index, n):
             warnings.warn(warning_msg)
             methylation_index = []
     # Paired-end reads: read_1
-    elif read.is_paired and read.is_read_1:
+    elif read.is_paired and read.is_read1:
         # read_1 aligned to OT-strand |------>
         if read.opt('XG') == 'CT' and read.opt('XR') == 'CT':
             for i in methylation_index:
@@ -157,7 +160,7 @@ def ignore_first_n_bases(read, methylation_index, n):
             warnings.warn(warning_msg)
             methylation_index = []
     # Paired-end reads: read_2
-    elif read.is_paired and read.is_read_2:
+    elif read.is_paired and read.is_read2:
         # read_2 aligned to OT-strand <------|
         if read.opt('XG') == 'CT' and read.opt('XR') == 'GA':
             for i in methylation_index:
@@ -212,7 +215,7 @@ def ignore_last_n_bases(read, methylation_index, n):
             warnings.warn(warning_msg)
             methylation_index = []
     # Paired-end reads: read_1
-    elif read.is_paired and read.is_read_1:
+    elif read.is_paired and read.is_read1:
         # read_1 aligned to OT-strand |------>
         if read.opt('XG') == 'CT' and read.opt('XR') == 'CT':
             for i in methylation_index:
@@ -228,7 +231,7 @@ def ignore_last_n_bases(read, methylation_index, n):
             warnings.warn(warning_msg)
             methylation_index = []
     # Paired-end reads: read_2
-    elif read.is_paired and read.is_read_2:
+    elif read.is_paired and read.is_read2:
         # read_2 aligned to OT-strand <------|
         if read.opt('XG') == 'CT' and read.opt('XR') == 'GA':
             for i in methylation_index:
@@ -278,8 +281,8 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap):
     """Check whether the overlapping sequence of read_1 and read_2 is identical.
 
     Args:
-        read_1: A pysam.AlignedRead instance with read.is_read_1 == true. Must be paired with read_2.
-        read_2: A pysam.AlignedRead instance with read.is_read_2 == true. Must be paired with read_1.
+        read_1: A pysam.AlignedRead instance with read.is_read1 == true. Must be paired with read_2.
+        read_2: A pysam.AlignedRead instance with read.is_read2 == true. Must be paired with read_1.
         n_overlap: The number of bases in the overlap of read_1 and read_2 (must be > 0)
 
     Returns:
@@ -305,8 +308,8 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
        If base qualities are identical then (arbitrarily) ignore the overlapping bases from read_2.
 
     Args:
-        read_1: A pysam.AlignedRead instance with read.is_read_1 == true. Must be paired with read_2.
-        read_2: A pysam.AlignedRead instance with read.is_read_2 == true. Must be paired with read_1.
+        read_1: A pysam.AlignedRead instance with read.is_read1 == true. Must be paired with read_2.
+        read_2: A pysam.AlignedRead instance with read.is_read2 == true. Must be paired with read_1.
         methylation_index_1: A list of zero-based indices.  Each index corresponds to the leftmost aligned position of a methylation site in read_1. For example:
 
         [0, 5]
@@ -354,19 +357,25 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
         methylation_index_2 = []
     return methylation_index_1, methylation_index_2
 
+def create_chromosome_index(chromosome_name):
+    chromosome_key = {'chr1': 1, 'chr2': 2, 'chr3': 3, 'chr4': 4, 'chr5': 5, 'chr6': 6, 'chr7': 7, 'chr8': 8, 'chr9': 9, 'chr10': 10, 'chr11': 11, 'chr12': 12, 'chr13': 13, 'chr14': 14, 'chr15': 15, 'chr16': 16, 'chr17': 17, 'chr18': 18, 'chr19': 19, 'chr20': 20, 'chr21': 21, 'chr22': 22, 'chrX': 23, 'chrY': 24, 'chrM': 25, 'chrL': 26}
+    return chromosome_key[chromosome_name]
+
 class WithinFragmentComethylationPair:
     """A WithinFragmentComethylationPair instance stores the within-fragment comethylation counts for a single pair of methylation sites, e.g. a CpG-pair.
     
     Attributes:
         chromosome: The chromosome containing the pair.
+        chromosome_index: An index to be used when sorting a set of WithinFragmentComethylationPair instances by chromosome name.
         position_1 = The 1-based position of the leftmost methylation site in the pair (with reference to the OT-strand). NB: position_1 < position_2 by definition.
         position_2 = The 1-based position of the rightmost methylation site in the pair (with reference to the OT-strand). NB: position_1 < position_2 by definition.
         counts: A dictionary storing the counts for each of the four comethylation states stratified by the strand (2 levels) or combined across strand (1 level), giving a total of twelve keys and associated values (counts).
     """
-    def __init__(self, chromosome, position_1, position_2, methylation_type):
+    def __init__(self, chromosome, chromosome_index, position_1, position_2, methylation_type):
         """Initiates WithinFragmentComethylationPair for a single pair of methylation events with co-ordinates given by arguments (chromosome, position_1, position_2) and sets all counts to zero."""
         self.methylation_type = methylation_type
         self.chromosome = chromosome
+        self.chromosome_index = chromosome_index
         self.position_1 = position_1
         self.position_2 = position_2
         self.counts = {'MM': 0, 'MU': 0, 'UM': 0, 'UU': 0, 'MM_OT': 0, 'MU_OT': 0, 'UM_OT': 0, 'UU_OT': 0, 'MM_OB': 0, 'MU_OB': 0, 'UM_OB': 0, 'UU_OB': 0}
@@ -375,6 +384,8 @@ class WithinFragmentComethylationPair:
         print ''.join(['Methylation type = ', self.methylation_type])
         print ''.join(['Position = ', self.chromosome, ':', str(self.position_1), '-', str(self.position_2)])
         print 'Counts =', self.counts
+    def pair_id(self):
+        print ''.join([self.chromosome, ':', str(self.position_1), '-', str(self.position_2)])
     def increment_count(self, comethylation_state, read_1, read_2):
         """Increment the counts attribute based on the comethylation_state that has been extracted from read_1 and read_2. NB: read_2 should be set to None if data is single-end."""
         # Single-end
@@ -477,7 +488,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
         methylation_index = ignore_first_n_bases(read, methylation_index, args.ignoreStart)
     if args.ignoreEnd > 0:
         methylation_index = ignore_last_n_bases(read, methylation_index, args.ignoreEnd)
-    # Ignore any positions with a base quality less than the min_qual, as specified by command line arguments
+    # Ignore any positions with a base quality less than the args.minQual, as specified by command line arguments
     methylation_index = ignore_low_quality_bases(read, methylation_index, args.minQual, phred_offset)
     n_methylation_sites = len(methylation_index)
     # Case A: > 1 methylation site in the read
@@ -501,7 +512,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
                 pair_id = ':'.join([BAM.getrname(read.tid), str(position_leftmost), str(position_rightmost)])
                 # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                 if not pair_id in methylation_pairs:
-                    methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read.tid), position_leftmost, position_rightmost, args.methylationType)
+                    methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read.tid), create_chromosome_index(BAM.getrname(read.tid)), position_leftmost, position_rightmost, args.methylationType)
                     methylation_pairs[pair_id].increment_count(''.join([read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]]), read, None)
                 else:
                     methylation_pairs[pair_id].increment_count(''.join([read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]]), read, None)
@@ -528,7 +539,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
                             pair_id = ':'.join([BAM.getrname(read.tid), str(position_leftmost), str(position_rightmost)])
                             # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                             if not pair_id in methylation_pairs:
-                                methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read.tid), position_leftmost, position_rightmost, args.methylationType)
+                                methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read.tid), create_chromosome_index(BAM.getrname(read.tid)), position_leftmost, position_rightmost, args.methylationType)
                                 methylation_pairs[pair_id].increment_count(''.join([read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]]), read, None)
                             else:
                                 methylation_pairs[pair_id].increment_count(''.join([read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]]), read, None)
@@ -556,7 +567,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
     if args.ignoreEnd > 0:
         methylation_index_1 = ignore_last_n_bases(read_1, methylation_index_1, args.ignoreEnd)
         methylation_index_2 = ignore_last_n_bases(read_2, methylation_index_2, args.ignoreEnd)
-    # Ignore any positions with a base quality less than the min_qual, as specified by command line arguments
+    # Ignore any positions with a base quality less than the args.minQual, as specified by command line arguments
     methylation_index_1 = ignore_low_quality_bases(read_1, methylation_index_1, args.minQual, phred_offset)
     methylation_index_2 = ignore_low_quality_bases(read_2, methylation_index_2, args.minQual, phred_offset)
     # Check for overlapping reads from a readpair.
@@ -564,7 +575,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
     # If the overlapping sequence is not identical report a warning and skip the readpair.
     n_overlap = read_1.alen + read_2.alen - abs(read_1.tlen)
     if n_overlap > 0:
-        if is_overlapping_sequence_identical(read_1, read_2, n_overlap):
+        if is_overlapping_sequence_identical(read_1, read_2, n_overlap) or args.skipIdenticalOverlapCheck:
             methylation_index_1, methylation_index_2 = ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap)
         else:
             warning_msg = ''.join(['Skipping readpair ', read.qname, ' as overlapping sequence is not identical'])
@@ -590,7 +601,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                     pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
                     # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                     if not pair_id in methylation_pairs:
-                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read.tid)), position_leftmost, position_rightmost, args.methylationType)
                         methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
                     else:
                         methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
@@ -615,7 +626,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                                     pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
                                     # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                                     if not pair_id in methylation_pairs:
-                                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read.tid)), position_leftmost, position_rightmost, args.methylationType)
                                         methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
                                     else:
                                         methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
@@ -636,7 +647,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                             pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
                             # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                             if not pair_id in methylation_pairs:
-                                methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read.tid)), position_leftmost, position_rightmost, args.methylationType)
                                 methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
                             else:
                                 methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
@@ -660,7 +671,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                                     pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
                                     # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                                     if not pair_id in methylation_pairs:
-                                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read.tid)), position_leftmost, position_rightmost, args.methylationType)
                                         methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
                                     else:
                                         methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
@@ -681,7 +692,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                     pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
                     # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                     if not pair_id in methylation_pairs:
-                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read.tid)), position_leftmost, position_rightmost, args.methylationType)
                         methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
                     else:
                         methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
@@ -704,7 +715,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                                 pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
                                 # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                                 if not pair_id in methylation_pairs:
-                                    methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                    methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read.tid)), position_leftmost, position_rightmost, args.methylationType)
                                     methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
                                 else:
                                     methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
@@ -725,7 +736,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                     pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
                     # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                     if not pair_id in methylation_pairs:
-                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read.tid)), position_leftmost, position_rightmost, args.methylationType)
                         methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
                     else:
                         methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
@@ -748,7 +759,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                                 pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
                                 # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                                 if not pair_id in methylation_pairs:
-                                    methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                    methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read.tid)), position_leftmost, position_rightmost, args.methylationType)
                                     methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
                                 else:
                                     methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
@@ -772,7 +783,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                     pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
                     # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                     if not pair_id in methylation_pairs:
-                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read.tid)), position_leftmost, position_rightmost, args.methylationType)
                         methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
                     else:
                         methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
@@ -797,7 +808,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                                     pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
                                     # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                                     if not pair_id in methylation_pairs:
-                                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read.tid)), position_leftmost, position_rightmost, args.methylationType)
                                         methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
                                     else:
                                         methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
@@ -818,7 +829,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                             pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
                             # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                             if not pair_id in methylation_pairs:
-                                methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read.tid)), position_leftmost, position_rightmost, args.methylationType)
                                 methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
                             else:
                                 methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
@@ -842,7 +853,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                                     pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
                                     # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                                     if not pair_id in methylation_pairs:
-                                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read.tid)), position_leftmost, position_rightmost, args.methylationType)
                                         methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
                                     else:
                                         methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
@@ -863,7 +874,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                     pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
                     # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                     if not pair_id in methylation_pairs:
-                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read.tid)), position_leftmost, position_rightmost, args.methylationType)
                         methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
                     else:
                         methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
@@ -886,7 +897,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                                 pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
                                 # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                                 if not pair_id in methylation_pairs:
-                                    methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                    methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read.tid)), position_leftmost, position_rightmost, args.methylationType)
                                     methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
                                 else:
                                     methylation_pairs[pair_id].increment_count(''.join([read_1.opt('XM')[methylation_leftmost], read_1.opt('XM')[methylation_rightmost]]), read_1, read_2)
@@ -907,7 +918,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                     pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
                     # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                     if not pair_id in methylation_pairs:
-                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                        methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read.tid)), position_leftmost, position_rightmost, args.methylationType)
                         methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
                     else:
                         methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
@@ -930,141 +941,141 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                                 pair_id = ':'.join([BAM.getrname(read_1.tid), str(position_leftmost), str(position_rightmost)])
                                 # Check whether pair has already been observed. If not, create a WithinFragmentMethylationPair instance for it and increment its count.
                                 if not pair_id in methylation_pairs:
-                                    methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), position_leftmost, position_rightmost, args.methylationType)
+                                    methylation_pairs[pair_id] = WithinFragmentComethylationPair(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read.tid)), position_leftmost, position_rightmost, args.methylationType)
                                     methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
                                 else:
                                     methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
 
+# tab_writer writes a tab-separated output file to the filehandle WF
+tab_writer = csv.writer(WF, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
 
-
-
-                                    
-
-## reorganiseCpGPairs() re-orginises the CpG_pairs object so that it can be iterated in a chromosome- or chromosome/position1- or chromosome/position1/position2-manner
-## reorganiseCpGPairs() dictionary structure:
-## reorganiseCpGPairs()             keys = (chr1, chr2, ..., chrX, chrY), values = chr_wf (the positions of the first CpG in the pair)
-##       chr_wf                     keys = (pos1._1, pos1._2, ..., pos1._m), values = pos2 (the position of the second CpG in the pair)
-##              pos2                keys = (pos12_1, pos12_2, pos21_2, pos31_2, ..., posm2_n), values = 
-##                   makeWFCount    keys = (M, M_OT, M_OB, U, ..., beta, beta_OT, beta_OB, gamma, gamma_OT, gamma_OB), values = 'count'
-def reorganiseCpGPairs(CpG_pairs):
-    CpG_pairs_reorganised = {}
-    for CpG_pair_ID in CpG_pairs.iterkeys():
-        chrom, pos1, pos2 = CpG_pair_ID.rsplit(':') # Split the CpG_ID into the chromosome and positions parts.
-        pos1 = int(pos1) # Convert pos1 from a string to an integer so that it can be sorted numerically
-        pos2 = int(pos2) # Convert pos2 from a string to an integer so that it can be sorted numerically
-        if chrom not in CpG_pairs_reorganised: # No CpG-pairs yet seen for this chromosome - create a dictionary for CpG-pairs on this chromosome
-            CpG_pairs_reorganised[chrom] = {}
-        if pos1 not in CpG_pairs_reorganised[chrom]: # No CpG-pairs yet seen starting at this position - create a dictionary for CpG-pairs starting at this position
-            CpG_pairs_reorganised[chrom][pos1] = {}
-        # Add the comethylation data for this CpG-pair on this chromosome, starting at pos1 and ending at pos2
-        CpG_pairs_reorganised[chrom][pos1][pos2] = CpG_pairs[CpG_pair_ID]
-    return CpG_pairs_reorganised
-        
-## WFWriter writes a tab-separated output file to the filehandle WF
-WFWriter = csv.writer(WF, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
-
-## writeWF() writes the CpG_pairs_reorganised object to disk as a tab-separated file.
-def writeWF(CpG_pairs_reorganised):
+def write_methylation_pairs_to_file(methylation_pairs):
+    """Write the methylation_pairs instance to a tab-separated file. The pairs are ordered by chromosome and genomic co-ordinates.
+    
+    Args:
+        methylation_pairs: A dictionary storing all observed pairs of methylation events and their WithinFragmentComethylationPair instance. An exmaple of a pair of methylation sites is a CpG-pair. 
+    """
     # Create the header row
     header = ['chr', 'pos1', 'pos2']
-    #example_row = CpG_pairs_reorganised[CpG_pairs_reorganised.keys()[0]][CpG_pairs_reorganised[CpG_pairs_reorganised.keys()[0]].keys()[0]][CpG_pairs_reorganised[CpG_pairs_reorganised.keys()[0]][CpG_pairs_reorganised[CpG_pairs_reorganised.keys()[0]].keys()[0]].keys()[0]]
-    example_row = makeWFCount()
+    example_row = WithinFragmentComethylationPair('chr1', 1, 1, 2, 'CG').counts
     for key in sorted(example_row.iterkeys()):
         header.append(key)
     # Write the header to file
-    WFWriter.writerow(header)
-    # Write each CpG-pair to file
-    for chromosome in sorted(CpG_pairs_reorganised.iterkeys()): # Loop over a single chromosome
-        print '\t', chromosome
-        for pos1 in sorted(CpG_pairs_reorganised[chromosome].iterkeys()): # Loop over all pos1 in that chromosome
-            for pos2 in sorted(CpG_pairs_reorganised[chromosome][pos1].iterkeys()): # Loop over all CpG-pairs that start at the current pos1
-                pair_counts = []
-                for count in sorted(CpG_pairs_reorganised[chromosome][pos1][pos2].iterkeys()):
-                    pair_counts.append(CpG_pairs_reorganised[chromosome][pos1][pos2][count])
-                row = [chromosome, pos1, pos2] + pair_counts
-                WFWriter.writerow(row)
-
+    tab_writer.writerow(header)
+    # Write each pair of methylation sites to file using a triple-nested for loop
+    # (1) Loop over chromosomes by increasing chromosome_index order
+    # (2) Loop over position_1 by increasing order
+    # (3) Loop over position_2 by increasing order
+    for pair in sorted(methylation_pairs.values(), key = attrgetter('chromosome_index', 'position_1', 'position_2')):
+        ordered_pair_counts = []
+        for i in sorted(pair.counts.iterkeys()):
+            ordered_pair_counts.append(pair.counts[i])
+        row = [pair.chromosome, pair.position_1, pair.position_2] + ordered_pair_counts
+        tab_writer.writerow(row)
     
 #############################################################################################################################################################################################
-
 ### Variable initialisations ###
 #############################################################################################################################################################################################
-CpG_pattern = re.compile(r"[Zz]")
-if (args.phred64):
-    PhredOffset = 64
+# Set the Phred quality score offset
+if args.phred64:
+    phred_offset = 64
 else:
-    PhredOffset = 33
-minQual = args.minQual
-pairChoice = args.pairChoice
-n_fragment = 0 # The number of DNA fragments. One single-end read and one paired-end read contribute a single DNA fragment.
-n_comethylation_fragment = 0 #  The number of DNA fragments with a co-methylation measurement. One single-end read and one paired-end read contribute a single DNA fragment.
-CpG_pairs = {} # Dictionary of CpG pair IDs with keys of form chr_pos1_pos2 and values corresponding to a makeWFCount object 
-#############################################################################################################################################################################################
+    phred_offset = 33
 
+# Check key --pairChoice variable is validly set
+if args.pairChoice != 'all' and args.pairChoice != 'outermost':
+    sys.exit('ERROR: --pairChoice must be one of \'all\' or \'outermost\'')
+
+# Set the methylation type to be used in the analysis
+if args.methylationType == 'CG':
+    methylation_pattern = re.compile(r'[Zz]')
+    ob_strand_offset = 1
+    MM = 'ZZ'
+    MU = 'Zz'
+    UM = 'zZ'
+    UU = 'zz'
+elif args.methylationType == 'CHG':
+    methylation_pattern = re.compile(r'[Xx]')
+    ob_strand_offset = 2
+    MM = 'XX'
+    MU = 'Xx'
+    UM = 'xX'
+    UU = 'xx'
+elif args.methylationType == 'CHH':
+    methylation_pattern = re.compile(r'[Hh]')
+    ob_strand_offset = 0
+    MM = 'HH'
+    MU = 'Hh'
+    UM = 'hH'
+    UU = 'hh'
+    sys.exit('Sorry, CHH-methylation is not yet implemented.')
+else:
+    sys.exit('--methylationType must be one of \'CG\' or \'CHG\'')
+    
+n_fragment = 0 # The number of DNA fragments. One single-end read and one paired-end read contribute a single DNA fragment.
+n_comethylation_fragment = 0 #  The number of DNA fragments with a co-methylation measurement. One single-end read contributes one to the count and each half of a readpair contributes half a count.
+max_n_methylation_sites = 50
+n_methylation_sites = [0] * max_n_methylation_sites
+methylation_pairs = {} # Dictionary of pairs of methylation sites with keys of form chromosome:position_1:position_2 and values corresponding to a WithinFragmentComethylationPair instance
+
+#############################################################################################################################################################################################
 ### The main program. Loops over the BAM file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or read-pair. ###
 #############################################################################################################################################################################################
-if pairChoice != 'all' and pairChoice != 'outermost':
-    sys.exit('ERROR: --pairchoice must be one of \'all\' or \'outermost\'')
-print 'Assuming quality scores are Phred', PhredOffset
-print 'Ignoring', args.ignore3, 'bp from 3\' end of each read'
-print 'Ignoring', args.ignore5, 'bp from 5\' end of each read'
-print 'Ignoring CpG-methylation calls with base-quality less than', minQual
-print 'Creating', pairChoice, 'CpG-pairs'
+
+# Print key variable names and command line parameter options to STDOUT
+print 'Input file =', BAM.filename
+print 'Output file =', WF.name
+if args.ignoreDuplicates:
+    print 'Ignoring reads marked as PCR duplicates'
+print 'Assuming quality scores are Phred', phred_offset
+print 'Ignoring', args.ignoreStart, 'bp from start of each read'
+print 'Ignoring', args.ignoreEnd, 'bp from end of each read'
+print 'Ignoring methylation calls with base-quality less than', args.minQual
+print 'Creating', args.pairChoice, 'pairs of methylation sites'
+print 'Analysing', args.methylationType, ' methylation events'
+if args.skipIdenticalOverlapCheck:
+    print 'Not checking overlapping readpairs for whether the overlapping sequence is identical'
+
+# Loop over the BAM
 for read in BAM:
-    fragment_MS = None # Reset the fragment_MS to None to erase values from previous reads/read-pairs
+    # Skip duplicates reads if command line parameter --ignoreDuplicates is set
     if args.ignoreDuplicates and read.is_duplicate:
         if not read.is_paired:
             n_fragment += 1
         else:
-            n_fragment += 0.5 # Want to count the number of FRAGMENTS not the number of reads.
+            n_fragment += 0.5 
         continue
     elif read.is_paired and not read.is_proper_pair:
-        print "WARNING: Skipping read ", read.qname, " as it is part of an improper pair."
-        n_fragment += 0.5 # Want to count the number of FRAGMENTS not the number of reads.
+        warning_msg = ''.join(['Skipping read ', read.qname, ' as it is part of an improper pair.'])
+        warnings.warn(warning_msg)
+        n_fragment += 0.5
         continue
     else:
-        if read.is_proper_pair and read.is_read_1:
+        if read.is_proper_pair and read.is_read1:
             read_1 = read
             continue
-        elif read.is_proper_pair and read.is_read_2: 
+        elif read.is_proper_pair and read.is_read2: 
             read_2 = read
             n_fragment += 1
-            # Check that read_1 and read_2 are aligned to the same chromosome and have identical read-names. If not, skip the read-pair.
+            # Check that read_1 and read_2 are aligned to the same chromosome and have identical read-names.
+            # If not, skip the read-pair.
             if read_1.tid == read_2.tid and read_1.qname == read_2.qname:
-                fragment_MS = SAM2MS_PE(read_1, read_2)
+                methylation_pairs, n_methylation_sites_in_fragment = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_pairs, args.pairChoice)
+                n_methylation_sites[n_methylation_sites_in_fragment] += 1                
             elif read_1.tid != read_2.tid:
-                print "ERROR: Reads in pair aligned to different chromosomes: ", read_1.qname, BAM.getrname(read_1.tid), read_2.qname, BAM.getrname(read_2.tid)
+                warning_msg = ''.join(['Skipping readpair', read_1.qname, ' as reads aligned to different chromosomes (', BAM.getrname(read_1.tid), ' and ', BAM.getrname(read_2.tid), ')'])
+                warnings.warn(warning_msg)
                 continue
             elif read_1.qname != read_2.qname:
-                print "ERROR: The name of read_1 is not identical to to that of read_2 for read-pair ", read_1.qname, read_2.qname, "\nHas your BAM file been sorted in query-name-order with Picard's SortSam function?"
-                continue
+                exit_msg = "ERROR: The name of read_1 is not identical to to that of read_2 for readpair ", read_1.qname, read_2.qname, "\nPlease sort your paired-end BAM file in query-name-order with Picard's SortSam function."
+                sys.exit(exit_msg)
         elif not read.is_paired:
-            n_fragment += 1  
-            fragment_MS = SAM2MS_SE(read)
+            n_fragment += 1
+            methylation_pairs, n_methylation_sites_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_pairs, args.pairChoice)
+            n_methylation_sites[n_methylation_sites_in_fragment] += 1
         else:
             print "Read is neither a single-end read nor part of a paired-end read. Check the SAM flag values are correctly set for read:", read.qname
             continue
-    #if fragment_MS is not None:
-    #    n_comethylation_fragment += 1
-    #    pair_ID = ':'.join([fragment_MS[0], str(fragment_MS[1]), str(fragment_MS[2])])
-    #    if not pair_ID in CpG_pairs: # CpG-pair not yet seen - create a dictionary key for it and increment its count (value)
-    #        CpG_pairs[pair_ID] = makeWFCount()
-    #        CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS, read.qname) 
-    #    else: # CpG-pair already seen - increment its count (value)
-    #        CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS, read.qname)
-    if len(fragment_MS) > 0: # Check whether there were any CpG-pairs identified in that DNA fragment by SAM2MS_SE() or SAM2MS_PE()
-        n_comethylation_fragment += 1
-        for i in range(0, len(fragment_MS)): # Loop over each CpG-pair in fragment_MS
-            pair_ID = ':'.join([fragment_MS[i][0], str(fragment_MS[i][1]), str(fragment_MS[i][2])]) # pair_ID is of form 'chrom:pos1:pos2'
-            if not pair_ID in CpG_pairs: # CpG-pair not yet seen - create a dictionary key for it and increment its count (value)
-                CpG_pairs[pair_ID] = makeWFCount()
-                CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS[i], read.qname) 
-            else: # CpG-pair already seen - increment its count (value)
-                CpG_pairs[pair_ID] = incrementWFCount(CpG_pairs[pair_ID], fragment_MS[i], read.qname)
-
-# Store CpG-pairs as a dictionary of dictionaries. The returned object is accessible by chromosome, then position.
-print 'Re-organising CpG-pairs in chromosomes-position order...'
-CpG_pairs_reorganised = reorganiseCpGPairs(CpG_pairs)
 
 # Write results to disk
 print 'Writing CpG-pairs to', WF.name, '...'
@@ -1075,4 +1086,8 @@ WF.close()
 
 print 'Number of DNA fragments in file:', n_fragment
 print 'Number of DNA fragments informative for comethylation:', n_comethylation_fragment, '(', round(n_comethylation_fragment / float(n_fragment) * 100, 1), '%)'
+print 'Histogram of number of', args.methylationType, 'methylation sites per DNA fragment'
+print 'n\tcount'
+for i in range(len(n_methylation_sites)):
+    '{i}, {j}'.format(i = i, j = n_methylation_sites[i])
 ##############################################################################################################################################################################################
