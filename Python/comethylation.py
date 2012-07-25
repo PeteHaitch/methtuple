@@ -6,6 +6,7 @@ import sys
 import csv
 import pysam
 import warnings
+from operator import itemgetter, attrgetter
 
 ## This program is Copyright (C) 2012, Peter Hickey (hickey@wehi.edu.au)
 
@@ -428,6 +429,8 @@ class WithinFragmentComethylationPair:
             else:
                 warning_msg = ''.join(['Skipping read ', read.qname, ' as XG-tags or XR-tags are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
                 warnings.warn(warning_msg)
+                print read_1
+                print read_2
         else:
             # Readpair aligns to OT-strand
             if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA' and read_1.is_paired and read_2.is_paired:
@@ -447,7 +450,7 @@ class WithinFragmentComethylationPair:
                     exit_msg = ''.join(['Error: Invalid methylation string (',  comethylation_state, ') for readpair:', read_1.qname])
                     sys.exit(exit_msg)
             # Readpair aligns to OB-strand
-            if read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA' and read_1.is_paired and read_2.is_paired:
+            elif read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA' and read_1.is_paired and read_2.is_paired:
                 if comethylation_state == MM:
                     self.counts['MM'] += 1
                     self.counts['MM_OB'] += 1
@@ -560,6 +563,8 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
     """
     # Identify methylation events in read, e.g. CpGs or CHHs. The methylation_pattern is specified by a command line argument (e.g. Z/z corresponds to CpG)
     methylation_index_1 = [m.start() for m in re.finditer(methylation_pattern, read_1.opt('XM'))]
+    methylation_index_2 = [m.start() for m in re.finditer(methylation_pattern, read_2.opt('XM'))]
+    n_methylation_sites = len(methylation_index_1) + len(methylation_index_2)
     # Ignore any start or end positions of read, as specified by command line arguments
     if args.ignoreStart > 0:
         methylation_index_1 = ignore_first_n_bases(read_1, methylation_index_1, args.ignoreStart)
@@ -945,6 +950,8 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                                     methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
                                 else:
                                     methylation_pairs[pair_id].increment_count(''.join([read_2.opt('XM')[methylation_leftmost], read_2.opt('XM')[methylation_rightmost]]), read_1, read_2)
+    return methylation_pairs, n_methylation_sites
+                                    
 
 # tab_writer writes a tab-separated output file to the filehandle WF
 tab_writer = csv.writer(WF, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
@@ -1012,8 +1019,7 @@ elif args.methylationType == 'CHH':
 else:
     sys.exit('--methylationType must be one of \'CG\' or \'CHG\'')
     
-n_fragment = 0 # The number of DNA fragments. One single-end read and one paired-end read contribute a single DNA fragment.
-n_comethylation_fragment = 0 #  The number of DNA fragments with a co-methylation measurement. One single-end read contributes one to the count and each half of a readpair contributes half a count.
+n_fragment = 0 # The number of DNA fragments. One single-end read contributes one to the count and each half of a readpair contributes half a count.
 max_n_methylation_sites = 50
 n_methylation_sites = [0] * max_n_methylation_sites
 methylation_pairs = {} # Dictionary of pairs of methylation sites with keys of form chromosome:position_1:position_2 and values corresponding to a WithinFragmentComethylationPair instance
@@ -1032,7 +1038,7 @@ print 'Ignoring', args.ignoreStart, 'bp from start of each read'
 print 'Ignoring', args.ignoreEnd, 'bp from end of each read'
 print 'Ignoring methylation calls with base-quality less than', args.minQual
 print 'Creating', args.pairChoice, 'pairs of methylation sites'
-print 'Analysing', args.methylationType, ' methylation events'
+print 'Analysing', args.methylationType, 'methylation events'
 if args.skipIdenticalOverlapCheck:
     print 'Not checking overlapping readpairs for whether the overlapping sequence is identical'
 
@@ -1079,13 +1085,12 @@ for read in BAM:
 
 # Write results to disk
 print 'Writing CpG-pairs to', WF.name, '...'
-writeWF(CpG_pairs_reorganised)
-
+write_methylation_pairs_to_file(methylation_pairs)
 BAM.close()
 WF.close()
 
 print 'Number of DNA fragments in file:', n_fragment
-print 'Number of DNA fragments informative for comethylation:', n_comethylation_fragment, '(', round(n_comethylation_fragment / float(n_fragment) * 100, 1), '%)'
+print 'Number of DNA fragments informative for within-fragment comethylation', sum(n_methylation_sites[2:]), '(', round(sum(n_methylation_sites[2:]) / float(n_fragment) * 100, 1), '%)'
 print 'Histogram of number of', args.methylationType, 'methylation sites per DNA fragment'
 print 'n\tcount'
 for i in range(len(n_methylation_sites)):
