@@ -507,8 +507,8 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
                 position_rightmost -= ob_strand_offset
             # Skip readpair if methylation sites are incorrectly ordered and report a warning.
             # Else add the pair of methylation sites to the methylation_pairs instance.
-                if position_leftmost >= position_rightmost:
-                    warning_msg = ' '.join(["Skipping single-end read", read.qname,  "as position_leftmost >= position_rightmost (Case A). Details: ", BAM.getrname(read.tid), str(position_leftmost), str(position_rightmost), read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]])
+            if position_leftmost >= position_rightmost:
+                warning_msg = ' '.join(["Skipping single-end read", read.qname,  "as position_leftmost >= position_rightmost (Case A). Details: ", BAM.getrname(read.tid), str(position_leftmost), str(position_rightmost), read.opt('XM')[methylation_leftmost], read.opt('XM')[methylation_rightmost]])
                 warnings.warn(warning_msg)
             else:
                 # Create a unique ID for each pair of methylation sites (of form "chromosome:position_leftmost:position_rightmost")
