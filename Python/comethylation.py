@@ -97,7 +97,7 @@ parser.add_argument('--phred64',
                     help='Quality scores are encoded as Phred64 (default: Phred33)')
 parser.add_argument('--skipIdenticalOverlapCheck',
                     action = 'store_true',
-                    help = 'Skip the check of whether the overlapping sequences from an overlapping readpair are identical.')
+                    help = 'WARNING: This option is not recommended and will likely give erroneous results. Skip the check of whether the overlapping sequences from an overlapping readpair are identical.')
 parser.add_argument('--version',
                     action='version', version='%(prog)s 2.0')
 
@@ -1089,7 +1089,7 @@ write_methylation_pairs_to_file(methylation_pairs)
 BAM.close()
 WF.close()
 
-print 'Number of DNA fragments in file:', n_fragment
+print 'Number of DNA fragments in file:', int(n_fragment)
 print 'Number of DNA fragments informative for within-fragment comethylation', sum(n_methylation_sites[2:]), '(', round(sum(n_methylation_sites[2:]) / float(n_fragment) * 100, 1), '%)'
 print 'Histogram of number of', args.methylationType, 'methylation sites per DNA fragment'
 print 'n\tcount'
