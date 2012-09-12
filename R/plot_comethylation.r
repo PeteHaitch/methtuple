@@ -30,6 +30,7 @@ library(ggplot2)
 library(doMC)
 library(BSgenome)
 library('BSgenome.Hsapiens.UCSC.hg18')
+library(rtracklayer)
 
 #### Register the doMC backend ####
 registerDoMC(cores = n.cores)
@@ -289,5 +290,16 @@ spectrum(z, span = c(3, 3))
 spectrum(z, span = c(3, 5))
 dev.off()
 
-#### FINISHED ####
 save.image(str_c(sample.name, '_comethylation.RData'))
+
+# Look at comethylation only at CpG-pairs without an intervening CpG
+cpgs <- import('~/CpGs_hg18.bed.gz', asRangedData = FALSE)
+n.cpgs <- countOverlaps(WF.gr, cpgs)
+WF.neighbours.only.gr <- WF.gr[n.cpgs==2, ]
+
+tmp.gr <- WF.neighbours.only.gr
+tmp.lor <- lor(x = tmp.gr, aggregateByLag = TRUE)
+plotAggregatedLorByLag(tmp.lor, title = paste0(sample.name, ' Within-fragment comethylation\n at neighbouring CpGs'), error.bars = FALSE)
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_genome_wide.pdf'))
+plotAggregatedLorByLag(tmp.lor, title = paste0(sample.name, ' Within-fragment comethylation\n at neighbouring CpGs'), error.bars = TRUE)
+ggsave(str_c('plots/', sample.name, '_aggregated_by_lag_lor_genome_wide_se.pdf'))
