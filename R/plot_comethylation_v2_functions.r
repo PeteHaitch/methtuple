@@ -84,7 +84,6 @@ lor <- function(x, correct = TRUE){
 #' @param x is a "WF" object storing CpG-pairs
 #' @param ipd is TRUE or FALSE. Should log odds ratios be aggregated by intra-pair distance?
 #' @param nic is TRUE or FALSE. Should log ods ratios be aggregated by the number of intervening CpGs (NIC) in the CpG-pair?
-#' @param cpgs is a GRanges instance of all CpGs in the reference/sample. Must be defined if nic = TRUE.
 #' @param correct is TRUE or FALSE. Should a continuity correction be performed for computation of log odds ratios?
 #' 
 #' @return a data.frame containing aggregated log odds ratio (and asymptotic standard errors) for each strata.
@@ -92,7 +91,7 @@ lor <- function(x, correct = TRUE){
 #' @export
 #' @examples
 #' NULL
-aggregatedLor <- function(x, ipd = TRUE, nic = FALSE, cpgs, correct = FALSE){
+aggregatedLor <- function(x, ipd = TRUE, nic = FALSE, correct = FALSE){
   if(ipd){
     ipd.values <- width(x) - 1 # -1 to make neighbouring CpGs (CGCG) have IPD = 2
   } else{
@@ -103,7 +102,7 @@ aggregatedLor <- function(x, ipd = TRUE, nic = FALSE, cpgs, correct = FALSE){
   } else{
     nic.values <- rep(-1, length(x))
   }
-  y <- values(x)
+  y <- elementMetadata(x)
   aggregated <- aggregate.data.frame(x = data.frame(MM = y$MM, MU = y$MU, UM = y$UM, UU = y$UU), by = list(IPD = ipd.values, NIC = nic.values), FUN = sum)
   
   # Replace -1 flags with NAs
@@ -116,18 +115,21 @@ aggregatedLor <- function(x, ipd = TRUE, nic = FALSE, cpgs, correct = FALSE){
 }
   
 # Quantile plot of LORs as a function of a intra-pair separation from the WF.gr instance
-#' Plot a quantile plot of individual CpG-pair log odds ratios as a function of IPD
+#' Plot a quantile plot of individual CpG-pair log odds ratios as a function of IPD. WARNING: Currently uses fixed y-limits = [-4, 6]
 #'
 #' @param cpg.pairs is a GRanges instance of CpG-pairs and their associated log odds ratios
 #' @param sample.name is a string of the sample's name
 #' @param min.cov is the miniumum coverage required for a CpG-pair to be included in the plot
+#' @param zero.nic is TRUE if the cpg.pairs contains only CpG-pairs with zero intervening CpGs (NIC)
+#' @param pair.choice is either 'all' or 'outermost' depending on how the CpG-pairs were constructed
+#' @param genomic.feature is a string describing what, if any, the CpG-pairs have been stratified by.
 #' 
 #' @return NULL
 #' @keywords WF, lor
 #' @export
 #' @examples
 #' NULL
-lorQuantilePlot <- function(cpg.pairs, sample.name, min.cov){
+lorQuantilePlot <- function(cpg.pairs, sample.name, min.cov, zero.nic, pair.choice, genomic.feature = NA, ...){
   cpg.pairs <- cpg.pairs[values(cpg.pairs)$cov >= min.cov, ]
   # A nasty kludge here to ensure q has the correct colnames. The tmp object is some bastard-hybrid of a 2 column data.frame, where the second column (x) is a named vector.
   tmp <- aggregate.data.frame(x = values(cpg.pairs)$lor, by = list(IPD = width(cpg.pairs) - 1), FUN = function(x){quantile(x, c(0.1, 0.25, 0.5, 0.75, 0.9), na.rm = TRUE, names = FALSE)})
@@ -139,7 +141,15 @@ lorQuantilePlot <- function(cpg.pairs, sample.name, min.cov){
   q.long <- melt(q, id.vars = 'IPD', variable.name = 'Quantile', value.name = 'lor')
   
   # Plot
-  qplot(x = IPD, y = lor, lty = Quantile, data = q.long, geom = "line", main = paste0(sample.name, ': WF-comethylation (n = ', length(cpg.pairs), ')'), ylab = "Log odds ratio", xlab = "Distance between CpGs (bp)") + scale_linetype_manual(name="Quantile",  values=c('Q10' = 3, 'Q25' = 2, 'Q50' = 1, 'Q75' = 2, 'Q90' = 3)) + presentation.theme
+  if(zero.nic){
+    my.title <- paste0(sample.name, ': WF-comethylation (n = ', length(cpg.pairs), ')\nmin.cov = ', min.cov, ', pair.choice = ', pair.choice, ', NIC = 0')
+  } else{
+    my.title <- paste0(sample.name, ': WF-comethylation (n = ', length(cpg.pairs), ')\nmin.cov = ', min.cov, ', pair.choice = ', pair.choice)
+  }
+  if(!is.na(genomic.feature)){
+    my.title <- paste0(my.title, ', ', genomic.feature)
+  }
+  qplot(x = IPD, y = lor, lty = Quantile, data = q.long, geom = "line", size = I(1.2), main = my.title, ylab = "Log odds ratio", xlab = "Distance between CpGs (bp)", ...) + scale_linetype_manual(name="Quantile",  values=c('Q10' = 3, 'Q25' = 2, 'Q50' = 1, 'Q75' = 2, 'Q90' = 3)) + presentation.theme # size = I(1.2) and not size = 1.2, otherwise size = 1.5 appears in the legend (http://stackoverflow.com/questions/3375984/how-to-adjust-line-size-in-geom-line-without-obtaining-another-useless-legend)
 }
 
 #' Density plot of all log odds ratios at a given IPD (can be multiple IPDs).
@@ -163,6 +173,27 @@ lorDensityPlot <- function(cpg.pairs, sample.name, min.cov, ipd, pair.type){
   tmp <- data.frame(lor = values(cpg.pairs)$lor, IPD = (width(cpg.pairs) - 1))
   m <- ggplot(tmp, aes(x = lor, colour = factor(IPD)))
   m + geom_density(size = 2) + ggtitle(substitute(paste(sample.name, ' (pair-type = ', pair.type, '): min.cov = ', min.cov, sep = ''), list(sample.name = sample.name, pair.type = pair.type, min.cov = min.cov))) + scale_colour_discrete(name = 'IPD') + presentation.theme
+}
+
+#' Plot aggregated log odds ratios
+#' 
+#' @param lor.df is a data.frame of aggregated log odds ratios, as produced by aggregatedLor()
+#' 
+#' @return NULL
+#' @keywords WF, lor, plot
+#' @export
+#' @examples
+#' NULL
+aggregateLorPlot <- function(lor.df, sample.name, zero.nic, pair.choice, genomic.feature = NA, ...){
+  if(zero.nic){
+    my.title <- paste0(sample.name, ': aggregated within-fragment comethylation\npair.choice = ', pair.choice, ', NIC = 0')
+  } else{
+    my.title <- my.title <- paste0(sample.name, ': aggregated within-fragment comethylation\npair.choice = ', pair.choice)
+  } 
+  if(!is.na(genomic.feature)){
+    my.title <- paste0(my.title, ', ', genomic.feature)
+  }
+  qplot(x = IPD, y = lor, data = lor.df, size = I(1.2), main = my.title, ylab = "Log odds ratio", xlab = "Distance between CpGs (bp)", ...) + presentation.theme
 }
 
   
