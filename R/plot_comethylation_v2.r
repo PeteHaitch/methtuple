@@ -133,3 +133,5 @@ ggsave(filename = paste0(sample.name, '.wf_aggregated_lor_plot.outermost_pairs.z
 rm(tmp)
 
 #### Finished ####
+setwd('../')
+save.image(paste0(sample.name, '_comethylation.RData'))
