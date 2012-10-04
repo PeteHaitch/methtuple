@@ -132,6 +132,119 @@ tmp <- aggregateLorPlot(outermost.zero.nic.outside.cgi.lor, sample.name, zero.ni
 ggsave(filename = paste0(sample.name, '.wf_aggregated_lor_plot.outermost_pairs.zero_NIC.CpG-pairs_outside_a_CGI.pdf'), width = 16.9, height = 10.5, plot = tmp)
 rm(tmp)
 
+#### Create data.frame to be used in plots of aggregate log odds ratios stratified by CGI status and average methylation in a 500bp window ####
+# Using complete.wf.all.gr
+# Add CGI variable with 3 levels (In, Partially.in, Out) to each CpG-pair
+fully.in <- countOverlaps(complete.wf.all.gr, CGI, type = 'within')
+fully.out <- countOverlaps(complete.wf.all.gr, gaps(CGI), type = 'within')
+partially.in <- as.numeric(fully.in == 0 & fully.out == 0)
+elementMetadata(complete.wf.all.gr)$CGI <- ifelse(fully.in, 'In', ifelse(fully.out, 'Out', 'Partially.in'))
+# Discretise gamma.500 by tertiles
+gamma.500.tertiles <- quantile(elementMetadata(complete.wf.all.gr)$gamma.500, c(1/3, 2/3))
+elementMetadata(complete.wf.all.gr)$gamma.500.level <- ifelse(elementMetadata(complete.wf.all.gr)$gamma.500 < gamma.500.tertiles[1], 'Low', ifelse(elementMetadata(complete.wf.all.gr)$gamma.500 >= gamma.500.tertiles[2], 'High', 'Intermediate'))
+# Compute aggregate log odds ratios for each strata
+lor1 <- aggregatedLor(subset(complete.wf.all.gr, elementMetadata(complete.wf.all.gr)$CGI == 'In' & elementMetadata(complete.wf.all.gr)$gamma.500.level == 'Low'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor2 <- aggregatedLor(subset(complete.wf.all.gr, elementMetadata(complete.wf.all.gr)$CGI == 'In' & elementMetadata(complete.wf.all.gr)$gamma.500.level == 'Intermediate'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor3 <- aggregatedLor(subset(complete.wf.all.gr, elementMetadata(complete.wf.all.gr)$CGI == 'In' & elementMetadata(complete.wf.all.gr)$gamma.500.level == 'High'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor4 <- aggregatedLor(subset(complete.wf.all.gr, elementMetadata(complete.wf.all.gr)$CGI == 'Partially.in' & elementMetadata(complete.wf.all.gr)$gamma.500.level == 'Low'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor5 <- aggregatedLor(subset(complete.wf.all.gr, elementMetadata(complete.wf.all.gr)$CGI == 'Partially.in' & elementMetadata(complete.wf.all.gr)$gamma.500.level == 'Intermediate'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor6 <- aggregatedLor(subset(complete.wf.all.gr, elementMetadata(complete.wf.all.gr)$CGI == 'Partially.in' & elementMetadata(complete.wf.all.gr)$gamma.500.level == 'High'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor7 <- aggregatedLor(subset(complete.wf.all.gr, elementMetadata(complete.wf.all.gr)$CGI == 'Out' & elementMetadata(complete.wf.all.gr)$gamma.500.level == 'Low'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor8 <- aggregatedLor(subset(complete.wf.all.gr, elementMetadata(complete.wf.all.gr)$CGI == 'Out' & elementMetadata(complete.wf.all.gr)$gamma.500.level == 'Intermediate'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor9 <- aggregatedLor(subset(complete.wf.all.gr, elementMetadata(complete.wf.all.gr)$CGI == 'Out' & elementMetadata(complete.wf.all.gr)$gamma.500.level == 'High'), ipd = TRUE, nic = FALSE, correct = FALSE)
+
+# Create data.frame of results
+complete.wf.all.lor.df <- rbind(lor1, lor2, lor3, lor4, lor5, lor6, lor7, lor8, lor9)
+complete.wf.all.lor.df$CGI <- c(rep('Within CGI', nrow(lor1) + nrow(lor2) + nrow(lor3)), rep('Partially in CGI', nrow(lor4) + nrow(lor5) + nrow(lor6)), rep('Outside CGI', nrow(lor7) + nrow(lor8) + nrow(lor9)))
+complete.wf.all.lor.df$gamma.500.level <- c(rep('Lowly methylated regions', nrow(lor1)), rep('Intermediately methylated regions', nrow(lor2)), rep('Highly methylated regions', nrow(lor3)), rep('Lowly methylated regions', nrow(lor4)), rep('Intermediately methylated regions', nrow(lor5)), rep('Highly methylated regions', nrow(lor6)), rep('Lowly methylated regions', nrow(lor7)), rep('Intermediately methylated regions', nrow(lor8)), rep('Highly methylated regions', nrow(lor9)))
+
+# Using complete.wf.outermost.gr #
+# Add CGI variable with 3 levels (In, Partioutermosty.in, Out) to each CpG-pair
+fully.in <- countOverlaps(complete.wf.outermost.gr, CGI, type = 'within')
+fully.out <- countOverlaps(complete.wf.outermost.gr, gaps(CGI), type = 'within')
+partioutermosty.in <- as.numeric(fully.in == 0 & fully.out == 0)
+elementMetadata(complete.wf.outermost.gr)$CGI <- ifelse(fully.in, 'In', ifelse(fully.out, 'Out', 'Partioutermosty.in'))
+# Discretise gamma.500 by tertiles
+gamma.500.tertiles <- quantile(elementMetadata(complete.wf.outermost.gr)$gamma.500, c(1/3, 2/3))
+elementMetadata(complete.wf.outermost.gr)$gamma.500.level <- ifelse(elementMetadata(complete.wf.outermost.gr)$gamma.500 < gamma.500.tertiles[1], 'Low', ifelse(elementMetadata(complete.wf.outermost.gr)$gamma.500 >= gamma.500.tertiles[2], 'High', 'Intermediate'))
+# Compute aggregate log odds ratios for each strata
+lor1 <- aggregatedLor(subset(complete.wf.outermost.gr, elementMetadata(complete.wf.outermost.gr)$CGI == 'In' & elementMetadata(complete.wf.outermost.gr)$gamma.500.level == 'Low'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor2 <- aggregatedLor(subset(complete.wf.outermost.gr, elementMetadata(complete.wf.outermost.gr)$CGI == 'In' & elementMetadata(complete.wf.outermost.gr)$gamma.500.level == 'Intermediate'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor3 <- aggregatedLor(subset(complete.wf.outermost.gr, elementMetadata(complete.wf.outermost.gr)$CGI == 'In' & elementMetadata(complete.wf.outermost.gr)$gamma.500.level == 'High'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor4 <- aggregatedLor(subset(complete.wf.outermost.gr, elementMetadata(complete.wf.outermost.gr)$CGI == 'Partioutermosty.in' & elementMetadata(complete.wf.outermost.gr)$gamma.500.level == 'Low'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor5 <- aggregatedLor(subset(complete.wf.outermost.gr, elementMetadata(complete.wf.outermost.gr)$CGI == 'Partioutermosty.in' & elementMetadata(complete.wf.outermost.gr)$gamma.500.level == 'Intermediate'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor6 <- aggregatedLor(subset(complete.wf.outermost.gr, elementMetadata(complete.wf.outermost.gr)$CGI == 'Partioutermosty.in' & elementMetadata(complete.wf.outermost.gr)$gamma.500.level == 'High'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor7 <- aggregatedLor(subset(complete.wf.outermost.gr, elementMetadata(complete.wf.outermost.gr)$CGI == 'Out' & elementMetadata(complete.wf.outermost.gr)$gamma.500.level == 'Low'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor8 <- aggregatedLor(subset(complete.wf.outermost.gr, elementMetadata(complete.wf.outermost.gr)$CGI == 'Out' & elementMetadata(complete.wf.outermost.gr)$gamma.500.level == 'Intermediate'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor9 <- aggregatedLor(subset(complete.wf.outermost.gr, elementMetadata(complete.wf.outermost.gr)$CGI == 'Out' & elementMetadata(complete.wf.outermost.gr)$gamma.500.level == 'High'), ipd = TRUE, nic = FALSE, correct = FALSE)
+
+# Using complete.wf.zero.nic.all.gr #
+# Add CGI variable with 3 levels (In, Partioutermosty.in, Out) to each CpG-pair
+fully.in <- countOverlaps(complete.wf.zero.nic.all.gr, CGI, type = 'within')
+fully.out <- countOverlaps(complete.wf.zero.nic.all.gr, gaps(CGI), type = 'within')
+partizero.nic.ally.in <- as.numeric(fully.in == 0 & fully.out == 0)
+elementMetadata(complete.wf.zero.nic.all.gr)$CGI <- ifelse(fully.in, 'In', ifelse(fully.out, 'Out', 'Partizero.nic.ally.in'))
+# Discretise gamma.500 by tertiles
+gamma.500.tertiles <- quantile(elementMetadata(complete.wf.zero.nic.all.gr)$gamma.500, c(1/3, 2/3))
+elementMetadata(complete.wf.zero.nic.all.gr)$gamma.500.level <- ifelse(elementMetadata(complete.wf.zero.nic.all.gr)$gamma.500 < gamma.500.tertiles[1], 'Low', ifelse(elementMetadata(complete.wf.zero.nic.all.gr)$gamma.500 >= gamma.500.tertiles[2], 'High', 'Intermediate'))
+# Compute aggregate log odds ratios for each strata
+lor1 <- aggregatedLor(subset(complete.wf.zero.nic.all.gr, elementMetadata(complete.wf.zero.nic.all.gr)$CGI == 'In' & elementMetadata(complete.wf.zero.nic.all.gr)$gamma.500.level == 'Low'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor2 <- aggregatedLor(subset(complete.wf.zero.nic.all.gr, elementMetadata(complete.wf.zero.nic.all.gr)$CGI == 'In' & elementMetadata(complete.wf.zero.nic.all.gr)$gamma.500.level == 'Intermediate'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor3 <- aggregatedLor(subset(complete.wf.zero.nic.all.gr, elementMetadata(complete.wf.zero.nic.all.gr)$CGI == 'In' & elementMetadata(complete.wf.zero.nic.all.gr)$gamma.500.level == 'High'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor4 <- aggregatedLor(subset(complete.wf.zero.nic.all.gr, elementMetadata(complete.wf.zero.nic.all.gr)$CGI == 'Partizero.nic.ally.in' & elementMetadata(complete.wf.zero.nic.all.gr)$gamma.500.level == 'Low'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor5 <- aggregatedLor(subset(complete.wf.zero.nic.all.gr, elementMetadata(complete.wf.zero.nic.all.gr)$CGI == 'Partizero.nic.ally.in' & elementMetadata(complete.wf.zero.nic.all.gr)$gamma.500.level == 'Intermediate'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor6 <- aggregatedLor(subset(complete.wf.zero.nic.all.gr, elementMetadata(complete.wf.zero.nic.all.gr)$CGI == 'Partizero.nic.ally.in' & elementMetadata(complete.wf.zero.nic.all.gr)$gamma.500.level == 'High'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor7 <- aggregatedLor(subset(complete.wf.zero.nic.all.gr, elementMetadata(complete.wf.zero.nic.all.gr)$CGI == 'Out' & elementMetadata(complete.wf.zero.nic.all.gr)$gamma.500.level == 'Low'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor8 <- aggregatedLor(subset(complete.wf.zero.nic.all.gr, elementMetadata(complete.wf.zero.nic.all.gr)$CGI == 'Out' & elementMetadata(complete.wf.zero.nic.all.gr)$gamma.500.level == 'Intermediate'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor9 <- aggregatedLor(subset(complete.wf.zero.nic.all.gr, elementMetadata(complete.wf.zero.nic.all.gr)$CGI == 'Out' & elementMetadata(complete.wf.zero.nic.all.gr)$gamma.500.level == 'High'), ipd = TRUE, nic = FALSE, correct = FALSE)
+
+# Create data.frame of results
+complete.wf.zero.nic.all.lor.df <- rbind(lor1, lor2, lor3, lor4, lor5, lor6, lor7, lor8, lor9)
+complete.wf.zero.nic.all.lor.df$CGI <- c(rep('Within CGI', nrow(lor1) + nrow(lor2) + nrow(lor3)), rep('Partizero.nic.ally in CGI', nrow(lor4) + nrow(lor5) + nrow(lor6)), rep('Outside CGI', nrow(lor7) + nrow(lor8) + nrow(lor9)))
+complete.wf.zero.nic.all.lor.df$gamma.500.level <- c(rep('Lowly methylated regions', nrow(lor1)), rep('Intermediately methylated regions', nrow(lor2)), rep('Highly methylated regions', nrow(lor3)), rep('Lowly methylated regions', nrow(lor4)), rep('Intermediately methylated regions', nrow(lor5)), rep('Highly methylated regions', nrow(lor6)), rep('Lowly methylated regions', nrow(lor7)), rep('Intermediately methylated regions', nrow(lor8)), rep('Highly methylated regions', nrow(lor9)))
+
+# Using complete.wf.zero.nic.outermost.gr #
+# Add CGI variable with 3 levels (In, Partioutermosty.in, Out) to each CpG-pair
+fully.in <- countOverlaps(complete.wf.zero.nic.outermost.gr, CGI, type = 'within')
+fully.out <- countOverlaps(complete.wf.zero.nic.outermost.gr, gaps(CGI), type = 'within')
+partizero.nic.outermosty.in <- as.numeric(fully.in == 0 & fully.out == 0)
+elementMetadata(complete.wf.zero.nic.outermost.gr)$CGI <- ifelse(fully.in, 'In', ifelse(fully.out, 'Out', 'Partizero.nic.outermosty.in'))
+# Discretise gamma.500 by tertiles
+gamma.500.tertiles <- quantile(elementMetadata(complete.wf.zero.nic.outermost.gr)$gamma.500, c(1/3, 2/3))
+elementMetadata(complete.wf.zero.nic.outermost.gr)$gamma.500.level <- ifelse(elementMetadata(complete.wf.zero.nic.outermost.gr)$gamma.500 < gamma.500.tertiles[1], 'Low', ifelse(elementMetadata(complete.wf.zero.nic.outermost.gr)$gamma.500 >= gamma.500.tertiles[2], 'High', 'Intermediate'))
+# Compute aggregate log odds ratios for each strata
+lor1 <- aggregatedLor(subset(complete.wf.zero.nic.outermost.gr, elementMetadata(complete.wf.zero.nic.outermost.gr)$CGI == 'In' & elementMetadata(complete.wf.zero.nic.outermost.gr)$gamma.500.level == 'Low'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor2 <- aggregatedLor(subset(complete.wf.zero.nic.outermost.gr, elementMetadata(complete.wf.zero.nic.outermost.gr)$CGI == 'In' & elementMetadata(complete.wf.zero.nic.outermost.gr)$gamma.500.level == 'Intermediate'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor3 <- aggregatedLor(subset(complete.wf.zero.nic.outermost.gr, elementMetadata(complete.wf.zero.nic.outermost.gr)$CGI == 'In' & elementMetadata(complete.wf.zero.nic.outermost.gr)$gamma.500.level == 'High'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor4 <- aggregatedLor(subset(complete.wf.zero.nic.outermost.gr, elementMetadata(complete.wf.zero.nic.outermost.gr)$CGI == 'Partizero.nic.outermosty.in' & elementMetadata(complete.wf.zero.nic.outermost.gr)$gamma.500.level == 'Low'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor5 <- aggregatedLor(subset(complete.wf.zero.nic.outermost.gr, elementMetadata(complete.wf.zero.nic.outermost.gr)$CGI == 'Partizero.nic.outermosty.in' & elementMetadata(complete.wf.zero.nic.outermost.gr)$gamma.500.level == 'Intermediate'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor6 <- aggregatedLor(subset(complete.wf.zero.nic.outermost.gr, elementMetadata(complete.wf.zero.nic.outermost.gr)$CGI == 'Partizero.nic.outermosty.in' & elementMetadata(complete.wf.zero.nic.outermost.gr)$gamma.500.level == 'High'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor7 <- aggregatedLor(subset(complete.wf.zero.nic.outermost.gr, elementMetadata(complete.wf.zero.nic.outermost.gr)$CGI == 'Out' & elementMetadata(complete.wf.zero.nic.outermost.gr)$gamma.500.level == 'Low'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor8 <- aggregatedLor(subset(complete.wf.zero.nic.outermost.gr, elementMetadata(complete.wf.zero.nic.outermost.gr)$CGI == 'Out' & elementMetadata(complete.wf.zero.nic.outermost.gr)$gamma.500.level == 'Intermediate'), ipd = TRUE, nic = FALSE, correct = FALSE)
+lor9 <- aggregatedLor(subset(complete.wf.zero.nic.outermost.gr, elementMetadata(complete.wf.zero.nic.outermost.gr)$CGI == 'Out' & elementMetadata(complete.wf.zero.nic.outermost.gr)$gamma.500.level == 'High'), ipd = TRUE, nic = FALSE, correct = FALSE)
+
+# Create data.frame of results
+complete.wf.zero.nic.outermost.lor.df <- rbind(lor1, lor2, lor3, lor4, lor5, lor6, lor7, lor8, lor9)
+complete.wf.zero.nic.outermost.lor.df$CGI <- c(rep('Within CGI', nrow(lor1) + nrow(lor2) + nrow(lor3)), rep('Partizero.nic.outermosty in CGI', nrow(lor4) + nrow(lor5) + nrow(lor6)), rep('Outside CGI', nrow(lor7) + nrow(lor8) + nrow(lor9)))
+complete.wf.zero.nic.outermost.lor.df$gamma.500.level <- c(rep('Lowly methylated regions', nrow(lor1)), rep('Intermediately methylated regions', nrow(lor2)), rep('Highly methylated regions', nrow(lor3)), rep('Lowly methylated regions', nrow(lor4)), rep('Intermediately methylated regions', nrow(lor5)), rep('Highly methylated regions', nrow(lor6)), rep('Lowly methylated regions', nrow(lor7)), rep('Intermediately methylated regions', nrow(lor8)), rep('Highly methylated regions', nrow(lor9)))
+
+#### Plots of aggregate log odds ratios stratified by CGI status and average methylation in a 500bp window ####
+tmp <- ggplot(data = complete.wf.all.lor.df, aes(x = IPD, y = lor)) + geom_point() + facet_grid(CGI ~ gamma.500.level) + ggtitle(label = paste0(sample.name, ': Within-fragment aggregated comethylation\npair.choice = all')) + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio') + presentation.theme
+ggsave(filename = paste0(sample.name, '.wf_aggregated_lor_plot.all_pairs.3x3.pdf'), width = 16.9, height = 10.5, plot = tmp)
+rm(tmp)
+
+tmp <- ggplot(data = complete.wf.outermost.lor.df, aes(x = IPD, y = lor)) + geom_point() + facet_grid(CGI ~ gamma.500.level) + ggtitle(label = paste0(sample.name, ': Within-fragment aggregated comethylation\npair.choice = outermost')) + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio') + presentation.theme
+ggsave(filename = paste0(sample.name, '.wf_aggregated_lor_plot.outermost_pairs.3x3.pdf'), width = 16.9, height = 10.5, plot = tmp)
+rm(tmp)
+
+tmp <- ggplot(data = complete.wf.zero.nic.outermost.lor.df, aes(x = IPD, y = lor)) + geom_point() + facet_grid(CGI ~ gamma.500.level) + ggtitle(label = paste0(sample.name, ': Within-fragment aggregated comethylation\npair.choice = zero.nic.outermost, NIC = 0')) + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio') + presentation.theme
+ggsave(filename = paste0(sample.name, '.wf_aggregated_lor_plot.all_pairs.zero_NIC.3x3.pdf'), width = 16.9, height = 10.5, plot = tmp)
+rm(tmp)
+
+tmp <- ggplot(data = complete.wf.zero.nic.all.lor.df, aes(x = IPD, y = lor)) + geom_point() + facet_grid(CGI ~ gamma.500.level) + ggtitle(label = paste0(sample.name, ': Within-fragment aggregated comethylation\npair.choice = zero.nic.all, NIC = 0')) + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio') + presentation.theme
+ggsave(filename = paste0(sample.name, '.wf_aggregated_lor_plot.outermost_pairs.zero_NIC.3x3.pdf'), width = 16.9, height = 10.5, plot = tmp)
+rm(tmp)
+
 #### Finished ####
 setwd('../')
 save.image(paste0(sample.name, '_comethylation.RData'))
