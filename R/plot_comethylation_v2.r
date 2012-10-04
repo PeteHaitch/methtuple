@@ -178,6 +178,11 @@ lor7 <- aggregatedLor(subset(complete.wf.outermost.gr, elementMetadata(complete.
 lor8 <- aggregatedLor(subset(complete.wf.outermost.gr, elementMetadata(complete.wf.outermost.gr)$CGI == 'Out' & elementMetadata(complete.wf.outermost.gr)$gamma.500.level == 'Intermediate'), ipd = TRUE, nic = FALSE, correct = FALSE)
 lor9 <- aggregatedLor(subset(complete.wf.outermost.gr, elementMetadata(complete.wf.outermost.gr)$CGI == 'Out' & elementMetadata(complete.wf.outermost.gr)$gamma.500.level == 'High'), ipd = TRUE, nic = FALSE, correct = FALSE)
 
+# Create data.frame of results
+complete.wf.outermost.lor.df <- rbind(lor1, lor2, lor3, lor4, lor5, lor6, lor7, lor8, lor9)
+complete.wf.outermost.lor.df$CGI <- c(rep('Within CGI', nrow(lor1) + nrow(lor2) + nrow(lor3)), rep('Partioutermosty in CGI', nrow(lor4) + nrow(lor5) + nrow(lor6)), rep('Outside CGI', nrow(lor7) + nrow(lor8) + nrow(lor9)))
+complete.wf.outermost.lor.df$gamma.500.level <- c(rep('Lowly methylated regions', nrow(lor1)), rep('Intermediately methylated regions', nrow(lor2)), rep('Highly methylated regions', nrow(lor3)), rep('Lowly methylated regions', nrow(lor4)), rep('Intermediately methylated regions', nrow(lor5)), rep('Highly methylated regions', nrow(lor6)), rep('Lowly methylated regions', nrow(lor7)), rep('Intermediately methylated regions', nrow(lor8)), rep('Highly methylated regions', nrow(lor9)))
+
 # Using complete.wf.zero.nic.all.gr #
 # Add CGI variable with 3 levels (In, Partioutermosty.in, Out) to each CpG-pair
 fully.in <- countOverlaps(complete.wf.zero.nic.all.gr, CGI, type = 'within')
