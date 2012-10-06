@@ -45,7 +45,7 @@ H9 <- read.table('~/Lister_2011_BS-seq_data/H9/Downloaded_mapped_reads/WF/H9_lor
 # Skip HSF1 due to strong read-position biases in methylation-values
 # HSF1 <- read.table('~/Lister_2011_BS-seq_data/HSF1/Downloaded_mapped_reads/WF/HSF1_lor_by_methylation_level_aggregated_by_distance.txt', sep = '\t', header = TRUE)
 
-# ES <- rbind(H1_r1, H1_r2, H9, H9_Laurent)
+# ES <- rbind(H1_r1, H1_r2, H9, H9_Laurent, HSF1)
 ES <- rbind(H1_r1, H1_r2, H9)
 # ES$Sample <- c(rep('H1_r1', nrow(H1_r1)), rep('H1_r2', nrow(H1_r2)), rep('H9', nrow(H9)), rep('H9_Laurent', nrow(H9_Laurent)))
 ES$Sample <- c(rep('H1_r1', nrow(H1_r1)), rep('H1_r2', nrow(H1_r2)), rep('H9', nrow(H9)))
