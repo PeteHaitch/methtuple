@@ -478,22 +478,22 @@ es.complete.wf.zero.nic.outermost.lor.df$gamma.500.level <- str_split_fixed(es.c
 
 ### Construct IVD data.frames ####
 ivd.complete.wf.all.lor.df <- rbind(H1_BMP4.complete.wf.all.lor.df, FF_iPSC_19.11_BMP4.complete.wf.all.lor.df)
-ivd.complete.wf.all.lor.df$Sample <- c(rep('H1+BMP4', nrow(H1_BMP4.complete.wf.all.lor.df)), rep('FF+iPSC_19.11_BMP4', nrow(FF_iPSC_19.11_BMP4.complete.wf.all.lor.df)))
+ivd.complete.wf.all.lor.df$Sample <- c(rep('H1+BMP4', nrow(H1_BMP4.complete.wf.all.lor.df)), rep('FF-iPSC_19.11+BMP4', nrow(FF_iPSC_19.11_BMP4.complete.wf.all.lor.df)))
 # Remove " regions" from gamma.500.level labels to privderve space in plot facet labels
 ivd.complete.wf.all.lor.df$gamma.500.level <- str_split_fixed(ivd.complete.wf.all.lor.df$gamma.500.level, ' regions', n = 2)[, 1]
 
 ivd.complete.wf.outermost.lor.df <- rbind(H1_BMP4.complete.wf.outermost.lor.df, FF_iPSC_19.11_BMP4.complete.wf.outermost.lor.df)
-ivd.complete.wf.outermost.lor.df$Sample <- c(rep('H1+BMP4', nrow(H1_BMP4.complete.wf.outermost.lor.df)), rep('FF+iPSC_19.11_BMP4', nrow(FF_iPSC_19.11_BMP4.complete.wf.outermost.lor.df)))
+ivd.complete.wf.outermost.lor.df$Sample <- c(rep('H1+BMP4', nrow(H1_BMP4.complete.wf.outermost.lor.df)), rep('FF-iPSC_19.11+BMP4', nrow(FF_iPSC_19.11_BMP4.complete.wf.outermost.lor.df)))
 # Remove " regions" from gamma.500.level labels to privderve space in plot facet labels
 ivd.complete.wf.outermost.lor.df$gamma.500.level <- str_split_fixed(ivd.complete.wf.outermost.lor.df$gamma.500.level, ' regions', n = 2)[, 1]
 
 ivd.complete.wf.zero.nic.all.lor.df <- rbind(H1_BMP4.complete.wf.zero.nic.all.lor.df, FF_iPSC_19.11_BMP4.complete.wf.zero.nic.all.lor.df)
-ivd.complete.wf.zero.nic.all.lor.df$Sample <- c(rep('H1+BMP4', nrow(H1_BMP4.complete.wf.zero.nic.all.lor.df)), rep('FF+iPSC_19.11_BMP4', nrow(FF_iPSC_19.11_BMP4.complete.wf.zero.nic.all.lor.df)))
+ivd.complete.wf.zero.nic.all.lor.df$Sample <- c(rep('H1+BMP4', nrow(H1_BMP4.complete.wf.zero.nic.all.lor.df)), rep('FF-iPSC_19.11+BMP4', nrow(FF_iPSC_19.11_BMP4.complete.wf.zero.nic.all.lor.df)))
 # Remove " regions" from gamma.500.level labels to privderve space in plot facet labels
 ivd.complete.wf.zero.nic.all.lor.df$gamma.500.level <- str_split_fixed(ivd.complete.wf.zero.nic.all.lor.df$gamma.500.level, ' regions', n = 2)[, 1]
 
 ivd.complete.wf.zero.nic.outermost.lor.df <- rbind(H1_BMP4.complete.wf.zero.nic.outermost.lor.df, FF_iPSC_19.11_BMP4.complete.wf.zero.nic.outermost.lor.df)
-ivd.complete.wf.zero.nic.outermost.lor.df$Sample <- c(rep('H1+BMP4', nrow(H1_BMP4.complete.wf.zero.nic.outermost.lor.df)), rep('FF+iPSC_19.11_BMP4', nrow(FF_iPSC_19.11_BMP4.complete.wf.zero.nic.outermost.lor.df)))
+ivd.complete.wf.zero.nic.outermost.lor.df$Sample <- c(rep('H1+BMP4', nrow(H1_BMP4.complete.wf.zero.nic.outermost.lor.df)), rep('FF-iPSC_19.11+BMP4', nrow(FF_iPSC_19.11_BMP4.complete.wf.zero.nic.outermost.lor.df)))
 # Remove " regions" from gamma.500.level labels to privderve space in plot facet labels
 ivd.complete.wf.zero.nic.outermost.lor.df$gamma.500.level <- str_split_fixed(ivd.complete.wf.zero.nic.outermost.lor.df$gamma.500.level, ' regions', n = 2)[, 1]
 
