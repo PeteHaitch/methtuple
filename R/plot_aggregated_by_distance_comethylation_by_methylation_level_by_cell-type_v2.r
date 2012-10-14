@@ -181,7 +181,7 @@ rm(ADS_adipose.env)
 gc()
 
 ADS_iPSC.env <- new.env()
-load('Lister_2011_BS-seq_data/ADS_iPSC/Downloaded_mapped_reads/WF/ADS_iPSC_comethylation.RData', envir = ADS_iPSC.env)
+load('Lister_2011_BS-seq_data/ADS-iPSC/Downloaded_mapped_reads/WF/ADS-iPSC_comethylation.RData', envir = ADS_iPSC.env)
 ADS_iPSC.all.lor <- ADS_iPSC.env$all.lor
 ADS_iPSC.all.outside.cgi.lor <- ADS_iPSC.env$all.outside.cgi.lor
 ADS_iPSC.all.within.cgi.lor <- ADS_iPSC.env$all.within.cgi.lor
@@ -411,8 +411,6 @@ IMR90_iPSC.complete.wf.zero.nic.outermost.lor.df <- IMR90_iPSC.env$complete.wf.z
 rm(IMR90_iPSC.env)
 gc()
 
-save.image('Lister_aggregated_by_distance_comethylation_by_methylation_by_cell-type.RData')
-
 #### Constract somatic data.frames ####
 somatic.complete.wf.all.lor.df <- rbind(IMR90_r1.complete.wf.all.lor.df, IMR90_r2.complete.wf.all.lor.df, FF.complete.wf.all.lor.df, ADS.complete.wf.all.lor.df, ADS_adipose.complete.wf.all.lor.df)
 somatic.complete.wf.all.lor.df$Sample <- c(rep('IMR90_r1', nrow(IMR90_r1.complete.wf.all.lor.df)), rep('IMR90_r2', nrow(IMR90_r2.complete.wf.all.lor.df)), rep('FF', nrow(FF.complete.wf.all.lor.df)), rep('ADS', nrow(ADS.complete.wf.all.lor.df)), rep('ADS-adipose', nrow(ADS_adipose.complete.wf.all.lor.df)))
@@ -497,116 +495,120 @@ ivd.complete.wf.zero.nic.outermost.lor.df$Sample <- c(rep('H1+BMP4', nrow(H1_BMP
 # Remove " regions" from gamma.500.level labels to privderve space in plot facet labels
 ivd.complete.wf.zero.nic.outermost.lor.df$gamma.500.level <- str_split_fixed(ivd.complete.wf.zero.nic.outermost.lor.df$gamma.500.level, ' regions', n = 2)[, 1]
 
+#### Save aggregated data ####
+save.image('Lister_aggregated_by_distance_comethylation_by_methylation_by_cell-type.RData')
+
 #### Change working directory to Lister_data.3x3.plots ####
 setwd('~/Lister_data.3x3.plots')
 
-#### Plots - Paired-end focus (full x-axis displayed), single-end focus (truncated x-axis). Both plots have truncated y-axesso that these are consistent across cell-types in order to make them comparable. This is done using coord_cartesian(limits = xxx) rather than scale_y_continuous(limits = xxx) to ensure the data aren't censored outside the limits (see https://groups.google.com/forum/?fromgroups=#!topic/ggplot2-dev/JGal_9nRzsg for details) ####
-tmp <- ggplot(data = somatic.complete.wf.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'Somatic cell-types: Aggregated within-fragment comethylation\npair.choice = all') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(ylim = c(-1, 4.5))
+#### Plots - Paired-end focus (full x-axis displayed), single-end focus (truncated x-axis). ####
+# WARNING: Paired-end plots have the x-axis truncated at c(0, 230) and single-end plots have the x-axis truncated at c(0, 90). Plots have truncated y-axes so that these are consistent across cell-types in order to make them comparable. Axis truncation is done, for example, using coord_cartesian(ylim = xxx) rather than scale_y_continuous(limits = xxx) to ensure the data aren't censored outside the limits (see https://groups.google.com/forum/?fromgroups=#!topic/ggplot2-dev/JGal_9nRzsg for details) 
+tmp <- ggplot(data = somatic.complete.wf.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'Somatic cell-types: Aggregated within-fragment comethylation\npair.choice = all') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 230), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.somatic.all_pairs.paired-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 tmp <- ggplot(data = somatic.complete.wf.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'Somatic cell-types: Aggregated within-fragment comethylation\npair.choice = all') + scale_x_continuous('Distance between CpGs (bp)', breaks = c(0, 20, 40, 60, 80)) + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 90), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.somatic.all_pairs.single-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 
-tmp <- ggplot(data = somatic.complete.wf.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'Somatic cell-types: Aggregated within-fragment comethylation\npair.choice = outermost') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(ylim = c(-1, 4.5))
+tmp <- ggplot(data = somatic.complete.wf.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'Somatic cell-types: Aggregated within-fragment comethylation\npair.choice = outermost') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 230), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.somatic.outermost_pairs.paired-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 tmp <- ggplot(data = somatic.complete.wf.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'Somatic cell-types: Aggregated within-fragment comethylation\npair.choice = outermost') + scale_x_continuous('Distance between CpGs (bp)', breaks = c(0, 20, 40, 60, 80)) + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 90), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.somatic.outermost_pairs.single-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 
-tmp <- ggplot(data = somatic.complete.wf.zero.nic.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'Somatic cell-types: Aggregated within-fragment comethylation\npair.choice = all, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(ylim = c(-1, 4.5))
+tmp <- ggplot(data = somatic.complete.wf.zero.nic.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'Somatic cell-types: Aggregated within-fragment comethylation\npair.choice = all, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 230), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.somatic.all_pairs.zero_NIC.paired-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 tmp <- ggplot(data = somatic.complete.wf.zero.nic.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'Somatic cell-types: Aggregated within-fragment comethylation\npair.choice = all, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)', breaks = c(0, 20, 40, 60, 80)) + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 90), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.somatic.all_pairs.zero_NIC.single-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 
-tmp <- ggplot(data = somatic.complete.wf.zero.nic.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'Somatic cell-types: Aggregated within-fragment comethylation\npair.choice = outermost, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(ylim = c(-1, 4.5))
+tmp <- ggplot(data = somatic.complete.wf.zero.nic.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'Somatic cell-types: Aggregated within-fragment comethylation\npair.choice = outermost, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 230), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.somatic.outermost_pairs.zero_NIC.paired-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 tmp <- ggplot(data = somatic.complete.wf.zero.nic.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'Somatic cell-types: Aggregated within-fragment comethylation\npair.choice = outermost, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)', breaks = c(0, 20, 40, 60, 80)) + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 90), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.somatic.outermost_pairs.zero_NIC.single-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 
-tmp <- ggplot(data = ipsc.complete.wf.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'iPSC cell-types: Aggregated within-fragment comethylation\npair.choice = all') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(ylim = c(-1, 4.5))
+tmp <- ggplot(data = ipsc.complete.wf.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'iPSC cell-types: Aggregated within-fragment comethylation\npair.choice = all') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 230), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.ipsc.all_pairs.paired-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 tmp <- ggplot(data = ipsc.complete.wf.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'iPSC cell-types: Aggregated within-fragment comethylation\npair.choice = all') + scale_x_continuous('Distance between CpGs (bp)', breaks = c(0, 20, 40, 60, 80)) + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 90), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.ipsc.all_pairs.single-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 
-tmp <- ggplot(data = ipsc.complete.wf.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'iPSC cell-types: Aggregated within-fragment comethylation\npair.choice = outermost') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(ylim = c(-1, 4.5))
+tmp <- ggplot(data = ipsc.complete.wf.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'iPSC cell-types: Aggregated within-fragment comethylation\npair.choice = outermost') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 230), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.ipsc.outermost_pairs.paired-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 tmp <- ggplot(data = ipsc.complete.wf.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'iPSC cell-types: Aggregated within-fragment comethylation\npair.choice = outermost') + scale_x_continuous('Distance between CpGs (bp)', breaks = c(0, 20, 40, 60, 80)) + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 90), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.ipsc.outermost_pairs.single-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 
-tmp <- ggplot(data = ipsc.complete.wf.zero.nic.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'iPSC cell-types: Aggregated within-fragment comethylation\npair.choice = all, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(ylim = c(-1, 4.5))
+tmp <- ggplot(data = ipsc.complete.wf.zero.nic.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'iPSC cell-types: Aggregated within-fragment comethylation\npair.choice = all, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 230), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.ipsc.all_pairs.zero.nic.paired-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 tmp <- ggplot(data = ipsc.complete.wf.zero.nic.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'iPSC cell-types: Aggregated within-fragment comethylation\npair.choice = all, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)', breaks = c(0, 20, 40, 60, 80)) + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 90), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.ipsc.all_pairs.zero.nic.single-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 
-tmp <- ggplot(data = ipsc.complete.wf.zero.nic.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'iPSC cell-types: Aggregated within-fragment comethylation\npair.choice = outermost, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(ylim = c(-1, 4.5))
+tmp <- ggplot(data = ipsc.complete.wf.zero.nic.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'iPSC cell-types: Aggregated within-fragment comethylation\npair.choice = outermost, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 230), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.ipsc.outermost_pairs.zero.nic.paired-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 tmp <- ggplot(data = ipsc.complete.wf.zero.nic.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'iPSC cell-types: Aggregated within-fragment comethylation\npair.choice = outermost, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)', breaks = c(0, 20, 40, 60, 80)) + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 90), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.ipsc.outermost_pairs.zero.nic.single-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 
-tmp <- ggplot(data = es.complete.wf.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'ES cell-types: Aggregated within-fragment comethylation\npair.choice = all') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(ylim = c(-1, 4.5))
+tmp <- ggplot(data = es.complete.wf.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'ES cell-types: Aggregated within-fragment comethylation\npair.choice = all') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 230), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.es.all_pairs.paired-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 tmp <- ggplot(data = es.complete.wf.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'ES cell-types: Aggregated within-fragment comethylation\npair.choice = all') + scale_x_continuous('Distance between CpGs (bp)', breaks = c(0, 20, 40, 60, 80)) + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 90), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.es.all_pairs.single-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 
-tmp <- ggplot(data = es.complete.wf.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'ES cell-types: Aggregated within-fragment comethylation\npair.choice = outermost') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(ylim = c(-1, 4.5))
+tmp <- ggplot(data = es.complete.wf.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'ES cell-types: Aggregated within-fragment comethylation\npair.choice = outermost') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 230), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.es.outermost_pairs.paired-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 tmp <- ggplot(data = es.complete.wf.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'ES cell-types: Aggregated within-fragment comethylation\npair.choice = outermost') + scale_x_continuous('Distance between CpGs (bp)', breaks = c(0, 20, 40, 60, 80)) + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 90), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.es.outermost_pairs.single-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 
-tmp <- ggplot(data = es.complete.wf.zero.nic.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'ES cell-types: Aggregated within-fragment comethylation\npair.choice = all, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(ylim = c(-1, 4.5))
+tmp <- ggplot(data = es.complete.wf.zero.nic.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'ES cell-types: Aggregated within-fragment comethylation\npair.choice = all, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 230), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.es.all_pairs.zero.nic.paired-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 tmp <- ggplot(data = es.complete.wf.zero.nic.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'ES cell-types: Aggregated within-fragment comethylation\npair.choice = all, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)', breaks = c(0, 20, 40, 60, 80)) + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 90), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.es.all_pairs.zero.nic.single-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 
-tmp <- ggplot(data = es.complete.wf.zero.nic.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'ES cell-types: Aggregated within-fragment comethylation\npair.choice = outermost, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(ylim = c(-1, 4.5))
+tmp <- ggplot(data = es.complete.wf.zero.nic.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'ES cell-types: Aggregated within-fragment comethylation\npair.choice = outermost, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 230), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.es.outermost_pairs.zero.nic.paired-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 tmp <- ggplot(data = es.complete.wf.zero.nic.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'ES cell-types: Aggregated within-fragment comethylation\npair.choice = outermost, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)', breaks = c(0, 20, 40, 60, 80)) + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 90), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.es.outermost_pairs.zero.nic.single-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 
-tmp <- ggplot(data = ivd.complete.wf.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'IVD cell-types: Aggregated within-fragment comethylation\npair.choice = all') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(ylim = c(-1, 4.5))
+tmp <- ggplot(data = ivd.complete.wf.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'IVD cell-types: Aggregated within-fragment comethylation\npair.choice = all') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 230), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.ivd.all_pairs.paired-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 tmp <- ggplot(data = ivd.complete.wf.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'IVD cell-types: Aggregated within-fragment comethylation\npair.choice = all') + scale_x_continuous('Distance between CpGs (bp)', breaks = c(0, 20, 40, 60, 80)) + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 90), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.ivd.all_pairs.single-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 
-tmp <- ggplot(data = ivd.complete.wf.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'IVD cell-types: Aggregated within-fragment comethylation\npair.choice = outermost') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(ylim = c(-1, 4.5))
+tmp <- ggplot(data = ivd.complete.wf.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'IVD cell-types: Aggregated within-fragment comethylation\npair.choice = outermost') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 230), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.ivd.outermost_pairs.paired-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 tmp <- ggplot(data = ivd.complete.wf.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'IVD cell-types: Aggregated within-fragment comethylation\npair.choice = outermost') + scale_x_continuous('Distance between CpGs (bp)', breaks = c(0, 20, 40, 60, 80)) + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 90), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.ivd.outermost_pairs.single-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 
-tmp <- ggplot(data = ivd.complete.wf.zero.nic.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'IVD cell-types: Aggregated within-fragment comethylation\npair.choice = all, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(ylim = c(-1, 4.5))
+tmp <- ggplot(data = ivd.complete.wf.zero.nic.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'IVD cell-types: Aggregated within-fragment comethylation\npair.choice = all, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 230), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.ivd.all_pairs.zero_NIC.paired-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 tmp <- ggplot(data = ivd.complete.wf.zero.nic.all.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'IVD cell-types: Aggregated within-fragment comethylation\npair.choice = all, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)', breaks = c(0, 20, 40, 60, 80)) + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 90), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.ivd.all_pairs.zero_NIC.single-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 
-tmp <- ggplot(data = ivd.complete.wf.zero.nic.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'IVD cell-types: Aggregated within-fragment comethylation\npair.choice = outermost, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(ylim = c(-1, 4.5))
+tmp <- ggplot(data = ivd.complete.wf.zero.nic.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'IVD cell-types: Aggregated within-fragment comethylation\npair.choice = outermost, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)') + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 230), ylim = c(-1, 4.5))
 ggsave(filename = 'Lister_data.ivd.outermost_pairs.zero_NIC.paired-end_focus.3x3.pdf', plot = tmp, width = 16.9, height = 10.5)
 rm(tmp)
 tmp <- ggplot(data = ivd.complete.wf.zero.nic.outermost.lor.df, aes(x = IPD, y = lor, colour = Sample)) + facet_grid(CGI ~ gamma.500.level) + geom_point(size = I(2)) + presentation.theme + ggtitle(label = 'IVD cell-types: Aggregated within-fragment comethylation\npair.choice = outermost, NIC = 0') + scale_x_continuous('Distance between CpGs (bp)', breaks = c(0, 20, 40, 60, 80)) + scale_y_continuous('Log odds ratio', breaks = 0:4) + coord_cartesian(xlim = c(0, 90), ylim = c(-1, 4.5))
