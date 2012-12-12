@@ -41,7 +41,7 @@ IN = pysam.Samfile(args.infile)
 # New BAM file to be created. Need to make header that includes a new @PG tag for the new BAM file.
 header = IN.header
 id = 'XM_tag.py'
-vn = '0.3'
+vn = '0.3.1'
 cl = ' '.join(['python XM_tag.py', args.infile, args.outfile, args.reference])
 XM_tag_PG = {'ID': id, 'VN': vn, 'CL': cl}
 header['PG'].append(XM_tag_PG)
@@ -154,17 +154,18 @@ def makeXMtag(read, refseq, strand): # read is an AlignedRead object, refseq is 
                     
 # Main loop - create XM tag for each read and write the new BAM to file
 for read in IN:
-    refseq = getPaddedRefSeq(read, REF, IN)
-    if read.opt('XG') == 'CT':
-        strand = "+"
-    elif read.opt('XG') == 'GA':
-        strand = "-"
-    else:
-        print 'Read skipped: Undefined strand (missing XG-tag) for read', read.qname
-        continue
-    XM = makeXMtag(read, refseq, strand)
-    read.tags = read.tags + [('XM', XM)]
-    OUT.write(read)
+    if not read.is_unmapped:
+        refseq = getPaddedRefSeq(read, REF, IN)
+        if read.opt('XG') == 'CT':
+            strand = "+"
+        elif read.opt('XG') == 'GA':
+            strand = "-"
+        else:
+            print 'Read skipped: Undefined strand (missing XG-tag) for read', read.qname
+            continue
+        XM = makeXMtag(read, refseq, strand)
+        read.tags = read.tags + [('XM', XM)]
+        OUT.write(read)
 
 IN.close()
 OUT.close()
