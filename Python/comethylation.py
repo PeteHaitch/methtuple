@@ -59,6 +59,7 @@ from operator import itemgetter, attrgetter
 ### TODOs ###
 ############################################################################################################################################################################################
 # See Google Docs "Issue tracker - comethylation.py v2" (https://docs.google.com/spreadsheet/ccc?key=0Au0uDiAd9OV9dHN1SUZPc1Ixa2oyTjZnQVlEYVZ1QlE)
+# Add a pairChoice "--bookended" which for a set of n CpGs constructs the (n-1) 'bookended' CpG-pairs.
 ############################################################################################################################################################################################
 
 ### Command line parser ###
@@ -72,6 +73,9 @@ parser.add_argument('sampleName',
 parser.add_argument('--ignoreDuplicates',
                     action = 'store_true',
                     help ='Ignore reads that have been flagged as PCR duplicates by Picard\'s MarkDuplicates function')
+parser.add_argument('--ignoreImproperPairs',
+                    action = 'store_true',
+                    help ='Ignore improper read-pairs')
 parser.add_argument('--ignoreStart', metavar = '<int>',
                     type = int,
                     default=0,
@@ -1033,6 +1037,8 @@ print 'Input file =', BAM.filename
 print 'Output file =', WF.name
 if args.ignoreDuplicates:
     print 'Ignoring reads marked as PCR duplicates'
+if args.ignoreImproperPairs:
+    print 'Ignoring improper read-pairs'
 print 'Assuming quality scores are Phred', phred_offset
 print 'Ignoring', args.ignoreStart, 'bp from start of each read'
 print 'Ignoring', args.ignoreEnd, 'bp from end of each read'
@@ -1051,20 +1057,30 @@ for read in BAM:
         else:
             n_fragment += 0.5 
         continue
-    elif read.is_paired and not read.is_proper_pair:
+    elif args.ignoreImproperPairs and read.is_paired and not read.is_proper_pair:
         warning_msg = ''.join(['Skipping read ', read.qname, ' as it is part of an improper pair.'])
         warnings.warn(warning_msg)
         n_fragment += 0.5
         continue
+        #    elif read.is_paired and not read.is_proper_pair:
+        #        warning_msg = ''.join(['Skipping read ', read.qname, ' as it is part of an improper pair.'])
+        #        warnings.warn(warning_msg)
+        #        n_fragment += 0.5
+        #        continue
     else:
-        if read.is_proper_pair and read.is_read1:
+        #        if read.is_proper_pair and read.is_read1:
+        if read.is_paired and read.is_read1:
             read_1 = read
             continue
-        elif read.is_proper_pair and read.is_read2: 
+        #        elif read.is_proper_pair and read.is_read2: 
+        elif read.is_paired and read.is_read2:
             read_2 = read
             n_fragment += 1
             # Check that read_1 and read_2 are aligned to the same chromosome and have identical read-names.
             # If not, skip the read-pair.
+            print read # For debugging only
+            print read_1 # For debugging only
+            print read_2 # For debugging only
             if read_1.tid == read_2.tid and read_1.qname == read_2.qname:
                 methylation_pairs, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_pairs, args.pairChoice)
                 n_methylation_loci[n_methylation_loci_in_fragment] += 1                
