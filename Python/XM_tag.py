@@ -26,7 +26,7 @@ import pysam
 ############################################################################################################################################################################################
 
 # Command line passer
-parser = argparse.ArgumentParser(description='Add a methylation tag XM to each read of a SAM/BAM file and write the result to BAM file. The XM tag specification is defined in the Bismark user manual.')
+parser = argparse.ArgumentParser(description='Add a methylation tag XM to each read of a SAM/BAM file and write the result to BAM file. The XM tag specification is defined in the Bismark user manual. Unmapped reads in the BAM file have their XM tag set to *')
 parser.add_argument('infile', metavar = 'in.bam',
                   help='The path to the original SAM/BAM file')
 parser.add_argument('outfile', metavar = 'out.bam',
@@ -164,8 +164,10 @@ for read in IN:
             print 'Read skipped: Undefined strand (missing XG-tag) for read', read.qname
             continue
         XM = makeXMtag(read, refseq, strand)
-        read.tags = read.tags + [('XM', XM)]
-        OUT.write(read)
+    else:
+        XM = '*'
+    read.tags = read.tags + [('XM', XM)]
+    OUT.write(read)
 
 IN.close()
 OUT.close()
