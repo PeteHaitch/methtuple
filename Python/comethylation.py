@@ -300,7 +300,7 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap):
     # Readpair aligns to OB-strand
     elif read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
         overlap_1 = read_1.seq[:n_overlap]
-        overlap_2 = read_2.seq[-n_overlap]
+        overlap_2 = read_2.seq[-n_overlap:]
     else:
         warning_msg = ''.join(['XG-tags or XR-tags for readpair ', read.qname, ' are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
         warnings.warn(warning_msg)
@@ -433,8 +433,6 @@ class WithinFragmentComethylationPair:
             else:
                 warning_msg = ''.join(['Skipping read ', read.qname, ' as XG-tags or XR-tags are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
                 warnings.warn(warning_msg)
-                print read_1
-                print read_2
         else:
             # Readpair aligns to OT-strand
             if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA' and read_1.is_paired and read_2.is_paired:
@@ -582,15 +580,17 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
     # Check for overlapping reads from a readpair.
     # If reads overlap check whether the overlapping sequence is identical
     # If the overlapping sequence is not identical report a warning and skip the readpair.
-    n_overlap = read_1.alen + read_2.alen - abs(read_1.tlen)
-    if n_overlap > 0:
-        if is_overlapping_sequence_identical(read_1, read_2, n_overlap) or args.skipIdenticalOverlapCheck:
-            methylation_index_1, methylation_index_2 = ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap)
-        else:
-            warning_msg = ''.join(['Skipping readpair ', read.qname, ' as overlapping sequence is not identical'])
-            warnings.warn(warning_msg)
-            methylation_index_1 = []
-            methylation_index_2 = []
+    # Only do this check if both read_1 and read_2 are mapped
+    if not read_1.is_unmapped and not read_2.is_unmapped:
+        n_overlap = read_1.alen + read_2.alen - abs(read_1.tlen)
+        if n_overlap > 0:
+            if is_overlapping_sequence_identical(read_1, read_2, n_overlap) or args.skipIdenticalOverlapCheck:
+                methylation_index_1, methylation_index_2 = ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap)
+            else:
+                warning_msg = ''.join(['Skipping readpair ', read.qname, ' as overlapping sequence is not identical'])
+                warnings.warn(warning_msg)
+                methylation_index_1 = []
+                methylation_index_2 = []
     # Case 1: Readpair aligns to OT-strand
     if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
         # Case A: > 0 CpGs in both reads of the readpair.
@@ -1078,12 +1078,9 @@ for read in BAM:
             n_fragment += 1
             # Check that read_1 and read_2 are aligned to the same chromosome and have identical read-names.
             # If not, skip the read-pair.
-            print read # For debugging only
-            print read_1 # For debugging only
-            print read_2 # For debugging only
             if read_1.tid == read_2.tid and read_1.qname == read_2.qname:
                 methylation_pairs, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_pairs, args.pairChoice)
-                n_methylation_loci[n_methylation_loci_in_fragment] += 1                
+                n_methylation_loci[n_methylation_loci_in_fragment] += 1
             elif read_1.tid != read_2.tid:
                 warning_msg = ''.join(['Skipping readpair', read_1.qname, ' as reads aligned to different chromosomes (', BAM.getrname(read_1.tid), ' and ', BAM.getrname(read_2.tid), ')'])
                 warnings.warn(warning_msg)
