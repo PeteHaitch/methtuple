@@ -4,6 +4,9 @@
 # This is version 2 and is a substantial re-write of the existing code.
 # Functions are stored separated in plot_comethylation_v2_functions.r
 
+#### WARNINGs ####
+# WARNING: The assignment of CpG-pairs to be 'in CGI', 'out CGI' or 'partially in CGI' is a little technical. For example, for a CpG-pair to be 'in CGI' they must both belong to the _same_ CGI. An example of a CpG-pair where each CpG lies in a _different_ CGI is chr1:3,219,899-3,220,040. This technicallity affects ~2000 CpG-pairs (i.e. very few CpG-pairs).
+
 #### TODOs ####
 # Redo Lister data plots
 # Stratify by other genomic features
