@@ -1,3 +1,4 @@
+#### DESCRIPTION ####
 # Peter Hickey
 # 10/09/2012
 # Plots of within-fragment comethylation
@@ -113,7 +114,7 @@ aggregatedLor <- function(x, ipd = TRUE, nic = FALSE, correct = FALSE){
   aggregated.lors <- cbind(IPD = aggregated$IPD, NIC = aggregated$NIC, lor(aggregated, correct = correct))
   return(aggregated.lors)
 }
-  
+
 # Quantile plot of LORs as a function of a intra-pair separation from the WF.gr instance
 #' Plot a quantile plot of individual CpG-pair log odds ratios as a function of IPD. WARNING: Currently uses fixed y-limits = [-4, 6]
 #'
@@ -196,19 +197,20 @@ aggregateLorPlot <- function(lor.df, sample.name, zero.nic, pair.choice, genomic
   qplot(x = IPD, y = lor, data = lor.df, size = I(1.2), main = my.title, ylab = "Log odds ratio", xlab = "Distance between CpGs (bp)", ...) + presentation.theme
 }
 
-#' Compute the average methylation in a w-bp window around each CpG-pair
+#' Compute the average methylation in a w-bp (or bigger) window around each CpG-pair
 #' 
 #' @param cpg.pairs is a GRanges instance of CpG-pairs and their associated log odds ratios
 #' @param am.gr is a GRanges instance of aggregate methylation values (beta and/or gamma) for each CpG
 #' @param w is the window size
 #' 
 #' @return mean a data.frame with nrows = length(cpg.pairs) and 2 columns (beta_w, gamma_w)
+#' @note A CpG-pair with an IPD > w will have the average methylation computed in at window of size w = IPD. Thus, this function really compute the pmax(IPD, w)-window sized average methylation
 #' @keywords WF, lor, plot
 #' @export
 #' @examples
 #' NULL
 averageMethylationInWindow <- function(cpg.pairs, am.gr, w){
-  regions <- resize(cpg.pairs, fix = 'center', width = w)
+  regions <- resize(cpg.pairs, width = pmax(500, width(cpg.pairs)), fix = 'center')
   means <- data.frame(beta_w = rep(NA, length(regions)), gamma_w = rep(NA, length(regions)))
   row.index <- 1
   for(chrom in seqnames(regions)@values){
@@ -227,4 +229,3 @@ averageMethylationInWindow <- function(cpg.pairs, am.gr, w){
   }
   return(means)
 }
-  
