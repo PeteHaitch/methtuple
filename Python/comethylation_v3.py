@@ -8,6 +8,7 @@ import pysam
 import warnings
 from operator import itemgetter, attrgetter
 import itertools
+from math import floor
 
 #### This program is Copyright (C) 2013, Peter Hickey (peter.hickey@gmail.com) ####
 
@@ -285,6 +286,18 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap):
         overlap_2 = False
     return overlap_1 == overlap_2
 
+def does_read_contain_indel(read):
+    """Check whether a read contains an insertion or deletion (InDel).
+
+    Args:
+        read: A pysam.AlignedRead instance.
+
+    Returns:
+        True if read contains an INDEL, False otherwise.
+    """
+    val = any([x[0] in [1, 2] for x in read.cigar]) # In pysam, the CIGAR operation for an insertion to the reference is 1 and the CIGAR operation for a deletion to the reference is 2.
+    return val
+
 def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap):
     """Ignore the overlapping sequence of read_1 and read_2 from the read with the lower (sum) base qualities in the overlapping region.
        If base qualities are identical then (arbitrarily) ignore the overlapping bases from read_2.
@@ -349,30 +362,39 @@ class WithinFragmentComethylationNTuple:
     Attributes:
         chromosome: The chromosome containing the methylation-loci-n-tuple.
         chromosome_index: An index to be used when sorting a set of WithinFragmentComethylationNTuple instances by chromosome name.
-        n-tuple: The size of the methylation-n-tuples.
+        n: The "n" in n-tuples, i.e. size of the methylation-n-tuples.
         positions: A sorted list of 1-based positions (position_1, position_2, ..., position_n) of length = n-tuple, where position_i is the position of the i-th methylation locus in the methylation-loci-n-tuple (with reference to the OT-strand). NB: position_1 < position_2 < ... < position_n by definition.
         methylation_type: The type of methylation event, e.g. CG, CHH or CHG.
         counts: A dictionary storing the counts for each of the 2^n-tuple comethylation states combined across strands giving a total of 2^n-tuple keys and associated values (counts).
     """
-    def __init__(self, chromosome, chromosome_index, n_tuple, positions, methylation_type):
+    def __init__(self, chromosome, chromosome_index, n, positions, methylation_type):
         """Initiates WithinFragmentComethylationNTuple for a single n-tuple of methylation events with co-ordinates given by arguments (chromosome, positions) and sets all counts to zero."""
         self.methylation_type = methylation_type
         self.chromosome = chromosome
         self.chromosome_index = chromosome_index
         self.positions = positions
-        tmp_k = list((itertools.product(('U', 'M'), repeat = n_tuple))) # Step 1 of creating the keys: create all combinations of 'U', 'M' of length n_tuple
+        tmp_k = list((itertools.product(('U', 'M'), repeat = n))) # Step 1 of creating the keys: create all combinations of 'U', 'M' of length n
         k = sorted([''.join(a) for a in tmp_k]) # Sort those keys for consistency's sake
-        self.counts = dict(zip(k, [0] * (2**n_tuple))) # Create the dictionary with all counts set to 0
+        self.counts = dict(zip(k, [0] * (2**n))) # Create the dictionary with all counts set to 0
     def display(self): 
         """Display a WithinFragmentComethylationNTuple instance."""
-        print 'Methylation type = ', self.methylation_type
-        print 'Positions = ', self.chromosome, ':', self.positions
+        print 'Methylation type =', self.methylation_type
+        print 'Positions =', self.chromosome, ':', self.positions
         print 'Counts =', self.counts
     def n_tuple_id(self):
-        #print ''.join([self.chromosome, ':', str(self.position_1), '-', str(self.position_2)])
         print ''.join([self.chromosome, ':', '-'.join([str(a) for a in self.positions])])
-    def increment_count(self, comethylation_state, read_1, read_2):
+    def increment_count(self, comethylation_state, methylation_type, read_1, read_2):
         """Increment the counts attribute based on the comethylation_state that has been extracted from read_1 and read_2. NB: read_2 should be set to None if data is single-end."""
+        # Replace Bismark methylated and unmethylated characters with M and U, depending on the methylation type.
+        if methylation_type == 'CG':
+            comethylation_state = comethylation_state.replace('Z', 'M')
+            comethylation_state = comethylation_state.replace('z', 'U')
+        elif methylation_type == 'CHG':
+            comethylation_state = comethylation_state.replace('X', 'M')
+            comethylation_state = comethylation_state.replace('x', 'U')
+        elif methylation_type == 'CHH':
+            comethylation_state = comethylation_state.replace('H', 'M')
+            comethylation_state = comethylation_state.replace('h', 'U')
         # Single-end
         if read_2 is None and not read_1.is_paired:
             # Check that XG- and XR-tags make sense with 2-strand protocol data
@@ -402,29 +424,37 @@ class WithinFragmentComethylationNTuple:
                 warning_msg = ''.join(['Skipping readpair ', read.qname, ' as XG-tags or XR-tags are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
                 warnings.warn(warning_msg)             
 
-def extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_n_tuples):
+def extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start, ignore_end, min_qual, phred_offset, ob_strand_offset):
     """Extracts n-tuples of methylation loci from a single-end read and adds the comethylation n-tuple to the methylation_n_tuples object.
     
     Args:
         read: An AlignedRead instance corresponding to a single-end read.
         BAM: The Samfile instance corresponding to the sample. Required in order to extract chromosome names from read.
         methylation_n_tuples: A dictionary storing all observed n-tuples of methylation events and their WithinFragmentComethylationNTuple instance.
+        methylation_type: A string of the methylation type, e.g. CG for CpG methylation. Must be a valid option for the WithinFragmentComethylationNTuple class.
+        methylation_pattern: A regular expression of the methylation loci, e.g. '[Zz]' for CpG-methylation
+        n: Is the "n" in "n-tuple", i.e. the size of the n-tuple. n must be an integer greater than or equal to 1. WARNING: No error or warning produced if this condition is violated.
+        ignore_start: How many bases to ignore from start of read.
+        ignore_end: How many bases to ignore from end of read.
+        min_qual: Ignore bases with quality-score less than this value.
+        phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
+        ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
     Returns:
         methylation_n_tuples: An updated version of methylation_n_tuples
         n_methylation_loci: The number of methylation loci extracted from the read.
     """
     # Identify methylation events in read, e.g. CpGs or CHHs. The methylation_pattern is specified by a command line argument (e.g. Z/z corresponds to CpG)
     methylation_index = [m.start() for m in re.finditer(methylation_pattern, read.opt('XM'))]
-    # Ignore any start or end positions of read, as specified by command line arguments
-    if args.ignoreStart > 0:
-        methylation_index = ignore_first_n_bases(read, methylation_index, args.ignoreStart)
-    if args.ignoreEnd > 0:
-        methylation_index = ignore_last_n_bases(read, methylation_index, args.ignoreEnd)
-    # Ignore any positions with a base quality less than the args.minQual, as specified by command line arguments
-    methylation_index = ignore_low_quality_bases(read, methylation_index, args.minQual, phred_offset)
+    # Ignore any start or end positions of read if required
+    if ignore_start > 0:
+        methylation_index = ignore_first_n_bases(read, methylation_index, ignore_start)
+    if ignore_end > 0:
+        methylation_index = ignore_last_n_bases(read, methylation_index, ignore_end)
+    # Ignore any positions with a base quality less than min_qual
+    methylation_index = ignore_low_quality_bases(read, methylation_index, min_qual, phred_offset)
     n_methylation_loci = len(methylation_index)
-    # Case A: >= n_tuple methylation loci in the read
-    if n_methylation_loci >= n_tuple:
+    # Case A: >= n methylation loci in the read
+    if n_methylation_loci >= n:
         positions = [read.pos + x + 1 for x in methylation_index] # +1 to transform from 0-based to 1-based co-ordinates.
         # If read is aligned to OB-strand then translate co-ordinate "ob_strand_offset" bases to the left so that it points to the C on the OT-strand of the methylation locus.
         if read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
@@ -435,26 +465,35 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
             warnings.warn(warning_msg)
         # Else, construct each bookended methylation-loci-n-tuple and add it to the methylation_n_tuple instance.
         else:
-            for i in range(0, len(methylation_index) - n_tuple + 1): # For a read containing m methylation loci there are (m - n-tuple + 1) n-tuples.
-                this_n_tuple_positions = positions[i:(i + n_tuple)]
+            for i in range(0, len(methylation_index) - n + 1): # For a read containing m methylation loci there are (m - n + 1) n-tuples.
+                this_n_tuple_positions = positions[i:(i + n)]
                 # Create a unique ID for each n-tuple of methylation loci (of form "chromosome:position_1-position_2-...-position_n")
                 n_tuple_id = ''.join([BAM.getrname(read.tid), ':', '-'.join([str(j) for j in this_n_tuple_positions])])
-                # Check whether n-tuple has already been observed. If not, create a WithinFragmentMethylationNTuple instance for it and increment its count.
+                # Check whether n-tuple has already been observed. If not, create a WithinFragmentMethylationNTuple instance for it and increment its count. Otherwise, just increment its count.
                 if not n_tuple_id in methylation_n_tuples:
-                    methylation_n_tuples[n_tuple_id] = WithinFragmentComethylationNTuple(BAM.getrname(read.tid), create_chromosome_index(BAM.getrname(read.tid)), n_tuple, this_n_tuple_positions, args.methylationType)
-                    methylation_n_tuples[n_tuple_id].increment_count(''.join([read.opt('XM')[i] for i in methylation_index[i:(i + n_tuple)]]), read, None)
+                    methylation_n_tuples[n_tuple_id] = WithinFragmentComethylationNTuple(BAM.getrname(read.tid), create_chromosome_index(BAM.getrname(read.tid)), n, this_n_tuple_positions, methylation_type)
+                    methylation_n_tuples[n_tuple_id].increment_count(''.join([read.opt('XM')[j] for j in methylation_index[i:(i + n)]]), methylation_type, read, None)
                 else:
-                    methylation_n_tuples[n_tuple_id].increment_count(''.join([read.opt('XM')[i] for i in methylation_index[i:(i + n_tuple)]]), read, None)
+                    methylation_n_tuples[n_tuple_id].increment_count(''.join([read.opt('XM')[j] for j in methylation_index[i:(i + n)]]), methylation_type, read, None)
     return methylation_n_tuples, n_methylation_loci
 
-def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_n_tuples):
+def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start, ignore_end, min_qual, phred_offset, ob_strand_offset, skip_identical_overlap_check):
     """Extracts n-tuples of methylation loci from a readpair and adds the comethylation n-tuple to the methylation_n_tuples object.
     
     Args:
         read_1: An AlignedRead instance corresponding to read_1 of the readpair.
         read_2: An AlignedRead instance corresponding to read_2 of the readpair.
         BAM: The Samfile instance corresponding to the sample. Required in order to extract chromosome names from read.
-        methylation_n_tuples: A dictionary storing all observed n-tuples of methylation events and their WithinFragmentComethylationNTuple instance. 
+        methylation_n_tuples: A dictionary storing all observed n-tuples of methylation events and their WithinFragmentComethylationNTuple instance.
+        n: Is the \"n\" in \"n-tuple\", i.e. the size of the n-tuple. n must be an integer greater than or equal to 1. WARNING: No error or warning produced if this condition is violated.
+        methylation_type: A string of the methylation type, e.g. CG for CpG methylation. Must be a valid option for the WithinFragmentComethylationNTuple class.
+        methylation_pattern: A regular expression of the methylation loci, e.g. '[Zz]' for CpG-methylation
+        ignore_start: How many bases to ignore from start of read.
+        ignore_end: How many bases to ignore from end of read.
+        min_qual: Ignore bases with quality-score less than this value.
+        phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
+        ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
+        skip_identical_overlap_check: If the two reads of a readpair overlap, should the check of whether the overlapping sequence is identical be skipped? 
     Returns:
         methylation_n_tuples: An updated version of methylation_n_tuples
         n_methylation_loci: The number of methylation loci extracted from the read.
@@ -462,24 +501,24 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
     # Identify methylation events in read, e.g. CpGs or CHHs. The methylation_pattern is specified by a command line argument (e.g. Z/z corresponds to CpG)
     methylation_index_1 = [m.start() for m in re.finditer(methylation_pattern, read_1.opt('XM'))]
     methylation_index_2 = [m.start() for m in re.finditer(methylation_pattern, read_2.opt('XM'))]
-    # Ignore any start or end positions of read, as specified by command line arguments
-    if args.ignoreStart > 0:
-        methylation_index_1 = ignore_first_n_bases(read_1, methylation_index_1, args.ignoreStart)
-        methylation_index_2 = ignore_first_n_bases(read_2, methylation_index_2, args.ignoreStart)
-    if args.ignoreEnd > 0:
-        methylation_index_1 = ignore_last_n_bases(read_1, methylation_index_1, args.ignoreEnd)
-        methylation_index_2 = ignore_last_n_bases(read_2, methylation_index_2, args.ignoreEnd)
-    # Ignore any positions with a base quality less than the args.minQual, as specified by command line arguments
-    methylation_index_1 = ignore_low_quality_bases(read_1, methylation_index_1, args.minQual, phred_offset)
-    methylation_index_2 = ignore_low_quality_bases(read_2, methylation_index_2, args.minQual, phred_offset)
+    # Ignore any start or end positions of read if required
+    if ignore_start > 0:
+        methylation_index_1 = ignore_first_n_bases(read_1, methylation_index_1, ignore_start)
+        methylation_index_2 = ignore_first_n_bases(read_2, methylation_index_2, ignore_start)
+    if ignore_end > 0:
+        methylation_index_1 = ignore_last_n_bases(read_1, methylation_index_1, ignore_end)
+        methylation_index_2 = ignore_last_n_bases(read_2, methylation_index_2, ignore_end)
+    # Ignore any positions with a base quality less than the min_qual
+    methylation_index_1 = ignore_low_quality_bases(read_1, methylation_index_1, min_qual, phred_offset)
+    methylation_index_2 = ignore_low_quality_bases(read_2, methylation_index_2, min_qual, phred_offset)
     # Check for overlapping reads from a readpair.
     # If reads overlap check whether the overlapping sequence is identical
     # If the overlapping sequence is not identical report a warning and skip the readpair.
-    # Only do this check if both read_1 and read_2 are mapped
-    if not read_1.is_unmapped and not read_2.is_unmapped:
+    # Only do this check if both read_1 and read_2 are mapped and skip_identical_overlap_check = False
+    if not skip_identical_overlap_check and not read_1.is_unmapped and not read_2.is_unmapped:
         n_overlap = read_1.alen + read_2.alen - abs(read_1.tlen)
         if n_overlap > 0:
-            if is_overlapping_sequence_identical(read_1, read_2, n_overlap) or args.skipIdenticalOverlapCheck:
+            if is_overlapping_sequence_identical(read_1, read_2, n_overlap):
                 methylation_index_1, methylation_index_2 = ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap)
             else:
                 warning_msg = ''.join(['Skipping readpair ', read.qname, ' as overlapping sequence is not identical'])
@@ -488,7 +527,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                 methylation_index_2 = []
     n_methylation_loci = len(methylation_index_1) + len(methylation_index_2)
     # Only process readpair if there are at least enough CpGs to form one n-tuple
-    if n_methylation_loci >= n_tuple:
+    if n_methylation_loci >= n:
         positions_1 = [read_1.pos + x + 1 for x in methylation_index_1] # +1 to transform from 0-based to 1-based co-ordinates.
         positions_2 = [read_2.pos + x + 1 for x in methylation_index_2] # +1 to transform from 0-based to 1-based co-ordinates.
         # Case 1: Readpair aligns to OT-strand
@@ -499,24 +538,24 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                 warnings.warn(warning_msg)
             else:
                 # First, create all n-tuples of methylation loci where each locus is from read_1.
-                if len(methylation_index_1) >= n_tuple:
-                    for i in range(0, len(methylation_index_1) - n_tuple + 1): # For a read containing m methylation loci there are (m - n-tuple + 1) n-tuples.:
-                        this_n_tuple_positions_1 = positions_1[i:(i + n_tuple)]
+                if len(methylation_index_1) >= n:
+                    for i in range(0, len(methylation_index_1) - n + 1): # For a read containing m methylation loci there are (m - n + 1) n-tuples.:
+                        this_n_tuple_positions_1 = positions_1[i:(i + n)]
                         # Create a unique ID for each n-tuple of methylation loci (of form "chromosome:position_1-position_2-...-position_n")
                         n_tuple_id = ''.join([BAM.getrname(read_1.tid), ':', '-'.join([str(j) for j in this_n_tuple_positions_1])])
-                        # Check whether n-tuple has already been observed. If not, create a WithinFragmentMethylationNTuple instance for it and increment its count.
+                        # Check whether n-tuple has already been observed. If not, create a WithinFragmentMethylationNTuple instance for it and increment its count. Otherwise, just increment its count.
                         if not n_tuple_id in methylation_n_tuples:
-                            methylation_n_tuples[n_tuple_id] = WithinFragmentComethylationNTuple(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read_1.tid)), n_tuple, this_n_tuple_positions_1, args.methylationType)
-                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_1.opt('XM')[i] for i in methylation_index_1[i:(i + n_tuple)]]), read_1, read_2)
+                            methylation_n_tuples[n_tuple_id] = WithinFragmentComethylationNTuple(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read_1.tid)), n, this_n_tuple_positions_1, methylation_type)
+                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + n)]]), methylation_type, read_1, read_2)
                         else:
-                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_1.opt('XM')[i] for i in methylation_index_1[i:(i + n_tuple)]]), read_1, read_2)
+                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + n)]]), methylation_type, read_1, read_2)
                 # Second, create all n-tuples of methylation loci where the leftmost locus is on read_1 and the rightmost locus is on read_2
-                num_shared_n_tuples = max(len(methylation_index_1) + len(methylation_index_2) - n_tuple + 1, 0) - max(len(methylation_index_1) - n_tuple + 1, 0) - max(len(methylation_index_2) - n_tuple + 1, 0) # the number of n_tuples that span read_1 and read_2
-                leftmost_shared_locus_index = max(0, len(methylation_index_1) - n_tuple + 1) # The index of the leftmost locus to be part of a "shared" n-tuple.
-                rightmost_shared_locus_index = min(n_tuple - 2, len(methylation_index_2) - 1) # The index of the rightmost locus to be part of a "shared" n-tuple.
+                num_shared_n_tuples = max(len(methylation_index_1) + len(methylation_index_2) - n + 1, 0) - max(len(methylation_index_1) - n + 1, 0) - max(len(methylation_index_2) - n + 1, 0) # the number of n-tuples that span read_1 and read_2
+                leftmost_shared_locus_index = max(0, len(methylation_index_1) - n + 1) # The index of the leftmost locus to be part of a "shared" n-tuple.
+                rightmost_shared_locus_index = min(n - 2, len(methylation_index_2) - 1) # TODO: Deprecate if possible - I don't think this variable is used anywhere. The index of the rightmost locus to be part of a "shared" n-tuple. -2 (= -1 - 1) because Python lists are 0-indexed.
                 for i in range(0, num_shared_n_tuples):
                     this_n_tuple_positions_1 = positions_1[(leftmost_shared_locus_index + i):]
-                    this_n_tuple_positions_2 = positions_2[:(rightmost_shared_locus_index + i)]
+                    this_n_tuple_positions_2 = positions_2[:(n - len(this_n_tuple_positions_1))]
                     # EXTRA CHECK: Skip readpair if methylation loci are incorrectly ordered and report a warning. This has already been checked a few lines above so this is a sanity check.
                     if not this_n_tuple_positions_1 + this_n_tuple_positions_2 == sorted(this_n_tuple_positions_1 + this_n_tuple_positions_2):
                         warning_msg = ' '.join(["Skipping paired-end read", read.qname, "as positions aren't properly ordered (Case 1: shared n-tuples)."])
@@ -524,26 +563,24 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                     else:
                         # Create a unique ID for each n-tuple of methylation loci (of form "chromosome:position_1-position_2-...-position_n")
                         n_tuple_id = ''.join([BAM.getrname(read_1.tid), ':', '-'.join([str(j) for j in this_n_tuple_positions_1] + [str(k) for k in this_n_tuple_positions_2])])
-                    # Check whether n-tuple has already been observed. If not, create a WithinFragmentMethylationNTuple instance for it and increment its count.
+                    # Check whether n-tuple has already been observed. If not, create a WithinFragmentMethylationNTuple instance for it and increment its count. Otherwise, just increments its count.
                         if not n_tuple_id in methylation_n_tuples:
-                            methylation_n_tuples[n_tuple_id] = WithinFragmentComethylationNTuple(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read_1.tid)), n_tuple, this_n_tuple_positions_1 + this_n_tuple_positions_2, args.methylationType)
-                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_1.opt('XM')[i] for i in methylation_index_1[(leftmost_shared_locus_index + i):]] + [read_2.opt('XM')[i] for i in methylation_index_2[:(rightmost_shared_locus_index + i)]]), read_1, read_2)
+                            methylation_n_tuples[n_tuple_id] = WithinFragmentComethylationNTuple(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read_1.tid)), n, this_n_tuple_positions_1 + this_n_tuple_positions_2, methylation_type)
+                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[(leftmost_shared_locus_index + i):]] + [read_2.opt('XM')[j] for j in methylation_index_2[:(n - len(this_n_tuple_positions_1))]]), methylation_type, read_1, read_2)
                         else:
-                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_1.opt('XM')[i] for i in methylation_index_1[(leftmost_shared_locus_index + i):]] + [read_2.opt('XM')[i] for i in methylation_index_2[:(rightmost_shared_locus_index + i)]]), read_1, read_2)
+                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[(leftmost_shared_locus_index + i):]] + [read_2.opt('XM')[j] for j in methylation_index_2[:(n - len(this_n_tuple_positions_1))]]), methylation_type, read_1, read_2)
                 # Finally, create all n-tuples of methylation loci where each locus is from read_2.        
-                if len(methylation_index_2) >= n_tuple:
-                    for i in range(0, len(methylation_index_2) - n_tuple + 1): # For a read containing m methylation loci there are (m - n-tuple + 1) n-tuples.:
-                        this_n_tuple_positions_2 = positions_2[i:(i + n_tuple)]
+                if len(methylation_index_2) >= n:
+                    for i in range(0, len(methylation_index_2) - n + 1): # For a read containing m methylation loci there are (m - n + 1) n-tuples.:
+                        this_n_tuple_positions_2 = positions_2[i:(i + n)]
                         # Create a unique ID for each n-tuple of methylation loci (of form "chromosome:position_1-position_2-...-position_n")
                         n_tuple_id = ''.join([BAM.getrname(read_2.tid), ':', '-'.join([str(j) for j in this_n_tuple_positions_2])])
                         # Check whether n-tuple has already been observed. If not, create a WithinFragmentMethylationNTuple instance for it and increment its count.
                         if not n_tuple_id in methylation_n_tuples:
-                            methylation_n_tuples[n_tuple_id] = WithinFragmentComethylationNTuple(BAM.getrname(read_2.tid), create_chromosome_index(BAM.getrname(read_2.tid)), n_tuple, this_n_tuple_positions_2, args.methylationType)
-                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_2.opt('XM')[i] for i in methylation_index_2[i:(i + n_tuple)]]), read_1, read_2)
+                            methylation_n_tuples[n_tuple_id] = WithinFragmentComethylationNTuple(BAM.getrname(read_2.tid), create_chromosome_index(BAM.getrname(read_2.tid)), n, this_n_tuple_positions_2, methylation_type)
+                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + n)]]), methylation_type, read_1, read_2)
                         else:
-                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_2.opt('XM')[i] for i in methylation_index_1[i:(i + n_tuple)]]), read_1, read_2)
-                
-                            #### UP TO HERE ####                                    
+                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + n)]]), methylation_type, read_1, read_2)
         # Case 2: Readpair aligns to OB-strand
         elif read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
             # Translate co-ordinates "ob_strand_offset" bases to the left so that it points to the C on the OT-strand of the methylation locus
@@ -555,24 +592,24 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                 warnings.warn(warning_msg)
             else:
                 # First, create all n-tuples of methylation loci where each locus is from read_1.
-                if len(methylation_index_1) >= n_tuple:
-                    for i in range(0, len(methylation_index_1) - n_tuple + 1): # For a read containing m methylation loci there are (m - n-tuple + 1) n-tuples.:
-                        this_n_tuple_positions_1 = positions_1[i:(i + n_tuple)]
+                if len(methylation_index_1) >= n:
+                    for i in range(0, len(methylation_index_1) - n + 1): # For a read containing m methylation loci there are (m - n-tuple + 1) n-tuples.:
+                        this_n_tuple_positions_1 = positions_1[i:(i + n)]
                         # Create a unique ID for each n-tuple of methylation loci (of form "chromosome:position_1-position_2-...-position_n")
-                        n_tuple_id = ''.join([BAM.getrname(read_1.tid), ':', '-'.join([str(j) for j in this_n_tuple_positions])])
+                        n_tuple_id = ''.join([BAM.getrname(read_1.tid), ':', '-'.join([str(j) for j in this_n_tuple_positions_1])])
                         # Check whether n-tuple has already been observed. If not, create a WithinFragmentMethylationNTuple instance for it and increment its count.
                         if not n_tuple_id in methylation_n_tuples:
-                            methylation_n_tuples[n_tuple_id] = WithinFragmentComethylationNTuple(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read_1.tid)), n_tuple, this_n_tuple_positions_1, args.methylationType)
-                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_1.opt('XM')[i] for i in methylation_index_1[i:(i + n_tuple)]]), read_1, read_2)
+                            methylation_n_tuples[n_tuple_id] = WithinFragmentComethylationNTuple(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read_1.tid)), n, this_n_tuple_positions_1, methylation_type)
+                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + n)]]), methylation_type, read_1, read_2)
                         else:
-                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_1.opt('XM')[i] for i in methylation_index_1[i:(i + n_tuple)]]), read_1, read_2)
+                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + n)]]), methylation_type, read_1, read_2)
                 # Second, create all n-tuples of methylation loci where the leftmost locus is on read_1 and the rightmost locus is on read_2
-                num_shared_n_tuples = max(len(methylation_index_1) + len(methylation_index_2) - n_tuple + 1, 0) - max(len(methylation_index_1) - n_tuple + 1, 0) - max(len(methylation_index_2) - n_tuple + 1, 0) # the number of n_tuples that span read_1 and read_2
-                leftmost_shared_locus_index = max(0, len(methylation_index_2) - n_tuple + 1) # The index of the leftmost locus to be part of a "shared" n-tuple.
-                rightmost_shared_locus_index = min(n_tuple - 2, len(methylation_index_1) - 1) # The index of the rightmost locus to be part of a "shared" n-tuple.
+                num_shared_n_tuples = max(len(methylation_index_1) + len(methylation_index_2) - n + 1, 0) - max(len(methylation_index_1) - n + 1, 0) - max(len(methylation_index_2) - n + 1, 0) # the number of n-tuples that span read_1 and read_2
+                leftmost_shared_locus_index = max(0, len(methylation_index_2) - n + 1) # The index of the leftmost locus to be part of a "shared" n-tuple.
+                rightmost_shared_locus_index = min(n - 2, len(methylation_index_1) - 1) # The index of the rightmost locus to be part of a "shared" n-tuple. -2 (= -1 - 1) because Python lists are 0-indexed.
                 for i in range(0, num_shared_n_tuples):
                     this_n_tuple_positions_2 = positions_2[(leftmost_shared_locus_index + i):]
-                    this_n_tuple_positions_1 = positions_1[:(rightmost_shared_locus_index + i)]
+                    this_n_tuple_positions_1 = positions_1[:(n - len(this_n_tuple_positions_2))]
                     # EXTRA CHECK: Skip readpair if methylation loci are incorrectly ordered and report a warning. This has already been checked a few lines above so this is a sanity check.
                     if not this_n_tuple_positions_2 + this_n_tuple_positions_1 == sorted(this_n_tuple_positions_2 + this_n_tuple_positions_1):
                         warning_msg = ' '.join(["Skipping paired-end read", read.qname, "as positions aren't properly ordered (Case 2: shared n-tuples)."])
@@ -582,36 +619,36 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                         n_tuple_id = ''.join([BAM.getrname(read_1.tid), ':', '-'.join([str(j) for j in this_n_tuple_positions_2] + [str(k) for k in this_n_tuple_positions_1])])
                     # Check whether n-tuple has already been observed. If not, create a WithinFragmentMethylationNTuple instance for it and increment its count.
                         if not n_tuple_id in methylation_n_tuples:
-                            methylation_n_tuples[n_tuple_id] = WithinFragmentComethylationNTuple(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read_1.tid)), n_tuple, this_n_tuple_positions_2 + this_n_tuple_positions_1, args.methylationType)
-                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_1.opt('XM')[i] for i in methylation_index_1[(leftmost_shared_locus_index + i):]] + [read_2.opt('XM')[i] for i in methylation_index_2[:(rightmost_shared_locus_index + i)]]), read_1, read_2)
+                            methylation_n_tuples[n_tuple_id] = WithinFragmentComethylationNTuple(BAM.getrname(read_1.tid), create_chromosome_index(BAM.getrname(read_1.tid)), n, this_n_tuple_positions_2 + this_n_tuple_positions_1, methylation_type)
+                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[(leftmost_shared_locus_index + i):]] + [read_1.opt('XM')[j] for j in methylation_index_1[:(n - len(this_n_tuple_positions_2))]]), methylation_type, read_1, read_2)
                         else:
-                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_1.opt('XM')[i] for i in methylation_index_1[(leftmost_shared_locus_index + i):]] + [read_2.opt('XM')[i] for i in methylation_index_2[:(rightmost_shared_locus_index + i)]]), read_1, read_2)
+                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[(leftmost_shared_locus_index + i):]] + [read_1.opt('XM')[j] for j in methylation_index_1[:(n - len(this_n_tuple_positions_2))]]), methylation_type, read_1, read_2)
                 # Finally, create all n-tuples of methylation loci where each locus is from read_2.        
-                if len(methylation_index_2) >= n_tuple:
-                    for i in range(0, len(methylation_index_2) - n_tuple + 1): # For a read containing m methylation loci there are (m - n-tuple + 1) n-tuples.:
-                        this_n_tuple_positions_2 = positions_2[i:(i + n_tuple)]
+                if len(methylation_index_2) >= n:
+                    for i in range(0, len(methylation_index_2) - n + 1): # For a read containing m methylation loci there are (m - n-tuple + 1) n-tuples.:
+                        this_n_tuple_positions_2 = positions_2[i:(i + n)]
                         # Create a unique ID for each n-tuple of methylation loci (of form "chromosome:position_1-position_2-...-position_n")
                         n_tuple_id = ''.join([BAM.getrname(read_2.tid), ':', '-'.join([str(j) for j in this_n_tuple_positions_2])])
                         # Check whether n-tuple has already been observed. If not, create a WithinFragmentMethylationNTuple instance for it and increment its count.
                         if not n_tuple_id in methylation_n_tuples:
-                            methylation_n_tuples[n_tuple_id] = WithinFragmentComethylationNTuple(BAM.getrname(read_2.tid), create_chromosome_index(BAM.getrname(read_2.tid)), n_tuple, this_n_tuple_positions_2, args.methylationType)
-                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_2.opt('XM')[i] for i in methylation_index_2[i:(i + n_tuple)]]), read_1, read_2)
+                            methylation_n_tuples[n_tuple_id] = WithinFragmentComethylationNTuple(BAM.getrname(read_2.tid), create_chromosome_index(BAM.getrname(read_2.tid)), n, this_n_tuple_positions_2, methylation_type)
+                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + n)]]), methylation_type, read_1, read_2)
                         else:
-                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_2.opt('XM')[i] for i in methylation_index_1[i:(i + n_tuple)]]), read_1, read_2)
+                            methylation_n_tuples[n_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + n)]]), methylation_type, read_1, read_2)
     return methylation_n_tuples, n_methylation_loci
                                     
 # tab_writer writes a tab-separated output file to the filehandle WF
 tab_writer = csv.writer(WF, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
 
-def write_methylation_n_tuples_to_file(methylation_n_tuples):
+def write_methylation_n_tuples_to_file(methylation_n_tuples, n):
     """Write the methylation_n_tuples instance to a tab-separated file. The n-tuples are ordered by chromosome and genomic co-ordinates.
     
     Args:
         methylation_n_tuples: A dictionary storing all observed n-tuples of methylation events and their WithinFragmentComethylationNTuple instance. 
     """
     # Create the header row
-    header = ['chr'] + ['pos' + str(i) for i in range(1, n_tuple)]
-    example_row = WithinFragmentComethylationNTuple('chr1', 1, n_tuple, [0] * n_tuple, 'CG').counts
+    header = ['chr'] + ['pos' + str(i) for i in range(1, n + 1)]
+    example_row = WithinFragmentComethylationNTuple('chr1', 1, n, [0] * n, 'CG').counts
     for key in sorted(example_row.iterkeys()):
         header.append(key)
     # Write the header to file
@@ -619,11 +656,11 @@ def write_methylation_n_tuples_to_file(methylation_n_tuples):
     # Write each n-tuple of methylation loci to file using a nested for loop
     # (1) Loop over chromosomes by increasing chromosome_index order
     # (2) Loop over positions by increasing order
-    for n_tuple in sorted(methylation_n_tuples.values(), key = attrgetter('chromosome_index', 'positions')): # TODO: Seems to work but output files should be carefully checked in R.
-        ordered_n_tuple_counts = []
-        for i in sorted(n_tuple.counts.iterkeys()):
-            ordered_n_tuple_counts.append(n_tuple.counts[i])
-        row = [n_tuple.chromosome] + n_tuple.positions + ordered_n_tuple_counts
+    for this_n_tuple in sorted(methylation_n_tuples.values(), key = attrgetter('chromosome_index', 'positions')): # TODO: Seems to work but output files should be carefully checked in R.
+        this_n_tuple_ordered_counts = []
+        for i in sorted(this_n_tuple.counts.iterkeys()):
+            this_n_tuple_ordered_counts.append(this_n_tuple.counts[i])
+        row = [this_n_tuple.chromosome] + this_n_tuple.positions + this_n_tuple_ordered_counts
         tab_writer.writerow(row)
     
 #### Variable initialisations ####
@@ -632,23 +669,31 @@ if args.phred64:
     phred_offset = 64
 else:
     phred_offset = 33
+# Set the "n" in "n-tuple", i.e. the size of the methylation-loci-n-tuples
+n = args.nTuple
 # Set the methylation type to be used in the analysis
-if args.methylationType == 'CG':
+methylation_type = args.methylationType
+if methylation_type == 'CG':
     methylation_pattern = re.compile(r'[Zz]')
     ob_strand_offset = 1
-elif args.methylationType == 'CHG':
+elif methylation_type == 'CHG':
     methylation_pattern = re.compile(r'[Xx]')
     ob_strand_offset = 2
-elif args.methylationType == 'CHH':
+elif methylation_type == 'CHH':
     methylation_pattern = re.compile(r'[Hh]')
     ob_strand_offset = 0
     sys.exit('Sorry, CHH-methylation support is not yet implemented.')
 else:
     sys.exit('--methylationType must be one of \'CG\' or \'CHG\'')
-    
+skip_identical_overlap_check = args.skipIdenticalOverlapCheck
+ignore_start = args.ignoreStart
+ignore_end = args.ignoreEnd
+min_qual = args.minQual
+
 n_fragment = 0 # The number of DNA fragments. One single-end read contributes one to the count and each half of a readpair contributes half a count.
 max_n_methylation_loci = 50
 n_methylation_loci = [0] * max_n_methylation_loci
+n_methylation_loci = {} # Dictionary of the number of methylation loci that passed QC per read
 methylation_n_tuples = {} # Dictionary of n-tuples of methylation loci with keys of form chromosome:position_1:position_2 and values corresponding to a WithinFragmentComethylationNTuple instance
 
 #### The main program. Loops over the BAM file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or readpair. ####
@@ -656,6 +701,9 @@ methylation_n_tuples = {} # Dictionary of n-tuples of methylation loci with keys
 print 'Input file =', BAM.filename
 print 'Output file =', WF.name
 print 'WARNING: CpG-n-tuples that span both mates of a readpair may have NIC > 0. Furthermore, filtering by base quality, read-position, etc. may also introduce CpG-n-tuples with NIC > 0. These should be post-hoc filtered.'
+if n < 1 or n != floor(n):
+    exit_msg = "ERROR: --nTuple must be an integer greater than or equal to 1."
+    sys.exit(exit_msg)
 if args.ignoreDuplicates:
     print 'Ignoring reads marked as PCR duplicates'
 if args.ignoreImproperPairs:
@@ -664,8 +712,8 @@ print 'Assuming quality scores are Phred', phred_offset
 print 'Ignoring', args.ignoreStart, 'bp from start of each read'
 print 'Ignoring', args.ignoreEnd, 'bp from end of each read'
 print 'Ignoring methylation calls with base-quality less than', args.minQual
-print 'Creating bookended methylation-loci-n-tuples'
-print 'Analysing', args.methylationType, 'methylation events'
+print 'Analysing', args.methylationType, 'methylation loci'
+print ''.join(['Creating bookended ', str(n), '-tuples of methylation loci'])
 if args.skipIdenticalOverlapCheck:
     print 'Not checking overlapping readpairs for whether the overlapping sequence is identical'
 # Loop over the BAM
@@ -689,10 +737,16 @@ for read in BAM:
         elif read.is_paired and read.is_read2:
             read_2 = read
             n_fragment += 1
+            # Skip reads containing indels
+            if does_read_contain_indel(read_1) or does_read_contain_indel(read_2):
+                continue
             # Check that read_1 and read_2 are aligned to the same chromosome and have identical read-names.
             # If not, skip the readpair.
             if read_1.tid == read_2.tid and read_1.qname == read_2.qname:
-                methylation_n_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_n_tuples)
+                methylation_n_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start, ignore_end, min_qual, phred_offset, ob_strand_offset, skip_identical_overlap_check)
+                # Update the n_methylation_loci dictionary
+                if not n_methylation_loci_in_fragment in n_methylation_loci:
+                    n_methylation_loci[n_methylation_loci_in_fragment] = 0
                 n_methylation_loci[n_methylation_loci_in_fragment] += 1
             elif read_1.tid != read_2.tid:
                 warning_msg = ''.join(['Skipping readpair', read_1.qname, ' as reads aligned to different chromosomes (', BAM.getrname(read_1.tid), ' and ', BAM.getrname(read_2.tid), ')'])
@@ -702,8 +756,13 @@ for read in BAM:
                 exit_msg = "ERROR: The name of read_1 is not identical to to that of read_2 for readpair ", read_1.qname, read_2.qname, "\nPlease sort your paired-end BAM file in query-name-order with Picard's SortSam function."
                 sys.exit(exit_msg)
         elif not read.is_paired:
+            # Skip reads containing indels
+            if does_read_contain_indel(read):
+                continue
             n_fragment += 1
-            methylation_n_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_n_tuples)
+            methylation_n_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start, ignore_end, min_qual, phred_offset, ob_strand_offset)
+            if not n_methylation_loci_in_fragment in n_methylation_loci:
+                n_methylation_loci[n_methylation_loci_in_fragment] = 0
             n_methylation_loci[n_methylation_loci_in_fragment] += 1
         else:
             warning_msg = ''.join(["Read is neither a single-end read nor part of a paired-end read. Check the SAM flag values are correctly set for read:", read.qname])
@@ -712,14 +771,20 @@ for read in BAM:
 
 # Write results to disk
 print 'Writing output to', WF.name, '...'
-write_methylation_n_tuples_to_file(methylation_n_tuples)
+write_methylation_n_tuples_to_file(methylation_n_tuples, n)
 BAM.close()
 WF.close()
 
 # TODO: Check that this output is doing as intended
 print 'Number of DNA fragments in file:', int(n_fragment)
-print 'Number of DNA fragments informative for within-fragment comethylation', sum(n_methylation_loci[2:]), '(', round(sum(n_methylation_loci[2:]) / float(n_fragment) * 100, 1), '%)'
+n_informative_fragments = 0
+for k, v in n_methylation_loci.iteritems():
+    if k >= n:
+        n_informative_fragments += v
+print ''.join(['Number of reads or readpairs informative for co-methylation ', str(n), '-tuples = ', str(n_informative_fragments), ' (', str(round(n_informative_fragments / float(n_fragment) * 100, 1)), '% of total fragments)'])
 print 'Histogram of number of', args.methylationType, 'methylation loci per DNA fragment'
 print 'n\tcount'
+for k, v in iter(sorted(n_methylation_loci.iteritems())):
+    print k, '\t', v
 for i in range(len(n_methylation_loci)):
     '{i}, {j}'.format(i = i, j = n_methylation_loci[i])
