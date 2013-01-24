@@ -786,5 +786,3 @@ print 'Histogram of number of', args.methylationType, 'methylation loci per DNA 
 print 'n\tcount'
 for k, v in iter(sorted(n_methylation_loci.iteritems())):
     print k, '\t', v
-for i in range(len(n_methylation_loci)):
-    '{i}, {j}'.format(i = i, j = n_methylation_loci[i])
