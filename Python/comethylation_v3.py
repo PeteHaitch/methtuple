@@ -43,6 +43,8 @@ from math import floor
 
 
 #### TODOs ####
+# Change methylationType CG to CpG
+# Include --nTuple and --methylationType parameters in output filenames
 # See GitHub issue tracker
 
 #### Command line parser ####
