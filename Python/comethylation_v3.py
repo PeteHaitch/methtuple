@@ -355,7 +355,12 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
     return methylation_index_1, methylation_index_2
 
 def create_chromosome_index(chromosome_name):
-    chromosome_key = {'chr1': 1, 'chr2': 2, 'chr3': 3, 'chr4': 4, 'chr5': 5, 'chr6': 6, 'chr7': 7, 'chr8': 8, 'chr9': 9, 'chr10': 10, 'chr11': 11, 'chr12': 12, 'chr13': 13, 'chr14': 14, 'chr15': 15, 'chr16': 16, 'chr17': 17, 'chr18': 18, 'chr19': 19, 'chr20': 20, 'chr21': 21, 'chr22': 22, 'chrX': 23, 'chrY': 24, 'chrM': 25, 'chrL': 26}
+    if chromosome_name.find('chr') == -1:
+        ## TODO: Remove hardcoding. This was hardcoded to work with the Seisenberger et al. data where chromosomes = 1, 2, ..., 19, X, Y and MT
+        chromosome_key = {'1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, '11': 11, '12': 12, '13': 13, '14': 14, '15': 15, '16': 16, '17': 17, '18': 18, '19': 19, 'X': 20, 'Y': 21, 'MT': 22}
+    else:
+        ## TODO: Remove hardcoding. This was hardcoded to work with Lister et al. data where chromosomes = chr1, chr2, ..., chr22, chrX, chrY, chrM and chrL (lambda_phage)
+        chromosome_key = {'chr1': 1, 'chr2': 2, 'chr3': 3, 'chr4': 4, 'chr5': 5, 'chr6': 6, 'chr7': 7, 'chr8': 8, 'chr9': 9, 'chr10': 10, 'chr11': 11, 'chr12': 12, 'chr13': 13, 'chr14': 14, 'chr15': 15, 'chr16': 16, 'chr17': 17, 'chr18': 18, 'chr19': 19, 'chr20': 20, 'chr21': 21, 'chr22': 22, 'chrX': 23, 'chrY': 24, 'chrM': 25, 'chrL': 26}
     return chromosome_key[chromosome_name]
 
 class WithinFragmentComethylationNTuple:
