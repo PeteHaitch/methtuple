@@ -4,10 +4,10 @@ Title: Analyse co-methylation from bisulfite sequencing data
 Description: Tools for analyzing spatial dependencies (co-methylation) within bisulfite sequencing data
 Author: Peter Hickey
 Maintainer: Peter Hickey <peter.hickey@gmail.com>
-Depends: R (>= 2.15), GenomicRanges, parallel, plyr
+Depends: R (>= 2.15), GenomicRanges, parallel, rtracklayer
 Imports:
 Suggests: 
-Collate: hasGRanges.r WFComethylation_Class.r read.wf.r
+Collate: hasGRanges.r WFComethylation_Class.r read.wf.r utils.r WFComethylation_utils.r
 License: Artistic-2.0
 LazyData: yes
 biocViews: DNAMethylation
