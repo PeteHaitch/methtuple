@@ -330,7 +330,7 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
                     methylation_index_2 = [x for x in methylation_index_2 if x not in ignore_these_bases]
         else:
             for i in methylation_index_1:
-                if i >= (read.alen - n_overlap):
+                if i >= (read_1.alen - n_overlap):
                     ignore_these_bases.append(i)
                     methylation_index_1 = [x for x in methylation_index_1 if x not in ignore_these_bases]
     # Readpair aligns to OB-strand
@@ -533,10 +533,15 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                 methylation_index_1 = []
                 methylation_index_2 = []
     n_methylation_loci = len(methylation_index_1) + len(methylation_index_2)
-    # Only process readpair if there are at least enough CpGs to form one n-tuple
+    # Only process readpair if there are at least enough CpGs to form one n-tuple.
     if n_methylation_loci >= n:
         positions_1 = [read_1.pos + x + 1 for x in methylation_index_1] # +1 to transform from 0-based to 1-based co-ordinates.
         positions_2 = [read_2.pos + x + 1 for x in methylation_index_2] # +1 to transform from 0-based to 1-based co-ordinates.
+        if any(x in positions_1 for x in positions_2):
+            exit_msg = ''.join(['ERROR: For readpair ', read.qname, ', position_1 and position_2 contain a common position. This should not happen.'])
+            print positions_1
+            print positions_2
+            sys.exit(exit_msg)
         # Case 1: Readpair aligns to OT-strand
         if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
             # Skip readpair if methylation loci are incorrectly ordered and report a warning.
@@ -793,3 +798,4 @@ print 'Histogram of number of', args.methylationType, 'methylation loci per DNA 
 print 'n\tcount'
 for k, v in iter(sorted(n_methylation_loci.iteritems())):
     print k, '\t', v
+
