@@ -495,7 +495,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
                     methylation_n_tuples[n_tuple_id].increment_count(''.join([read.opt('XM')[j] for j in methylation_index[i:(i + n)]]), methylation_type, read, None)
     return methylation_n_tuples, n_methylation_loci
 
-def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start, ignore_end, min_qual, phred_offset, ob_strand_offset, skip_identical_overlap_check):
+def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start, ignore_end, min_qual, phred_offset, ob_strand_offset, skip_identical_overlap_check, n_fragment_skipped_due_to_bad_overlap):
     """Extracts n-tuples of methylation loci from a readpair and adds the comethylation n-tuple to the methylation_n_tuples object.
     
     Args:
@@ -511,7 +511,8 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         min_qual: Ignore bases with quality-score less than this value.
         phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
         ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
-        skip_identical_overlap_check: If the two reads of a readpair overlap, should the check of whether the overlapping sequence is identical be skipped? 
+        skip_identical_overlap_check: If the two reads of a readpair overlap, should the check of whether the overlapping sequence is identical be skipped?
+        n_fragment_skipped_due_to_bad_overlap: The total number of fragments (read-pairs) skipped due to the overlapping sequencing not passing the filter.
     Returns:
         methylation_n_tuples: An updated version of methylation_n_tuples
         n_methylation_loci: The number of methylation loci extracted from the read.
@@ -540,6 +541,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                 methylation_index_1, methylation_index_2 = ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap)
             else:
                 warning_msg = ''.join(['Skipping readpair ', read.qname, ' as overlapping sequence is not identical'])
+                n_fragment_skipped_due_to_bad_overlap += 1
                 warnings.warn(warning_msg)
                 methylation_index_1 = []
                 methylation_index_2 = []
@@ -658,7 +660,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                             methylation_n_tuples[n_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + n)]]), methylation_type, read_1, read_2)
                         else:
                             methylation_n_tuples[n_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + n)]]), methylation_type, read_1, read_2)
-    return methylation_n_tuples, n_methylation_loci
+    return methylation_n_tuples, n_methylation_loci, n_fragment_skipped_due_to_bad_overlap
                                     
 # tab_writer writes a tab-separated output file to the filehandle WF
 tab_writer = csv.writer(WF, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
@@ -714,7 +716,8 @@ ignore_end = args.ignoreEnd
 min_qual = args.minQual
 
 n_fragment = 0 # The number of DNA fragments. One single-end read contributes one to the count and each half of a readpair contributes half a count.
-max_n_methylation_loci = 50
+n_fragment_skipped_due_to_bad_overlap = 0 # The number of DNA fragments (read-pairs) skipped due to the overlapping sequencing not passing the appropriate filter
+max_n_methylation_loci = 50 # TODO: Make this a non-hardcoded value
 n_methylation_loci = [0] * max_n_methylation_loci
 n_methylation_loci = {} # Dictionary of the number of methylation loci that passed QC per read
 methylation_n_tuples = {} # Dictionary of n-tuples of methylation loci with keys of form chromosome:position_1:position_2 and values corresponding to a WithinFragmentComethylationNTuple instance
@@ -768,7 +771,7 @@ for read in BAM:
             # Check that read_1 and read_2 are aligned to the same chromosome and have identical read-names.
             # If not, skip the readpair.
             if read_1.tid == read_2.tid and read_1.qname == read_2.qname:
-                methylation_n_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start, ignore_end, min_qual, phred_offset, ob_strand_offset, skip_identical_overlap_check)
+                methylation_n_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start, ignore_end, min_qual, phred_offset, ob_strand_offset, skip_identical_overlap_check, n_fragment_skipped_due_to_bad_overlap)
                 # Update the n_methylation_loci dictionary
                 if not n_methylation_loci_in_fragment in n_methylation_loci:
                     n_methylation_loci[n_methylation_loci_in_fragment] = 0
@@ -800,8 +803,9 @@ write_methylation_n_tuples_to_file(methylation_n_tuples, n)
 BAM.close()
 WF.close()
 
-# TODO: Check that this output is doing as intended
+# Print some summary information to STDOUT
 print 'Number of DNA fragments in file:', int(n_fragment)
+print 'Number of DNA fragments (read-pairs) skipped due to overlapping sequence not passing QC filter:', int(n_fragment_skipped_due_to_bad_overlap)
 n_informative_fragments = 0
 for k, v in n_methylation_loci.iteritems():
     if k >= n:
