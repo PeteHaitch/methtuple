@@ -90,7 +90,7 @@ parser.add_argument('--nTuple', metavar = '<int>',
 parser.add_argument('--methylationType',
                     metavar = '<string>',
                     default ="CpG",
-                    help='The type of methylation loci to study: CG or CHH (default: CG)')
+                    help='The type of methylation loci to study: CG or CHG (default: CG; CHH not yet implemented)')
 parser.add_argument('--phred64',
                     action = 'store_true',
                     help='Quality scores are encoded as Phred64 (default: Phred33)')
