@@ -70,14 +70,22 @@ parser.add_argument('--ignoreDuplicates',
 parser.add_argument('--ignoreImproperPairs',
                     action = 'store_true',
                     help ='Ignore improper readpairs')
-parser.add_argument('--ignoreStart', metavar = '<int>',
+parser.add_argument('--ignoreStart_r1', metavar = '<int>',
                     type = int,
                     default=0,
-                    help='Ignore first <int> bases from start of reads, where start is the first sequenced base not necessarily the leftmost aligned base (default: 0). WARNING: Parameter value not sanity checked by program.')
-parser.add_argument('--ignoreEnd', metavar = '<int>',
+                    help="Ignore first <int> bases from start (5' end) of read (respectively, read_1) for single-end data (respectively, paired-end data) (default: 0). WARNING: Parameter value not sanity checked by program.")
+parser.add_argument('--ignoreStart_r2', metavar = '<int>',
                     type = int,
                     default=0,
-                    help='Ignore last <int> bases from end of reads, where end is the last sequenced base not necessarily the rightmost aligned base (default: 0). WARNING: Parameter value not sanity checked by program.')
+                    help="Only used if data are paired-end. Ignore first <int> bases from start (5' end) of read_2 (default: 0). WARNING: Parameter value not sanity checked by program.")
+parser.add_argument('--ignoreEnd_r1', metavar = '<int>',
+                    type = int,
+                    default=0,
+                    help="Ignore last <int> bases from end (3' end) of read (respectively, read_1) for single-end data (respectively, paired-end data) (default: 0). WARNING: Parameter value not sanity checked by program.")
+parser.add_argument('--ignoreEnd_r2', metavar = '<int>',
+                    type = int,
+                    default=0,
+                    help="Only used if data are paired-end. Ignore last <int> bases from end (5' end) of read_2 (default: 0). WARNING: Parameter value not sanity checked by program.")
 parser.add_argument('--minQual', metavar = '<int>',
                     type = int,
                     default=0,
@@ -457,7 +465,7 @@ class WithinFragmentComethylationNTuple:
                 warning_msg = ''.join(['Skipping readpair ', read.qname, ' as XG-tags or XR-tags are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
                 warnings.warn(warning_msg)             
 
-def extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start, ignore_end, min_qual, phred_offset, ob_strand_offset):
+def extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start_r1, ignore_end_r1, min_qual, phred_offset, ob_strand_offset):
     """Extracts n-tuples of methylation loci from a single-end read and adds the comethylation n-tuple to the methylation_n_tuples object.
     
     Args:
@@ -467,8 +475,8 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
         methylation_type: A string of the methylation type, e.g. CG for CpG methylation. Must be a valid option for the WithinFragmentComethylationNTuple class.
         methylation_pattern: A regular expression of the methylation loci, e.g. '[Zz]' for CpG-methylation
         n: Is the "n" in "n-tuple", i.e. the size of the n-tuple. n must be an integer greater than or equal to 1. WARNING: No error or warning produced if this condition is violated.
-        ignore_start: How many bases to ignore from start of read.
-        ignore_end: How many bases to ignore from end of read.
+        ignore_start_r1: How many bases to ignore from start (5' end) of read.
+        ignore_end_r1: How many bases to ignore from end (3' end) of read.
         min_qual: Ignore bases with quality-score less than this value.
         phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
         ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
@@ -479,10 +487,10 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
     # Identify methylation events in read, e.g. CpGs or CHHs. The methylation_pattern is specified by a command line argument (e.g. Z/z corresponds to CpG)
     methylation_index = [m.start() for m in re.finditer(methylation_pattern, read.opt('XM'))]
     # Ignore any start or end positions of read if required
-    if ignore_start > 0:
-        methylation_index = ignore_first_n_bases(read, methylation_index, ignore_start)
-    if ignore_end > 0:
-        methylation_index = ignore_last_n_bases(read, methylation_index, ignore_end)
+    if ignore_start_r1 > 0:
+        methylation_index = ignore_first_n_bases(read, methylation_index, ignore_start_r1)
+    if ignore_end_r1 > 0:
+        methylation_index = ignore_last_n_bases(read, methylation_index, ignore_end_r1)
     # Ignore any positions with a base quality less than min_qual
     methylation_index = ignore_low_quality_bases(read, methylation_index, min_qual, phred_offset)
     n_methylation_loci = len(methylation_index)
@@ -510,7 +518,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
                     methylation_n_tuples[n_tuple_id].increment_count(''.join([read.opt('XM')[j] for j in methylation_index[i:(i + n)]]), methylation_type, read, None)
     return methylation_n_tuples, n_methylation_loci
 
-def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start, ignore_end, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap):
+def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start_r1, ignore_start_r2, ignore_end_r1, ignore_end_r2, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap):
     """Extracts n-tuples of methylation loci from a readpair and adds the comethylation n-tuple to the methylation_n_tuples object.
     
     Args:
@@ -521,8 +529,10 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         n: Is the \"n\" in \"n-tuple\", i.e. the size of the n-tuple. n must be an integer greater than or equal to 1. WARNING: No error or warning produced if this condition is violated.
         methylation_type: A string of the methylation type, e.g. CG for CpG methylation. Must be a valid option for the WithinFragmentComethylationNTuple class.
         methylation_pattern: A regular expression of the methylation loci, e.g. '[Zz]' for CpG-methylation
-        ignore_start: How many bases to ignore from start of read.
-        ignore_end: How many bases to ignore from end of read.
+        ignore_start_r1: How many bases to ignore from start (5' end) of read_1.
+        ignore_start_r2: How many bases to ignore from start (5' end) of read_2.
+        ignore_end_r1: How many bases to ignore from end (3' end) of read_1.
+        ignore_end_r2: How many bases to ignore from end (3' end) of read_2.
         min_qual: Ignore bases with quality-score less than this value.
         phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
         ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
@@ -536,12 +546,12 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
     methylation_index_1 = [m.start() for m in re.finditer(methylation_pattern, read_1.opt('XM'))]
     methylation_index_2 = [m.start() for m in re.finditer(methylation_pattern, read_2.opt('XM'))]
     # Ignore any start or end positions of read if required
-    if ignore_start > 0:
-        methylation_index_1 = ignore_first_n_bases(read_1, methylation_index_1, ignore_start)
-        methylation_index_2 = ignore_first_n_bases(read_2, methylation_index_2, ignore_start)
-    if ignore_end > 0:
-        methylation_index_1 = ignore_last_n_bases(read_1, methylation_index_1, ignore_end)
-        methylation_index_2 = ignore_last_n_bases(read_2, methylation_index_2, ignore_end)
+    if (ignore_start_r1 > 0) | (ignore_start_r2 > 0):
+        methylation_index_1 = ignore_first_n_bases(read_1, methylation_index_1, ignore_start_r1)
+        methylation_index_2 = ignore_first_n_bases(read_2, methylation_index_2, ignore_start_r2)
+    if (ignore_end_r1 > 0) | (ignore_end_r2 > 0):
+        methylation_index_1 = ignore_last_n_bases(read_1, methylation_index_1, ignore_end_r1)
+        methylation_index_2 = ignore_last_n_bases(read_2, methylation_index_2, ignore_end_r2)
     # Ignore any positions with a base quality less than the min_qual
     methylation_index_1 = ignore_low_quality_bases(read_1, methylation_index_1, min_qual, phred_offset)
     methylation_index_2 = ignore_low_quality_bases(read_2, methylation_index_2, min_qual, phred_offset)
@@ -726,8 +736,10 @@ elif methylation_type == 'CHH':
 else:
     sys.exit('--methylationType must be one of \'CG\' or \'CHG\'')
 overlap_check = args.overlappingPairedEndCheck
-ignore_start = args.ignoreStart
-ignore_end = args.ignoreEnd
+ignore_start_r1 = args.ignoreStart_r1
+ignore_start_r2 = args.ignoreStart_r2
+ignore_end_r1 = args.ignoreEnd_r1
+ignore_end_r2 = args.ignoreEnd_r2
 min_qual = args.minQual
 
 n_fragment = 0 # The number of DNA fragments. One single-end read contributes one to the count and each half of a readpair contributes half a count.
@@ -752,8 +764,10 @@ if args.ignoreDuplicates:
 if args.ignoreImproperPairs:
     print 'Ignoring improper readpairs'
 print 'Assuming quality scores are Phred', phred_offset
-print 'Ignoring', args.ignoreStart, 'bp from start of each read'
-print 'Ignoring', args.ignoreEnd, 'bp from end of each read'
+print "Ignoring', args.ignoreStart_r1, 'bp from 5' end of each read if data are single-end or of each read_1 if data are paired end"
+print "Ignoring', args.ignoreStart_r2, 'bp from 5' end of each read_2 if data are paired end"
+print "Ignoring', args.ignoreEnd_r1, 'bp from 3' end of each read if data are single-end or of each read_1 if data are paired end"
+print "Ignoring', args.ignoreEnd_r2, 'bp from 3' end of each read_2 if data are paired end"
 print 'Ignoring methylation calls with base-quality less than', args.minQual
 print 'Analysing', args.methylationType, 'methylation loci'
 print ''.join(['Creating bookended ', str(n), '-tuples of methylation loci'])
@@ -794,7 +808,7 @@ for read in BAM:
             # Check that read_1 and read_2 are aligned to the same chromosome and have identical read-names.
             # If not, skip the readpair.
             if read_1.tid == read_2.tid and read_1.qname == read_2.qname:
-                methylation_n_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start, ignore_end, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap)
+                methylation_n_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start_r1, ignore_start_r2, ignore_end_r1, ignore_end_r2, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap)
                 # Update the n_methylation_loci dictionary
                 if not n_methylation_loci_in_fragment in n_methylation_loci:
                     n_methylation_loci[n_methylation_loci_in_fragment] = 0
@@ -811,7 +825,7 @@ for read in BAM:
             if does_read_contain_indel(read):
                 continue
             n_fragment += 1
-            methylation_n_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start, ignore_end, min_qual, phred_offset, ob_strand_offset)
+            methylation_n_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start_r1, ignore_end_r1, min_qual, phred_offset, ob_strand_offset)
             if not n_methylation_loci_in_fragment in n_methylation_loci:
                 n_methylation_loci[n_methylation_loci_in_fragment] = 0
             n_methylation_loci[n_methylation_loci_in_fragment] += 1
