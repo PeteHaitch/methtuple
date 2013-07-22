@@ -94,15 +94,13 @@ parser.add_argument('--nTuple', metavar = '<int>',
                     type = int,
                     default=2,
                     help='The size of the methylation-loci-n-tuples (i.e. the choice of n); must be an integer > 1 (default: 2).')
-parser.add_argument('--methylationType',
-                    metavar = '<string>',
+parser.add_argument('--methylationType', metavar = '<string>',
                     default ="CpG",
                     help='The type of methylation loci to study: CG or CHG (default: CG; CHH not yet implemented).')
 parser.add_argument('--phred64',
                     action = 'store_true',
                     help='Quality scores are encoded as Phred64 (default: Phred33).')
-parser.add_argument('--overlappingPairedEndCheck',
-                    metava = '<string>',
+parser.add_argument('--overlappingPairedEndCheck', metavar = '<string>',
                     default = 'XM',
                     help='What check should be done of any overlapping paired-end reads (options listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), or do nothing (none) (default: XM).')
 parser.add_argument('--version',
@@ -565,7 +563,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
             if is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check): 
                 methylation_index_1, methylation_index_2 = ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap)
             else:
-                warning_msg = ''.join(['Skipping readpair ', read.qname, ' as overlapping sequence does not pass filter specified by ----overlappingPairedEndCheck ', overlap_check])
+                warning_msg = ''.join(['Skipping readpair ', read.qname, ' as overlapping sequence does not pass filter specified by --overlappingPairedEndCheck ', overlap_check])
                 n_fragment_skipped_due_to_bad_overlap += 1
                 warnings.warn(warning_msg)
                 methylation_index_1 = []
