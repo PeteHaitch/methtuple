@@ -102,7 +102,7 @@ parser.add_argument('--phred64',
                     help='Quality scores are encoded as Phred64 (default: Phred33).')
 parser.add_argument('--overlappingPairedEndCheck', metavar = '<string>',
                     default = 'XM',
-                    help='What check should be done of any overlapping paired-end reads (options listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), or do nothing (none) (default: XM).')
+                    help='What check should be done of any overlapping paired-end reads (options listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark) or do nothing (none) (default: XM).')
 parser.add_argument('--version',
                     action='version', version='%(prog)s 0.3')
 
@@ -286,7 +286,7 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
         read_1: A pysam.AlignedRead instance with read.is_read1 == true. Must be paired with read_2.
         read_2: A pysam.AlignedRead instance with read.is_read2 == true. Must be paired with read_1.
         n_overlap: The number of bases in the overlap of read_1 and read_2 (must be > 0)
-        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), or do nothing (none)
+        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark) or do nothing (none)
 
     Returns:
         True if the overlapping sequence passes the filter, False otherwise (NB: this means that readpairs that trigger the warning for having mis-specified XG- or XR-tags will also return 'False').
@@ -299,6 +299,9 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
         elif overlap_check == 'XM':
             overlap_1 = read_1.opt('XM')[-n_overlap:]
             overlap_2 = read_2.opt('XM')[:n_overlap]
+        elif overlap_check == 'bismark': # return True as Bismark does not actually check the overlapping sequence but rather just takes the overlap from read_1
+            overlap_1 = True
+            overlap_2 = True
         elif overlap_check == 'none':
             overlap_1 = True
             overlap_2 = True
@@ -310,6 +313,9 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
         elif overlap_check == 'XM':
             overlap_1 = read_1.opt('XM')[:n_overlap]
             overlap_2 = read_2.opt('XM')[-n_overlap:]
+        elif overlap_check == 'bismark': # return True as Bismark does not actually check the overlapping sequence but rather just takes the overlap from read_1
+            overlap_1 = True
+            overlap_2 = True
         elif overlap_check == 'none':
             overlap_1 = True
             overlap_2 = True
@@ -332,7 +338,7 @@ def does_read_contain_indel(read):
     val = any([x[0] in [1, 2] for x in read.cigar]) # In pysam, the CIGAR operation for an insertion to the reference is 1 and the CIGAR operation for a deletion to the reference is 2.
     return val
 
-def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap):
+def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap, overlap_check):
     """Ignore the overlapping sequence of read_1 and read_2 from the read with the lower (sum) base qualities in the overlapping region.
        If base qualities are identical then (arbitrarily) ignore the overlapping bases from read_2.
 
@@ -346,6 +352,7 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
         corresponds to read_1 with a methylation locus at the first and sixth positions of the read.
         methylation_index_2: As for methylation_index_1 but informative for read_2.
         n_overlap: The number of bases in the overlap (must be > 0).
+        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark) or do nothing (none)
 
     Returns:
         Updated versions of methylation_index_1 and methylation_index_2.
@@ -355,7 +362,7 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
     if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
         overlap_quals_1 = sum([ord(x) for x in read_1.qual[-n_overlap:]])
         overlap_quals_2 = sum([ord(x) for x in read_2.qual[-n_overlap:]])
-        if overlap_quals_1 >= overlap_quals_2:
+        if (overlap_quals_1 >= overlap_quals_2) | (overlap_check == 'bismark'): # overlap_check == 'bismark' simply means use the overlapping sequence from read_1.
             for i in methylation_index_2:
                 if i < n_overlap:
                     ignore_these_bases.append(i)
@@ -369,7 +376,7 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
     elif read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
         overlap_quals_1 = sum([ord(x) for x in read_1.qual[:n_overlap]])
         overlap_quals_2 = sum([ord(x) for x in read_2.qual[-n_overlap:]])
-        if overlap_quals_1 >= overlap_quals_2:
+        if (overlap_quals_1 >= overlap_quals_2) | (overlap_check == 'bismark'): # overlap_check == 'bismark' simply means use the overlapping sequence from read_1.
             for i in methylation_index_2:
                 if i >= (read_2.alen - n_overlap):
                     ignore_these_bases.append(i)
@@ -525,7 +532,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         min_qual: Ignore bases with quality-score less than this value.
         phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
         ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
-        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), or do nothing (none)
+        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark) or do nothing (none)
         n_fragment_skipped_due_to_bad_overlap: The total number of fragments (read-pairs) skipped due to the overlapping sequencing not passing the filter.
     Returns:
         methylation_n_tuples: An updated version of methylation_n_tuples
@@ -545,14 +552,14 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
     methylation_index_1 = ignore_low_quality_bases(read_1, methylation_index_1, min_qual, phred_offset)
     methylation_index_2 = ignore_low_quality_bases(read_2, methylation_index_2, min_qual, phred_offset)
     # Check for overlapping reads from a readpair.
-    # Only do this check if both read_1 and read_2 are mapped and overlap_check != none
+    # Only do this check if both read_1 and read_2 are mapped and overlap_check == XM or overlap_check == sequence since there is no need to actually check the overlapping sequence if overlap_check == none or overlap_check == bismark
     # If reads overlap check whether the overlapping sequence passes the filter given by overlap_check.
     # If the overlapping sequence does not pass the filter report a warning, increment a counter and skip the readpair (by setting methylation_index_1 and methylation_index_2 to be the empty list).
-    if (overlap_check != 'none') and (not read_1.is_unmapped) and (not read_2.is_unmapped):
+    if (overlap_check == 'XM' | overlap_check == 'sequence') and (not read_1.is_unmapped) and (not read_2.is_unmapped):
         n_overlap = read_1.alen + read_2.alen - abs(read_1.tlen)
         if n_overlap > 0:
             if is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check): 
-                methylation_index_1, methylation_index_2 = ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap)
+                methylation_index_1, methylation_index_2 = ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap, overlap_check)
             else:
                 warning_msg = ''.join(['Skipping readpair ', read.qname, ' as overlapping sequence does not pass filter specified by --overlappingPairedEndCheck ', overlap_check])
                 n_fragment_skipped_due_to_bad_overlap += 1
@@ -764,6 +771,8 @@ if overlap_check == 'sequence':
     print 'Paired-end reads that have overlapping mates will be filtered out if the overlapping sequences are not identical'
 elif overlap_check == 'XM':
     print 'Paired-end reads that have overlapping mates will be filtered out if the XM-tags for the overlapping sequence are not identical'
+elif overlap_check == 'bismark':
+    print "Paired-end reads that have overlapping mates will simply use the overlapping bases from read_1 ala bismark_methylation_extractor"
 elif overlap_check == 'none':
     print 'Paired-end reads that have overlapping mates will not be subject to any filtering based on the overlapping sequence'
 else:
