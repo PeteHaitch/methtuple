@@ -555,7 +555,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
     # Only do this check if both read_1 and read_2 are mapped and overlap_check == XM or overlap_check == sequence since there is no need to actually check the overlapping sequence if overlap_check == none or overlap_check == bismark
     # If reads overlap check whether the overlapping sequence passes the filter given by overlap_check.
     # If the overlapping sequence does not pass the filter report a warning, increment a counter and skip the readpair (by setting methylation_index_1 and methylation_index_2 to be the empty list).
-    if (overlap_check == 'XM' | overlap_check == 'sequence') and (not read_1.is_unmapped) and (not read_2.is_unmapped):
+    if (not read_1.is_unmapped) and (not read_2.is_unmapped):
         n_overlap = read_1.alen + read_2.alen - abs(read_1.tlen)
         if n_overlap > 0:
             if is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check): 
