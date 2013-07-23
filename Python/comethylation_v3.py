@@ -102,7 +102,7 @@ parser.add_argument('--phred64',
                     help='Quality scores are encoded as Phred64 (default: Phred33).')
 parser.add_argument('--overlappingPairedEndCheck', metavar = '<string>',
                     default = 'XM',
-                    help='What check should be done of any overlapping paired-end reads (options listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark) or do nothing (none) (default: XM).')
+                    help='What check should be done of any overlapping paired-end reads (options listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (none), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark) (default: XM).')
 parser.add_argument('--version',
                     action='version', version='%(prog)s 0.3')
 
@@ -286,7 +286,7 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
         read_1: A pysam.AlignedRead instance with read.is_read1 == true. Must be paired with read_2.
         read_2: A pysam.AlignedRead instance with read.is_read2 == true. Must be paired with read_1.
         n_overlap: The number of bases in the overlap of read_1 and read_2 (must be > 0)
-        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark) or do nothing (none)
+        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (none), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark)
 
     Returns:
         True if the overlapping sequence passes the filter, False otherwise (NB: this means that readpairs that trigger the warning for having mis-specified XG- or XR-tags will also return 'False').
@@ -352,7 +352,7 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
         corresponds to read_1 with a methylation locus at the first and sixth positions of the read.
         methylation_index_2: As for methylation_index_1 but informative for read_2.
         n_overlap: The number of bases in the overlap (must be > 0).
-        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark) or do nothing (none)
+        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (none), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark)
 
     Returns:
         Updated versions of methylation_index_1 and methylation_index_2.
@@ -532,7 +532,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         min_qual: Ignore bases with quality-score less than this value.
         phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
         ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
-        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark) or do nothing (none)
+        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (none), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark)
         n_fragment_skipped_due_to_bad_overlap: The total number of fragments (read-pairs) skipped due to the overlapping sequencing not passing the filter.
     Returns:
         methylation_n_tuples: An updated version of methylation_n_tuples
