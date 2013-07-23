@@ -753,10 +753,10 @@ if args.ignoreDuplicates:
 if args.ignoreImproperPairs:
     print 'Ignoring improper readpairs'
 print 'Assuming quality scores are Phred', phred_offset
-print "Ignoring', args.ignoreStart_r1, 'bp from 5' end of each read if data are single-end or of each read_1 if data are paired end"
-print "Ignoring', args.ignoreStart_r2, 'bp from 5' end of each read_2 if data are paired end"
-print "Ignoring', args.ignoreEnd_r1, 'bp from 3' end of each read if data are single-end or of each read_1 if data are paired end"
-print "Ignoring', args.ignoreEnd_r2, 'bp from 3' end of each read_2 if data are paired end"
+print "Ignoring", args.ignoreStart_r1, "bp from 5' end of each read if data are single-end or of each read_1 if data are paired end"
+print "Ignoring", args.ignoreStart_r2, "bp from 5' end of each read_2 if data are paired end"
+print "Ignoring", args.ignoreEnd_r1, "bp from 3' end of each read if data are single-end or of each read_1 if data are paired end"
+print "Ignoring", args.ignoreEnd_r2, "bp from 3' end of each read_2 if data are paired end"
 print 'Ignoring methylation calls with base-quality less than', args.minQual
 print 'Analysing', args.methylationType, 'methylation loci'
 print ''.join(['Creating bookended ', str(n), '-tuples of methylation loci'])
