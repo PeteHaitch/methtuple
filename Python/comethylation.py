@@ -71,9 +71,6 @@ parser.add_argument('--nTuple', metavar = '<int>',
 parser.add_argument('--methylationType', metavar = '<string>',
                     default ="CpG",
                     help='The type of methylation loci to study: CG or CHG (default: CG; CHH not yet implemented).')
-parser.add_argument('--methylationType', metavar = '<string>',
-                    default ="CpG",
-                    help='The type of methylation loci to study: CG or CHG (default: CG; CHH not yet implemented).')
 parser.add_argument('--oldBismark',
                     action = 'store_true',
                     help ='SAM/BAM created with Bismark version < 0.8.3. The FLAG and QNAME field in SAM/BAM files created by these older versions of Bismark differed from the SAM specifications and need to be adjusted on the fly by comethylation.py')
