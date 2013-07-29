@@ -750,8 +750,7 @@ print 'Input file =', BAM.filename
 print 'Output file =', WF.name
 warning_msg = 'methylation n-tuples may have intervening methylation events (i.e. NIC > 0). These generally occur in paired-end reads with non-overlapping mates but can also be caused by filtering methylation calls by base quality, read-position, etc. These should be post-hoc filtered.'
 warnings.warn(warning_msg)
-print 'WARNING: CpG-n-tuples that span both mates of a readpair may have NIC > 0. Furthermore, filtering by base quality, read-position, etc. may also introduce CpG-n-tuples with NIC > 0. These should be post-hoc filtered.'
-if n < 1 or n != floor(n):
+if (n < 1) or (n != floor(n)):
     exit_msg = "ERROR: --nTuple must be an integer greater than or equal to 1."
     sys.exit(exit_msg)
 if args.ignoreDuplicates:
