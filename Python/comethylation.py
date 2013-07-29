@@ -783,7 +783,7 @@ if (n < 1) or (n != floor(n)):
     exit_msg = "ERROR: --nTuple must be an integer greater than or equal to 1."
     sys.exit(exit_msg)
 if args.oldBismark:
-    print 'Assuming file is a paired-end SAM/BAM created with Bismark vrsion < 0.8.3'
+    print 'Assuming file is a paired-end SAM/BAM created with Bismark version < 0.8.3'
 if args.ignoreDuplicates:
     print 'Ignoring reads marked as PCR duplicates'
 if args.ignoreImproperPairs:
