@@ -69,9 +69,12 @@ parser.add_argument('--nTuple', metavar = '<int>',
                     default=2,
                     help='The size of the methylation-loci-n-tuples (i.e. the choice of n); must be an integer > 1 (default: 2).')
 <<<<<<< HEAD
+<<<<<<< HEAD
 parser.add_argument('--methylationType', metavar = '<string>',
                     default ="CpG",
                     help='The type of methylation loci to study: CG or CHG (default: CG; CHH not yet implemented).')
+=======
+>>>>>>> fd5f898ce24386c2ff140e1872f0682046f30985
 =======
 >>>>>>> fd5f898ce24386c2ff140e1872f0682046f30985
 parser.add_argument('--oldBismark',
@@ -104,7 +107,10 @@ parser.add_argument('--minQual', metavar = '<int>',
                     default=0,
                     help='Minimum base-quality (default: 0). Any base with a lower base-quality is ignored.')
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> fd5f898ce24386c2ff140e1872f0682046f30985
 parser.add_argument('--methylationType', metavar = '<string>',
                     default ="CpG",
                     help='The type of methylation loci to study: CG or CHG (default: CG; CHH not yet implemented).')
