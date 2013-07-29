@@ -68,9 +68,21 @@ parser.add_argument('--nTuple', metavar = '<int>',
                     type = int,
                     default=2,
                     help='The size of the methylation-loci-n-tuples (i.e. the choice of n); must be an integer > 1 (default: 2).')
+<<<<<<< HEAD
 parser.add_argument('--methylationType', metavar = '<string>',
                     default ="CpG",
                     help='The type of methylation loci to study: CG or CHG (default: CG; CHH not yet implemented).')
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+parser.add_argument('--methylationType', metavar = '<string>',
+                    default ="CpG",
+                    help='The type of methylation loci to study: CG or CHG (default: CG; CHH not yet implemented).')
+=======
+>>>>>>> fd5f898ce24386c2ff140e1872f0682046f30985
+=======
+>>>>>>> fd5f898ce24386c2ff140e1872f0682046f30985
+>>>>>>> 3b3bd8f91e2e6060b18bbef0ade140f070a243f0
 parser.add_argument('--oldBismark',
                     action = 'store_true',
                     help ='SAM/BAM created with Bismark version < 0.8.3. The FLAG and QNAME field in SAM/BAM files created by these older versions of Bismark differed from the SAM specifications and need to be adjusted on the fly by comethylation.py')
@@ -100,6 +112,18 @@ parser.add_argument('--minQual', metavar = '<int>',
                     type = int,
                     default=0,
                     help='Minimum base-quality (default: 0). Any base with a lower base-quality is ignored.')
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> fd5f898ce24386c2ff140e1872f0682046f30985
+parser.add_argument('--methylationType', metavar = '<string>',
+                    default ="CpG",
+                    help='The type of methylation loci to study: CG or CHG (default: CG; CHH not yet implemented).')
+>>>>>>> fd5f898ce24386c2ff140e1872f0682046f30985
+>>>>>>> 3b3bd8f91e2e6060b18bbef0ade140f070a243f0
 parser.add_argument('--phred64',
                     action = 'store_true',
                     help='Quality scores are encoded as Phred64 (default: Phred33).')
