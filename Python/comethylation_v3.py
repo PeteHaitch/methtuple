@@ -33,7 +33,7 @@ from math import floor
 # This program is an extension of comethylation.py (v2) to methylation-loci-n-tuples from methylation-loci-n-tuples (i.e. methylation-loci-2-tuples)
 # There are two types of comethylation: (1) Within-fragment co-methylation (WF), which is the dependence of methylation states along a DNA read/fragment/chromosome that contains multiple methylation loci; and (2) correlation of aggregate methylation values (AM). Aggregate methylation values are based on the pileup of reads at each methylation locus and include beta = M/(U+M) and gamma = log((M + eps)/(U + eps)), where M = the number of methylated Cs, U = the number of unmethylated Cs and esp is a small number to ensure numerical stability of gamma, typically esp = 0.5.
 # co-methylation extracts the necessary information to analyse (1), it does not perform the statistical analysis. A sister program, aggregate_methylation.py, extracts the necessary information to analyse (2).
-# If the reads from a readpair overlap then, provided the overlapping sequence passes the filter specified by --overlappingPairedEndCheck, we trim the lower quality read until no overlap remains. If the overlapping sequence does not pass the filter specified by --overlappingPairedEndCheck then we ignore the readpair. This behaviour may be altered in future releases.
+# If the reads from a readpair overlap then, provided the overlapping sequence passes the filter specified by --overlappingPairedEndFilter, we trim the lower quality read until no overlap remains. If the overlapping sequence does not pass the filter specified by --overlappingPairedEndFilter then we ignore the readpair. This behaviour may be altered in future releases.
 
 #### Description of sample.wf ####
 # Each line corresponds to a methylation-loci-n-tuple and includes a count of each type of n-tuple.
@@ -100,9 +100,9 @@ parser.add_argument('--methylationType', metavar = '<string>',
 parser.add_argument('--phred64',
                     action = 'store_true',
                     help='Quality scores are encoded as Phred64 (default: Phred33).')
-parser.add_argument('--overlappingPairedEndCheck', metavar = '<string>',
+parser.add_argument('--overlappingPairedEndFilter', metavar = '<string>',
                     default = 'XM',
-                    help='What check should be done of any overlapping paired-end reads (options listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (none), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark) (default: XM).')
+                    help="What filter should be applied to any overlapping paired-end reads. Read-pairs that don't pass the filter are not used for methylation calling (options listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (none), do no check of the overlapping bases and just use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark) (default: XM).")
 parser.add_argument('--version',
                     action='version', version='%(prog)s 0.3')
 
@@ -560,7 +560,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
             if is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check): 
                 methylation_index_1, methylation_index_2 = ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap, overlap_check)
             else:
-                warning_msg = ''.join(['Skipping readpair ', read.qname, ' as overlapping sequence does not pass filter specified by --overlappingPairedEndCheck ', overlap_check])
+                warning_msg = ''.join(['Skipping readpair ', read.qname, ' as overlapping sequence does not pass filter specified by --overlappingPairedEndFilter ', overlap_check])
                 n_fragment_skipped_due_to_bad_overlap += 1
                 warnings.warn(warning_msg)
                 methylation_index_1 = []
@@ -730,7 +730,7 @@ elif methylation_type == 'CHH':
     sys.exit('Sorry, CHH-methylation support is not yet implemented.')
 else:
     sys.exit('--methylationType must be one of \'CG\' or \'CHG\'')
-overlap_check = args.overlappingPairedEndCheck
+overlap_check = args.overlappingPairedEndFilter
 ignore_start_r1 = args.ignoreStart_r1
 ignore_start_r2 = args.ignoreStart_r2
 ignore_end_r1 = args.ignoreEnd_r1
@@ -775,7 +775,7 @@ elif overlap_check == 'bismark':
 elif overlap_check == 'none':
     print 'Paired-end reads that have overlapping mates will not be subject to any filtering based on the overlapping sequence'
 else:
-    exit_msg = "ERROR: --overlappingPairedEndCheck must be one of 'sequence', 'XM' or 'none'"
+    exit_msg = "ERROR: --overlappingPairedEndFilter must be one of 'sequence', 'XM', 'bismark' or 'none'"
     sys.exit(exit_msg)
 
 # Loop over the BAM
