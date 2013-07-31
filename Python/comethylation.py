@@ -367,6 +367,18 @@ def does_read_contain_indel(read):
     val = any([x[0] in [1, 2] for x in read.cigar]) # In pysam, the CIGAR operation for an insertion to the reference is 1 and the CIGAR operation for a deletion to the reference is 2.
     return val
 
+def does_read_contain_complicated_cigar(read):
+    """Check whether a read contains a complicated CIGAR string character, defined as anything other than a match (M; 0), insertion (I; 1) or deletion (D; 2).
+
+    Args:
+        read: A pysam.AlignedRead instance.
+
+    Returns:
+        True if read contains an complicated CIGAR string character, False otherwise.
+    """
+    val = any([x[0] not in [0, 1, 2] for x in read.cigar]) # In pysam, the CIGAR operation for an insertion to the reference is 1 and the CIGAR operation for a deletion to the reference is 2.
+    return val
+
 def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap, overlap_check):
     """Ignore the overlapping sequence of read_1 and read_2 from the read with the lower (sum) base qualities in the overlapping region.
        If base qualities are identical then (arbitrarily) ignore the overlapping bases from read_2.
