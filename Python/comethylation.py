@@ -106,8 +106,11 @@ parser.add_argument('--phred64',
 parser.add_argument('--overlappingPairedEndFilter', metavar = '<string>',
                     default = 'XM',
                     help="What filter should be applied to any overlapping paired-end reads. Read-pairs that don't pass the filter are not used for methylation calling (options listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (none), do no check of the overlapping bases and just use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark) (default: XM).")
+parser.add_argument('--strandSpecific',
+                    action = 'store_true',
+                    help = "Produce strand-specific counts, i.e. don't collapse methylation calls across Watson and Crick strands (default for CHH methylation)")
 parser.add_argument('--version',
-                    action='version', version='%(prog)s 0.3')
+                    action='version', version='%(prog)s 0.3.1')
 
 args = parser.parse_args()
 
@@ -742,7 +745,7 @@ def write_methylation_n_tuples_to_file(methylation_n_tuples, n):
     # Write each n-tuple of methylation loci to file using a nested for loop
     # (1) Loop over chromosomes by increasing chromosome_index order
     # (2) Loop over positions by increasing order
-    for this_n_tuple in sorted(methylation_n_tuples.values(), key = attrgetter('chromosome_index', 'positions')): # TODO: Seems to work but output files should be carefully checked in R.
+    for this_n_tuple in sorted(methylation_n_tuples.values(), key = attrgetter('chromosome_index', 'positions')):
         this_n_tuple_ordered_counts = []
         for i in sorted(this_n_tuple.counts.iterkeys()):
             this_n_tuple_ordered_counts.append(this_n_tuple.counts[i])
@@ -761,16 +764,26 @@ n = args.nTuple
 methylation_type = args.methylationType
 if methylation_type == 'CG':
     methylation_pattern = re.compile(r'[Zz]')
-    ob_strand_offset = 1
+    if args.strandSpecific:
+        ob_strand_offset = 0
+    else:
+        ob_strand_offset = 1
 elif methylation_type == 'CHG':
     methylation_pattern = re.compile(r'[Xx]')
-    ob_strand_offset = 2
+    if args.strandSpecific:
+        ob_strand_offset = 0
+    else:
+        ob_strand_offset = 2
 elif methylation_type == 'CHH':
     methylation_pattern = re.compile(r'[Hh]')
-    ob_strand_offset = 0
-    sys.exit('Sorry, CHH-methylation support is not yet implemented.')
+    if args.strandSpecific:
+        ob_strand_offset = 0
+    else:
+        exit_msg = 'Sorry, CHH-methylation is only supported with --strandSpecific option.'
+        sys.exit(exit_msg)
 else:
-    sys.exit('--methylationType must be one of \'CG\' or \'CHG\'')
+    sys.exit("--methylationType must be one of 'CG', 'CHG' or 'CHH'")
+    
 overlap_check = args.overlappingPairedEndFilter
 ignore_start_r1 = args.ignoreStart_r1
 ignore_start_r2 = args.ignoreStart_r2
