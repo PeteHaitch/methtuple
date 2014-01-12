@@ -1,7 +1,0 @@
-The new (v2) pipeline is as follows:
-* Annotate CpG-pairs (i.e. the .wf files) with annotate_WF_files.r
-* Plot comethylation using plot_comethylation_v2.r. This includes plots stratified by genomic-features.
-
-All functions are to be kept in plot_comethylation_v2_functions.r.
-
-The reason I have split the annotation and the plotting into two separate tasks is that the annotation need only be done once and then the annotated CpG-pairs can be saved to disk as RData files. This substantially speeds up the process if I want to do some new plots since it is much faster to load an RData object than it is to read in and re-annotate the .wf files.
