@@ -3,6 +3,11 @@ import argparse
 import sys
 import pysam
 
+#### IMPORTANT ####
+# Only required for Bismark version < 0.8.3 (a patch was added to Bismark in version 0.8.3 that fixed this problem)
+#### IMPORTANT ####
+
+
 ## Fix the FLAG values in a Bismark paired-end SAM file. 
 ## Specifically, correct the strand information in the FLAG and add a tag (XS:Z:<tag> to encode which DNA-strand the read is informative for, where <tag> = OT, CTOT, OB or CTOB.
 ## See accompanying Word document "Paired_end_read_orientation.docx" for details.
