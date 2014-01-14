@@ -4,16 +4,14 @@ import sys
 import pysam
 
 #### IMPORTANT ####
-# Only required for Bismark version < 0.8.3 (a patch was added to Bismark in version 0.8.3 that fixed this problem)
+# The typical use case for this script is to fix the FLAG for each read prior to running comethylation.py for SAM/BAM files created with Bismark version < 0.8.3. However, this fix is now done on-the-fly by comethylation.py and so this script is no longer required for this use case.
+# Someone may still want to run this script in order to correct the FLAG for each read in a SAM/BAM files created with Bismark version < 0.8.3, e.g. so that paired-end reads are properly displayed in IGV.
 #### IMPORTANT ####
 
 
 ## Fix the FLAG values in a Bismark paired-end SAM file. 
 ## Specifically, correct the strand information in the FLAG and add a tag (XS:Z:<tag> to encode which DNA-strand the read is informative for, where <tag> = OT, CTOT, OB or CTOB.
 ## See accompanying Word document "Paired_end_read_orientation.docx" for details.
-
-## TODO: Add funtion to correct single-end data
-## TODO: Change XS-tag to XI-tag so it doesn't clash with Bowtie2's XS-tag
 
 ###### WARNING - CURRENTLY ONLY HANDLE DIRECTIONAL-LIBRARIES ########
 
