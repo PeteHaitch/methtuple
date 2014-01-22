@@ -593,17 +593,16 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
     # Check for overlapping reads from a readpair.
     # If reads overlap check whether the overlapping sequence passes the filter given by overlap_check.
     # If the overlapping sequence does not pass the filter report a warning, increment a counter and skip the readpair (by setting methylation_index_1 and methylation_index_2 to be the empty list).
-    if (not read_1.is_unmapped) and (not read_2.is_unmapped):
-        n_overlap = read_1.alen + read_2.alen - abs(read_1.tlen)
-        if n_overlap > 0:
-            if is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check): 
-                methylation_index_1, methylation_index_2 = ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap, overlap_check)
-            else:
-                warning_msg = ''.join(['Skipping readpair ', read.qname, ' as overlapping sequence does not pass filter specified by --overlappingPairedEndFilter ', overlap_check])
-                n_fragment_skipped_due_to_bad_overlap += 1
-                warnings.warn(warning_msg)
-                methylation_index_1 = []
-                methylation_index_2 = []
+    n_overlap = read_1.alen + read_2.alen - abs(read_1.tlen)
+    if n_overlap > 0:
+        if is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
+            methylation_index_1, methylation_index_2 = ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap, overlap_check)
+        else:
+            warning_msg = ''.join(['Skipping readpair ', read.qname, ' as overlapping sequence does not pass filter specified by --overlappingPairedEndFilter ', overlap_check])
+            n_fragment_skipped_due_to_bad_overlap += 1
+            warnings.warn(warning_msg)
+            methylation_index_1 = []
+            methylation_index_2 = []
     n_methylation_loci = len(methylation_index_1) + len(methylation_index_2)
     # Only process readpair if there are at least enough CpGs to form one n-tuple.
     if n_methylation_loci >= n:
@@ -824,62 +823,95 @@ else:
     exit_msg = "ERROR: --overlappingPairedEndFilter must be one of 'sequence', 'XM', 'bismark' or 'none'"
     sys.exit(exit_msg)
 
-# Loop over the BAM
+# Check that mapped reads have the XR-, XG- and XM-tags set. Will only check first mapped read, so assumes that the first mapped read in the BAM is representative of all mapped reads in the BAM.
+print 'Checking that the XR-, XG- and XM-tags are set for the first mapped read...'
+for read in BAM:
+    if read.is_unmapped:
+        continue
+    # Check XR-tag
+    if not 'XR' in [x[0] for x in read.tags]:
+        exit_msg = "ERROR: The first mapped read does not contain an XR-tag. The XR-tag stores the read conversion state for the alignment and is required by comethylation.py.\n SAM/BAM files created by Bismark should already have the XR-tag set.\n If your SAM/BAM was created with another program you will need to add the correct XR-tags before proceeding. The script bismarkify.py may be able to help you with this."
+        sys.exit(exit_msg)
+    # Check XG-tag
+    if not 'XG' in [x[0] for x in read.tags]:
+        exit_msg = "ERROR: The first mapped read does not contain an XG-tag. The XG-tag stores the read conversion state for the alignment and is required by comethylation.py.\n SAM/BAM files created by Bismark should already have the XG-tag set.\n If your SAM/BAM was created with another program you will need to add the correct XG-tags before proceeding. The script bismarkify.py may be able to help you with this."
+        sys.exit(exit_msg)
+    # Check XG-tag
+    if not 'XM' in [x[0] for x in read.tags]:
+        exit_msg = "ERROR: The first mapped read does not contain an XM-tag. The XMtag stores the methylation call string for the alignment and is required by comethylation.py.\n SAM/BAM files created by Bismark should already have the XM-tag set.\n If your SAM/BAM was created with another program you will need to add the correct XM-tags before proceeding. The script bismarkify.py may be able to help you with this."
+        sys.exit(exit_msg)
+    else:
+        print 'Verified that the XR-, XG- and XM-tags are set for the first mapped read'
+        # Reset BAM to start
+        BAM.reset()
+        break
+
+# Loop over the BAM and extract methylation m-tuples
 for read in BAM:
     # Fix QNAME and FLAG values if --oldBismark flag is set
     if(args.oldBismark):
         read = fix_old_bismark(read) 
-    # Skip duplicates reads if command line parameter --ignoreDuplicates is set
-    if args.ignoreDuplicates and read.is_duplicate:
-        if not read.is_paired:
-            n_fragment += 1
-        else:
-            n_fragment += 0.5 
+    # Read is first in a read-pair
+    if read.is_paired and read.is_read1:
+        read_1 = read
         continue
-    # Skip improperly paired-reads if command line parameter --ignoreImproperPairs is set
-    if args.ignoreImproperPairs and read.is_paired and not read.is_proper_pair:
-        warning_msg = ''.join(['Skipping read ', read.qname, ' as it is part of an improper readpair.'])
-        warnings.warn(warning_msg)
-        n_fragment += 0.5
-        continue
-    else:
-        if read.is_paired and read.is_read1:
-            read_1 = read
+    # Read is second in a read-pair
+    elif read.is_paired and read.is_read2:
+        read_2 = read
+        n_fragment += 1
+        # Skip duplicates reads if command line parameter --ignoreDuplicates is set
+        if args.ignoreDuplicates and read.is_duplicate:
             continue
-        elif read.is_paired and read.is_read2:
-            read_2 = read
-            n_fragment += 1
-            # Skip reads containing indels
-            if does_read_contain_indel(read_1) or does_read_contain_indel(read_2):
-                continue
-            # Check that read_1 and read_2 are aligned to the same chromosome and have identical read-names.
-            # If not, skip the readpair.
-            if read_1.tid == read_2.tid and read_1.qname == read_2.qname:
-                methylation_n_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start_r1, ignore_start_r2, ignore_end_r1, ignore_end_r2, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap)
-                # Update the n_methylation_loci_per_read dictionary
-                if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
-                    n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
-                n_methylation_loci_per_read[n_methylation_loci_in_fragment] += 1
-            elif read_1.tid != read_2.tid:
-                warning_msg = ''.join(['Skipping readpair', read_1.qname, ' as reads aligned to different chromosomes (', BAM.getrname(read_1.tid), ' and ', BAM.getrname(read_2.tid), ')'])
-                warnings.warn(warning_msg)
-                continue
-            elif read_1.qname != read_2.qname:
-                exit_msg = "ERROR: The name of read_1 is not identical to to that of read_2 for readpair ", read_1.qname, read_2.qname, ". Please sort your paired-end BAM file in query-name-order with Picard's SortSam function."
-                sys.exit(exit_msg)
-        elif not read.is_paired:
-            # Skip reads containing indels
-            if does_read_contain_indel(read):
-                continue
-            n_fragment += 1
-            methylation_n_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start_r1, ignore_end_r1, min_qual, phred_offset, ob_strand_offset)
+        # Skip read if either mate is unmapped
+        if read_1.is_unmapped or read_2.is_unmapped:
+            continue
+        # Skip improperly paired-reads if command line parameter --ignoreImproperPairs is set
+        if args.ignoreImproperPairs and not read.is_proper_pair:
+            warning_msg = ''.join(['Skipping read-pair ', read_1.qname, ' as it is not properly paired.'])
+            warnings.warn(warning_msg)
+            continue
+        # Skip reads containing indels
+        if does_read_contain_indel(read_1) or does_read_contain_indel(read_2):
+            continue
+        # Check that read_1 and read_2 are aligned to the same chromosome and have identical read-names.
+        # If not, skip the readpair.
+        if read_1.tid == read_2.tid and read_1.qname == read_2.qname:
+            methylation_n_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start_r1, ignore_start_r2, ignore_end_r1, ignore_end_r2, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap)
+            # Update the n_methylation_loci_per_read dictionary
             if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
                 n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
             n_methylation_loci_per_read[n_methylation_loci_in_fragment] += 1
-        else:
-            warning_msg = ''.join(["Read is neither a single-end read nor part of a paired-end read. Check the SAM flag values are correctly set for read:", read.qname])
+        elif read_1.tid != read_2.tid:
+            warning_msg = ''.join(['Skipping readpair', read_1.qname, ' as reads aligned to different chromosomes (', BAM.getrname(read_1.tid), ' and ', BAM.getrname(read_2.tid), ')'])
             warnings.warn(warning_msg)
             continue
+        elif read_1.qname != read_2.qname:
+            exit_msg = "ERROR: The name of read_1 is not identical to to that of read_2 for read-pair ", read_1.qname, read_2.qname, ". Please sort your paired-end BAM file in queryname order with Picard's SortSam function."
+            sys.exit(exit_msg)
+        # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
+        read_1 = None
+        read_2 = None
+    # Read is single-end
+    elif not read.is_paired:
+        n_fragment += 1
+        # Skip duplicates reads if command line parameter --ignoreDuplicates is set
+        if args.ignoreDuplicates and read.is_duplicate:
+            continue
+        # Skip read if it is unmapped
+        if read.is_unmapped:
+            continue
+        # Skip reads containing indels
+        if does_read_contain_indel(read):
+            continue
+        methylation_n_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_n_tuples, n, methylation_type, methylation_pattern, ignore_start_r1, ignore_end_r1, min_qual, phred_offset, ob_strand_offset)
+        if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
+            n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
+        n_methylation_loci_per_read[n_methylation_loci_in_fragment] += 1
+    # Read is neither single-end or a mate from a read-pair. This is odd and shouldn't happen.
+    else:
+        exit_msg = ''.join(["Read is neither a single-end read nor part of a paired-end read. Check the SAM FLAG values are correctly set for read:", read.qname])
+        sys.exit(exit_msg)
+        continue
 
 # Write results to disk
 print 'Writing output to', WF.name, '...'
