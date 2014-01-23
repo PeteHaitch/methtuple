@@ -37,9 +37,10 @@ from math import floor
 # comethylation.py extracts the necessary information to analyse both (1) and (2), but it does not perform the statistical analysis.
 # If the reads from a readpair overlap then, provided the overlapping sequence passes the filter specified by --overlappingPairedEndFilter, we trim the lower quality read until no overlap remains. If the overlapping sequence does not pass the filter specified by --overlappingPairedEndFilter then we ignore the readpair. This behaviour may be altered in future releases.
 
-#### Description of sample.wf ####
-# Each line corresponds to a methylation-loci m-tuple and includes a count of each type of m-tuple.
-# There are 2^m possible m-tuples.
+#### Description of sampleName.methylationType.mTuple.tsv ####
+# Fields are tab-delimited.
+# Each line corresponds to a methylation-loci m-tuple and includes a count of each type of m-tuple in the form [chromosome pos_1 ... pos_m counts_1 ... counts_2^m]
+# There are 2^m possible m-tuples and these are alphabetically ordered in the output
 # Only "bookended" methylation-loci m-tuples can be created.
 # WARNING: methylation-loci m-tuples that span both mates of a readpair may have NIC > 0. Furthermore, filtering by base quality, read-position, etc. may also introduce methylation-loci m-tuples with NIC > 0. These should be post-hoc filtered.
 
@@ -66,7 +67,7 @@ parser.add_argument('--mTuple', metavar = '<int>',
                     default=2,
                     help='The size of the methylation-loci m-tuples (i.e. the choice of m); must be an integer > 1 (default: 2).')
 parser.add_argument('--methylationType', metavar = '<string>',
-                    default ="CpG",
+                    default ="CG",
                     help='The type of methylation loci to study: CG or CHG (default: CG; CHH not yet implemented).')
 parser.add_argument('--oldBismark',
                     action = 'store_true',
@@ -113,7 +114,7 @@ args = parser.parse_args()
 
 #### Open SAM/BAM file and output files ####
 BAM = pysam.Samfile(args.BAM)
-WF = open(".".join([args.sampleName, "wf"]), "w")
+OUT = open(".".join([args.sampleName, args.methylationType, str(args.mTuple), "tsv"]), "w")
 
 #### Function definitions ####
 def ignore_first_n_bases(read, methylation_index, n):
@@ -719,8 +720,8 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                             methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), methylation_type, read_1, read_2)
     return methylation_m_tuples, m_methylation_loci, n_fragment_skipped_due_to_bad_overlap
                                     
-# tab_writer writes a tab-separated output file to the filehandle WF
-tab_writer = csv.writer(WF, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
+# tab_writer writes a tab-separated output file to the filehandle OUT
+tab_writer = csv.writer(OUT, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
 
 def write_methylation_m_tuples_to_file(methylation_m_tuples, m):
     """Write the methylation_m_tuples instance to a tab-separated file. The m-tuples are ordered by chromosome and genomic co-ordinates.
@@ -752,7 +753,7 @@ if args.phred64:
 else:
     phred_offset = 33
 # Set the "m" in "m-tuple", i.e. the size of the methylation-loci m-tuples
-m = args.MTuple
+m = args.mTuple
 # Set the methylation type to be used in the analysis
 methylation_type = args.methylationType
 if methylation_type == 'CG':
@@ -792,7 +793,7 @@ methylation_m_tuples = {} # Dictionary of m-tuples of methylation loci with keys
 #### The main program. Loops over the BAM file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or readpair. ####
 # Print key variable names and command line parameter options to STDOUT
 print 'Input file =', BAM.filename
-print 'Output file =', WF.name
+print 'Output file =', OUT.name
 warning_msg = 'methylation m-tuples may have intervening methylation events (i.e. NIC > 0). These generally occur in paired-end reads with non-overlapping mates but can also be caused by filtering methylation calls by base quality, read-position, etc. These should be post-hoc filtered.'
 warnings.warn(warning_msg)
 if (m < 1) or (m != floor(m)):
@@ -915,10 +916,10 @@ for read in BAM:
         continue
 
 # Write results to disk
-print 'Writing output to', WF.name, '...'
+print 'Writing output to', OUT.name, '...'
 write_methylation_m_tuples_to_file(methylation_m_tuples, m)
 BAM.close()
-WF.close()
+OUT.close()
 
 # Print some summary information to STDOUT
 print 'Number of DNA fragments in file:', int(n_fragment)
