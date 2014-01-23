@@ -3,6 +3,23 @@
 # Peter Hickey
 # 15/01/2013
 
+#### LICENSE ####
+## Copyright (C) 2012 - 2014 Peter Hickey (peter.hickey@gmail.com)
+
+## This file is part of Comethylation.
+
+## Comethylation is free software: you can redistribute it and/or modify it
+## under the terms of the GNU General Public License as published by
+## the Free Software Foundation, either version 2 of the License, or
+## (at your option) any later version.
+## Comethylation is distributed in the hope that it will be useful, but
+## WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+
+## You should have received a copy of the GNU General Public License
+## along with Comethylation.  If not, see <http://www.gnu.org/licenses/>.
+
 #### TODO ###
 # TODO: Need to manually check each type of read listed on GitHub issues tracker. 
 
