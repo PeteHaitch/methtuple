@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 #### DESCRIPTION ####
 # Extract reads to be used as test cases for comethylation.py
 # Peter Hickey
