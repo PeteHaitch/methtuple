@@ -119,6 +119,7 @@ args = parser.parse_args()
 #### Open SAM/BAM file and output files ####
 BAM = pysam.Samfile(args.BAM)
 OUT = open(".".join([args.sampleName, args.methylationType, str(args.mTuple), "tsv"]), "w")
+HIST = open("".join([args.sampleName, ".", args.methylationType, "_per_read.hist"]), "w")
 
 #### Function definitions ####
 def ignore_first_n_bases(read, methylation_index, n):
@@ -943,10 +944,8 @@ for read in BAM:
 # Write results to disk
 print 'Writing output to', OUT.name, '...'
 write_methylation_m_tuples_to_file(methylation_m_tuples, m)
-BAM.close()
-OUT.close()
 
-# Print some summary information to STDOUT
+# Print some summary information to HIST and STDOUT
 print 'Number of DNA fragments in file:', int(n_fragment)
 print 'Number of DNA fragments (read-pairs) skipped due to overlapping sequence not passing QC filter:', int(n_fragment_skipped_due_to_bad_overlap)
 n_informative_fragments = 0
@@ -954,8 +953,13 @@ for k, v in n_methylation_loci_per_read.iteritems():
     if k >= m:
         n_informative_fragments += v
 print ''.join(['Number of reads or readpairs informative for co-methylation ', str(m), '-tuples = ', str(n_informative_fragments), ' (', str(round(n_informative_fragments / float(n_fragment) * 100, 1)), '% of total fragments)'])
-print 'Histogram of number of', args.methylationType, 'methylation loci per DNA fragment'
-print 'n\tcount'
+print 'Writing histogram of number of', args.methylationType, 'methylation loci per DNA fragment that passed QC filters to', HIST.name, '...'
+HIST.write('n\tcount\n')
 for k, v in iter(sorted(n_methylation_loci_per_read.iteritems())):
-    print k, '\t', v
+    HIST.write(''.join([str(k), '\t', str(v), '\n']))
+
+# Close all files
+BAM.close()
+OUT.close()
+HIST.close()
 
