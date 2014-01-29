@@ -9,6 +9,7 @@ import warnings
 from operator import itemgetter, attrgetter
 import itertools
 from math import floor
+import os
 
 #### LICENSE ####
 ## Copyright (C) 2012 - 2014 Peter Hickey (peter.hickey@gmail.com)
@@ -111,6 +112,9 @@ parser.add_argument('--strandSpecific',
 parser.add_argument('--useImproperPairs',
                     action = 'store_true',
                     help ='Do not filter out improper readpairs. The definition of a proper readpair is aligner-specific and the value set with the 0x2 bit in the SAM flag')
+parser.add_argument('--noFailedQCFile',
+                    action = 'store_true',
+                    help = "Do not create the file listing the reads that failed to pass a QC filter and which filter they failed")
 parser.add_argument('--version',
                     action='version', version='%(prog)s 0.3.1')
 
@@ -120,7 +124,10 @@ args = parser.parse_args()
 BAM = pysam.Samfile(args.BAM)
 OUT = open(".".join([args.sampleName, args.methylationType, str(args.mTuple), "tsv"]), "w")
 HIST = open("".join([args.sampleName, ".", args.methylationType, "_per_read.hist"]), "w")
-FAILED_QC = open("".join([args.sampleName, ".reads_that_failed_QC.txt"]), "w")
+if not args.noFailedQCFile:
+    FAILED_QC = open("".join([args.sampleName, ".reads_that_failed_QC.txt"]), "w")
+else:
+    FAILED_QC = open(os.devnull, "w")
 
 #### Function definitions ####
 def ignore_first_n_bases(read, methylation_index, n):
@@ -811,7 +818,10 @@ methylation_m_tuples = {} # Dictionary of m-tuples of methylation loci with keys
 # Print key variable names and command line parameter options to STDOUT
 print 'Input BAM file =', BAM.filename
 print ''.join(['Output file of ', methylation_type, ' ', str(m), '-tuples = ', OUT.name])
-print 'Reads that fail to pass QC filters will be written to =', FAILED_QC.name, '\n'
+if not args.noFailedQCFile:
+    print 'Reads that fail to pass QC filters will be written to =', FAILED_QC.name, '\n'
+else:
+    print 'There will be no file of reads that fail to pass QC filters\n'
 
 if (m < 1) or (m != floor(m)):
     exit_msg = "ERROR: --mTuple must be an integer greater than or equal to 1."
@@ -1022,7 +1032,7 @@ n_informative_fragments = 0
 for k, v in n_methylation_loci_per_read.iteritems():
     if k >= m:
         n_informative_fragments += v
-print ''.join(['Number of reads or readpairs informative for comethylation ', str(m), '-tuples = ', str(n_informative_fragments), ' (', str(round(n_informative_fragments / float(n_fragment) * 100, 1)), '% of total fragments)\n'])
+print ''.join(['Number of DNA fragments informative for comethylation ', str(m), '-tuples = ', str(n_informative_fragments), ' (', str(round(n_informative_fragments / float(n_fragment) * 100, 1)), '% of total fragments)\n'])
 
 # Write histogram to HIST with the number of methylation loci per DNA fragment that passed QC filters
 print 'Writing histogram with the number of', args.methylationType, 'methylation loci per DNA fragment that passed QC filters to', HIST.name, '...'
