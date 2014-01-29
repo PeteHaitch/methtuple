@@ -800,6 +800,7 @@ n_fragment_skipped_due_to_bad_overlap = 0 # The number of DNA fragments skipped 
 n_fragment_skipped_due_to_low_mapq = 0 # The number of DNA fragments skipped due to low mapQ
 n_fragment_skipped_due_to_duplicate = 0 # The number of DNA fragments skipped due to them being marked as duplicates
 n_fragment_skipped_due_to_diff_chr = 0  # The number of DNA fragments skipped due to the mates being aligned to different chromosomes
+n_fragment_skipped_due_to_unmapped_read_or_mate = 0 # The number of DNA fragments skipped due to the read or its mate being unmapped
 n_methylation_loci_per_read = {} # Dictionary of the number of methylation loci that passed QC per read
 methylation_m_tuples = {} # Dictionary of m-tuples of methylation loci with keys of form chromosome:position_1:position_2 and values corresponding to a WithinFragmentComethylationMTuple instance
 
@@ -898,6 +899,12 @@ for read in BAM:
             continue
         # Skip read if either mate is unmapped
         if read_1.is_unmapped or read_2.is_unmapped:
+            failed_read_msg = '\t'.join[read_1.qname, 'read or its mate is unmapped\n']
+            FAILED_QC.write(failed_read_msg)
+            n_fragment_skipped_due_to_unmapped_read_or_mate += 1
+            # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
+            read_1 = None
+            read_2 = None
             continue
         # Skip improperly paired-reads if command line parameter --ignoreImproperPairs is set
         if args.ignoreImproperPairs and not read.is_proper_pair:
@@ -946,6 +953,9 @@ for read in BAM:
             continue
         # Skip read if it is unmapped
         if read.is_unmapped:
+            failed_read_msg = '\t'.join[read.qname, 'read is unmapped\n']
+            FAILED_QC.write(failed_read_msg)
+            n_fragment_skipped_due_to_unmapped_read_or_mate += 1
             continue
         # Skip reads containing indels
         if does_read_contain_indel(read):
