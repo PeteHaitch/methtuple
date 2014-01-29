@@ -796,9 +796,10 @@ min_qual = args.minQual
 min_mapq = args.minMapQ
 
 n_fragment = 0 # The number of DNA fragments. One single-end read contributes one to the count and each half of a readpair contributes half a count.
-n_fragment_skipped_due_to_bad_overlap = 0 # The number of DNA fragments (read-pairs) skipped due to the overlapping sequencing not passing the appropriate filter
-n_fragment_skipped_due_to_low_mapq = 0
-n_fragment_skipped_due_to_duplicate = 0
+n_fragment_skipped_due_to_bad_overlap = 0 # The number of DNA fragments skipped due to the overlapping sequencing not passing the appropriate filter
+n_fragment_skipped_due_to_low_mapq = 0 # The number of DNA fragments skipped due to low mapQ
+n_fragment_skipped_due_to_duplicate = 0 # The number of DNA fragments skipped due to them being marked as duplicates
+n_fragment_skipped_due_to_diff_chr = 0  # The number of DNA fragments skipped due to the mates being aligned to different chromosomes
 n_methylation_loci_per_read = {} # Dictionary of the number of methylation loci that passed QC per read
 methylation_m_tuples = {} # Dictionary of m-tuples of methylation loci with keys of form chromosome:position_1:position_2 and values corresponding to a WithinFragmentComethylationMTuple instance
 
@@ -882,12 +883,18 @@ for read in BAM:
             failed_read_msg = '\t'.join[read_1.qname, 'marked as duplicate\n']
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_duplicate += 1
+            # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
+            read_1 = None
+            read_2 = None
             continue
         # Skip read-pairs if either mate's mapQ is less than min_mapq
         if read_1.mapq < min_mapq or read_2.mapq < min_mapq:
             failed_read_msg = '\t'.join[read_1.qname, 'mapQ < --minMapQ\n']
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_low_mapq += 1
+            # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
+            read_1 = None
+            read_2 = None
             continue
         # Skip read if either mate is unmapped
         if read_1.is_unmapped or read_2.is_unmapped:
@@ -897,27 +904,31 @@ for read in BAM:
             warning_msg = ''.join(['Skipping read-pair ', read_1.qname, ' as it is not properly paired.'])
             warnings.warn(warning_msg)
             continue
+        # Skip read if mates are mapped to different chromosomes
+        if read_1.tid != read_2.tid:
+            failed_read_msg = '\t'.join[read_1.qname, 'mates map to different chromosomes\n']
+            FAILED_QC.write(failed_read_msg)
+            n_fragment_skipped_due_to_diff_chr += 1
+            # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
+            read_1 = None
+            read_2 = None
+            continue
         # Skip reads containing indels
         if does_read_contain_indel(read_1) or does_read_contain_indel(read_2):
             continue
-        # Check that read_1 and read_2 are aligned to the same chromosome and have identical read-names.
-        # If not, skip the readpair.
-        if read_1.tid == read_2.tid and read_1.qname == read_2.qname:
+        # Check that read_1 and read_2 have identical read-names. If not, skip the readpair.
+        if read_1.qname == read_2.qname:
             methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_start_r2, ignore_end_r1, ignore_end_r2, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap)
             # Update the n_methylation_loci_per_read dictionary
             if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
                 n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
             n_methylation_loci_per_read[n_methylation_loci_in_fragment] += 1
-        elif read_1.tid != read_2.tid:
-            warning_msg = ''.join(['Skipping readpair', read_1.qname, ' as reads aligned to different chromosomes (', BAM.getrname(read_1.tid), ' and ', BAM.getrname(read_2.tid), ')'])
-            warnings.warn(warning_msg)
-            continue
-        elif read_1.qname != read_2.qname:
+            # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
+            read_1 = None
+            read_2 = None
+        else:
             exit_msg = "ERROR: The name of read_1 is not identical to to that of read_2 for read-pair ", read_1.qname, read_2.qname, ". Please sort your paired-end BAM file in queryname order with Picard's SortSam function."
             sys.exit(exit_msg)
-        # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
-        read_1 = None
-        read_2 = None
     # Read is single-end
     elif not read.is_paired:
         n_fragment += 1
