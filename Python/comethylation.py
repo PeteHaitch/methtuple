@@ -135,7 +135,7 @@ def ignore_first_n_bases(read, methylation_index, n):
         n: The number of bases to exclude from the start of each read. The start of a read is the first *sequenced* base, not the leftmost aligned base.
 
     Returns:
-        An updated version of methylation_index.
+        An updated version of methylation_index. Will report a warning if the FLAG does not encode whether the read is part of a paired-end or which mate of the paired-end read it is. Will report an error and call sys.exit() if the XR-tag or XG-tag is incompatible or missing.
     """
     ignore_these_bases = []
     # Single-end reads
@@ -206,7 +206,7 @@ def ignore_last_n_bases(read, methylation_index, n):
         n: The number of bases to exclude from the start of each read. The start of a read is the first *sequenced* base, not the leftmost aligned base.
 
     Returns:
-        An updated version of methylation_index.
+        An updated version of methylation_index. Will report a warning if the FLAG does not encode whether the read is part of a paired-end or which mate of the paired-end read it is. Will report an error and call sys.exit() if the XR-tag or XG-tag is incompatible or missing.
     """
     ignore_these_bases = []
     # Single-end reads
@@ -548,10 +548,10 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
         # If read is aligned to OB-strand then translate co-ordinate "ob_strand_offset" bases to the left so that it points to the C on the OT-strand of the methylation locus.
         if read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
             positions = [x - ob_strand_offset for x in positions]
-        # Skip readpair if methylation loci are incorrectly ordered and report a warning.
+        # Exit if methylation loci are incorrectly ordered
         if not positions == sorted(positions):
-            warning_msg = ' '.join(["Skipping single-end read", read.qname, "as positions aren't properly ordered (Case A)."])
-            warnings.warn(warning_msg)
+            exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for single-end read", read.qname, "\n'positions' =", str(positions)])
+            sys.exit(exit_msg)
         # Else, construct each bookended methylation-loci m-tuple and add it to the methylation_m_tuple instance.
         else:
             for i in range(0, len(methylation_index) - m + 1): # For a read containing k methylation loci there are (k - m + 1) m-tuples.
@@ -638,10 +638,10 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
             sys.exit(exit_msg)
         # Case 1: Readpair aligns to OT-strand
         if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
-            # Skip readpair if methylation loci are incorrectly ordered and report a warning.
+            # Exit if methylation loci are incorrectly ordered
             if not positions_1 + positions_2 == sorted(positions_1 + positions_2):
-                warning_msg = ' '.join(["Skipping paired-end read", read.qname, "as positions aren't properly ordered (Case 1)."])
-                warnings.warn(warning_msg)
+                exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for paired-end read", read_1.qname, "which is aligned to the OT-strand.\n'positions_1 + positions_2' =", str(positions_1 + positions_2)])
+                sys.exit(exit_msg)
             else:
                 # First, create all m-tuples of methylation loci where each locus is from read_1.
                 if len(methylation_index_1) >= m:
@@ -661,10 +661,10 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                 for i in range(0, num_shared_m_tuples):
                     this_m_tuple_positions_1 = positions_1[(leftmost_shared_locus_index + i):]
                     this_m_tuple_positions_2 = positions_2[:(m - len(this_m_tuple_positions_1))]
-                    # EXTRA CHECK: Skip readpair if methylation loci are incorrectly ordered and report a warning. This has already been checked a few lines above so this is a sanity check.
+                    # Exit if methylation loci are incorrectly ordered. While a similar check is performed a few lines above, this is a sanity check to make sure than nothing has gone wrong in constructing the shared m-tuples
                     if not this_m_tuple_positions_1 + this_m_tuple_positions_2 == sorted(this_m_tuple_positions_1 + this_m_tuple_positions_2):
-                        warning_msg = ' '.join(["Skipping paired-end read", read.qname, "as positions aren't properly ordered (Case 1: shared m-tuples)."])
-                        warnings.warn(warning_msg)
+                        exit_msg = ' '.join(["ERROR: The positions of the shared methylation loci are not properly ordered for paired-end read", read_1.qname, "which is aligned to the OT-strand.\n'this_m_tuple_positions_1 + this_m_tuple_positions_2' =", str(this_m_tuple_positions_1 + this_m_tuple_positions_2)])
+                        sys.exit(exit_msg)
                     else:
                         # Create a unique ID for each m-tuple of methylation loci (of form "chromosome:position_1-position_2-...-position_m")
                         m_tuple_id = ''.join([BAM.getrname(read_1.tid), ':', '-'.join([str(j) for j in this_m_tuple_positions_1] + [str(k) for k in this_m_tuple_positions_2])])
@@ -691,10 +691,10 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
             # Translate co-ordinates "ob_strand_offset" bases to the left so that it points to the C on the OT-strand of the methylation locus
             positions_1 = [x - ob_strand_offset for x in positions_1]
             positions_2 = [x - ob_strand_offset for x in positions_2]
-            # Skip readpair if methylation loci are incorrectly ordered and report a warning.
+            # Exit if methylation loci are incorrectly ordered.
             if not positions_2 + positions_1 == sorted(positions_2 + positions_1): 
-                warning_msg = ' '.join(["Skipping paired-end read", read.qname, "as positions aren't properly ordered (Case 2)."])
-                warnings.warn(warning_msg)
+                exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for paired-end read", read_1.qname, "which is aligned to the OB-strand.\n'positions_2 + positions_1' =", str(positions_2 + positions_1)])
+                sys.exit(exit_msg)
             else:
                 # First, create all m-tuples of methylation loci where each locus is from read_1.
                 if len(methylation_index_1) >= m:
@@ -714,10 +714,10 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                 for i in range(0, num_shared_m_tuples):
                     this_m_tuple_positions_2 = positions_2[(leftmost_shared_locus_index + i):]
                     this_m_tuple_positions_1 = positions_1[:(m - len(this_m_tuple_positions_2))]
-                    # EXTRA CHECK: Skip readpair if methylation loci are incorrectly ordered and report a warning. This has already been checked a few lines above so this is a sanity check.
+                    # Exit if methylation loci are incorrectly ordered. While a similar check is performed a few lines above, this is a sanity check to make sure than nothing has gone wrong in constructing the shared m-tuples
                     if not this_m_tuple_positions_2 + this_m_tuple_positions_1 == sorted(this_m_tuple_positions_2 + this_m_tuple_positions_1):
-                        warning_msg = ' '.join(["Skipping paired-end read", read.qname, "as positions aren't properly ordered (Case 2: shared m-tuples)."])
-                        warnings.warn(warning_msg)
+                        exit_msg = ' '.join(["ERROR: The positions of the shared methylation loci are not properly ordered for paired-end read", read_1.qname, "which is aligned to the OB-strand.\n'this_m_tuple_positions_2 + this_m_tuple_positions_1' =", str(this_m_tuple_positions_2 + this_m_tuple_positions_1)])
+                        sys.exit(exit_msg)
                     else:
                         # Create a unique ID for each m-tuple of methylation loci (of form "chromosome:position_1-position_2-...-position_m")
                         m_tuple_id = ''.join([BAM.getrname(read_1.tid), ':', '-'.join([str(j) for j in this_m_tuple_positions_2] + [str(k) for k in this_m_tuple_positions_1])])
