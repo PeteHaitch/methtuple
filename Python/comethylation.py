@@ -802,6 +802,7 @@ n_fragment_skipped_due_to_duplicate = 0 # The number of DNA fragments skipped du
 n_fragment_skipped_due_to_diff_chr = 0  # The number of DNA fragments skipped due to the mates being aligned to different chromosomes
 n_fragment_skipped_due_to_unmapped_read_or_mate = 0 # The number of DNA fragments skipped due to the read or its mate being unmapped
 n_fragment_skipped_due_to_improper_pair = 0 # The number of DNA fragments skipped due to the readpair being improperly paired
+n_fragment_skipped_due_to_indel = 0 # The number of DNA fragments skipped due to the read or readpair containing an indel
 n_methylation_loci_per_read = {} # Dictionary of the number of methylation loci that passed QC per read
 methylation_m_tuples = {} # Dictionary of m-tuples of methylation loci with keys of form chromosome:position_1:position_2 and values corresponding to a WithinFragmentComethylationMTuple instance
 
@@ -929,6 +930,12 @@ for read in BAM:
             continue
         # Skip reads containing indels
         if does_read_contain_indel(read_1) or does_read_contain_indel(read_2):
+            failed_read_msg = '\t'.join[read_1.qname, 'read has indel\n']
+            FAILED_QC.write(failed_read_msg)
+            n_fragment_skipped_due_to_indel += 1
+            # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
+            read_1 = None
+            read_2 = None
             continue
         # Check that read_1 and read_2 have identical read-names. If not, skip the readpair.
         if read_1.qname == read_2.qname:
@@ -966,6 +973,12 @@ for read in BAM:
             continue
         # Skip reads containing indels
         if does_read_contain_indel(read):
+            failed_read_msg = '\t'.join[read.qname, 'read has indel\n']
+            FAILED_QC.write(failed_read_msg)
+            n_fragment_skipped_due_to_indel += 1
+            # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
+            read_1 = None
+            read_2 = None
             continue
         methylation_m_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_end_r1, min_qual, phred_offset, ob_strand_offset)
         if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
