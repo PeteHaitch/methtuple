@@ -104,7 +104,7 @@ parser.add_argument('--phred64',
                     help='Quality scores are encoded as Phred64 (default: Phred33).')
 parser.add_argument('--overlappingPairedEndFilter', metavar = '<string>',
                     default = 'XM',
-                    help="What filter should be applied to any overlapping paired-end reads. Read-pairs that don't pass the filter are not used for methylation calling (options listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (none), do no check of the overlapping bases and just use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark) (default: XM).")
+                    help="What filter should be applied to any overlapping paired-end reads. Read-pairs that don't pass the filter are not used for methylation calling (options listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (quality), do no check of the overlapping bases and just use the overlapping bases from read_1 a la bismark_methylation_extractor (bismark) (default: XM).")
 parser.add_argument('--strandSpecific',
                     action = 'store_true',
                     help = "Produce strand-specific counts, i.e. don't collapse methylation calls across Watson and Crick strands (default for CHH methylation)")
@@ -321,7 +321,7 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
         read_1: A pysam.AlignedRead instance with read.is_read1 == true. Must be paired with read_2.
         read_2: A pysam.AlignedRead instance with read.is_read2 == true. Must be paired with read_1.
         n_overlap: The number of bases in the overlap of read_1 and read_2 (must be > 0)
-        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (none), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark)
+        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (quality), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark)
 
     Returns:
         True if the overlapping sequence passes the filter, False otherwise (NB: this means that readpairs that trigger the warning for having mis-specified XG- or XR-tags will also return 'False').
@@ -337,7 +337,7 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
         elif overlap_check == 'bismark': # return True as Bismark does not actually check the overlapping sequence but rather just takes the overlap from read_1
             overlap_1 = True
             overlap_2 = True
-        elif overlap_check == 'none':
+        elif overlap_check == 'quality':
             overlap_1 = True
             overlap_2 = True
     # Readpair aligns to OB-strand
@@ -351,7 +351,7 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
         elif overlap_check == 'bismark': # return True as Bismark does not actually check the overlapping sequence but rather just takes the overlap from read_1
             overlap_1 = True
             overlap_2 = True
-        elif overlap_check == 'none':
+        elif overlap_check == 'quality':
             overlap_1 = True
             overlap_2 = True
     else:
@@ -399,7 +399,7 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
         corresponds to read_1 with a methylation locus at the first and sixth positions of the read.
         methylation_index_2: As for methylation_index_1 but informative for read_2.
         n_overlap: The number of bases in the overlap (must be > 0).
-        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (none), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark)
+        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (quality), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark)
 
     Returns:
         Updated versions of methylation_index_1 and methylation_index_2.
@@ -579,7 +579,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         min_qual: Ignore bases with quality-score less than this value.
         phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
         ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
-        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (none), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark)
+        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (quality), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark)
         n_fragment_skipped_due_to_bad_overlap: The total number of fragments (read-pairs) skipped due to the overlapping sequencing not passing the filter.
         FAILED_QC: The file object where the QNAME of readpairs that fail the overlap check are written, along with the reason the readpairs failed
     Returns:
@@ -610,7 +610,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         if is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
             methylation_index_1, methylation_index_2 = ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap, overlap_check)
         else:
-            failed_read_msg = '\t'.join[read_1.qname, ''.join(['failed the --overlappingPairedEndFilter ', overlap_check, '\n'])]
+            failed_read_msg = '\t'.join([read_1.qname, ''.join(['failed the --overlappingPairedEndFilter ', overlap_check, '\n'])])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_bad_overlap += 1
             methylation_index_1 = []
@@ -809,60 +809,66 @@ methylation_m_tuples = {} # Dictionary of m-tuples of methylation loci with keys
 
 #### The main program. Loops over the BAM file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or readpair. ####
 # Print key variable names and command line parameter options to STDOUT
-print 'Input file =', BAM.filename
-print 'Output file =', OUT.name
-print 'Methylation m-tuples may have intervening methylation events (i.e. NIC > 0). These generally occur in paired-end reads with non-overlapping mates but can also be caused by filtering methylation calls by base quality, read-position, etc. These should be post-hoc filtered.'
+print 'Input BAM file =', BAM.filename
+print ''.join(['Output file of ', methylation_type, ' ', str(m), '-tuples = ', OUT.name])
+print 'Reads that fail to pass QC filters will be written to =', FAILED_QC.name, '\n'
+
 if (m < 1) or (m != floor(m)):
     exit_msg = "ERROR: --mTuple must be an integer greater than or equal to 1."
     sys.exit(exit_msg)
+
+print 'Assuming quality scores are Phred', phred_offset, '\n'
+
 if args.oldBismark:
-    print 'Assuming file is a paired-end SAM/BAM created with Bismark version < 0.8.3'
+    print 'Assuming file is a paired-end SAM/BAM created with Bismark version < 0.8.3\n'
+
 if args.ignoreDuplicates:
     print 'Ignoring reads marked as PCR duplicates'
 if not args.useImproperPairs:
     print 'Ignoring improper readpairs'
 else:
     print 'Not filtering out readpairs that are marked as improperly paired. The definition of a proper readpair is aligner-specific and the value is set with the 0x2 bit in the SAM flag'
-print 'Assuming quality scores are Phred', phred_offset
 print "Ignoring", ignore_start_r1, "bp from 5' end of each read if data are single-end or of each read_1 if data are paired end"
 print "Ignoring", ignore_start_r2, "bp from 5' end of each read_2 if data are paired end"
 print "Ignoring", ignore_end_r1, "bp from 3' end of each read if data are single-end or of each read_1 if data are paired end"
 print "Ignoring", ignore_end_r2 , "bp from 3' end of each read_2 if data are paired end"
 print 'Ignoring methylation calls with base-quality less than', min_qual
 print 'Ignoring reads with mapQ less than', min_mapq
-print 'Analysing', methylation_type, 'methylation loci'
-print ''.join(['Creating bookended ', str(m), '-tuples of methylation loci'])
+
 if overlap_check == 'sequence':
-    print 'Paired-end reads that have overlapping mates will be filtered out if the overlapping sequences are not identical'
+    print 'Ignoring paired-end reads that have overlapping mates if the overlapping sequences are not identical\n'
 elif overlap_check == 'XM':
-    print 'Paired-end reads that have overlapping mates will be filtered out if the XM-tags for the overlapping sequence are not identical'
+    print 'Ignoring paired-end reads that have overlapping mates if the XM-tags for the overlapping sequence are not identical\n'
+elif overlap_check == 'quality':
+    print 'Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only the mate with the higher quality scores in the overlapping region shall be used\n'
 elif overlap_check == 'bismark':
-    print "Paired-end reads that have overlapping mates will simply use the overlapping bases from read_1 ala bismark_methylation_extractor"
-elif overlap_check == 'none':
-    print 'Paired-end reads that have overlapping mates will not be subject to any filtering based on the overlapping sequence'
+    print "Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only read_1 shall be used (a la bismark_methylation_extractor)\n"
 else:
-    exit_msg = "ERROR: --overlappingPairedEndFilter must be one of 'sequence', 'XM', 'bismark' or 'none'"
+    exit_msg = "ERROR: --overlappingPairedEndFilter must be one of 'sequence', 'XM', 'quality' or 'bismark'"
     sys.exit(exit_msg)
 
+print ''.join(['Creating ', methylation_type, ' ', str(m), '-tuples'])
+if m > 1:
+    print ''.join([str(m), '-tuples may have intervening methylation loci (i.e. NIC > 0). Such ', str(m), '-tuples generally occur in paired-end reads with non-overlapping mates but can also be caused by filtering methylation calls by base quality, read-position, etc. It is generally recommended that ', str(m), '-tuples with NIC > 0 be post-hoc filtered.\n'])
+
 # Check that mapped reads have the XR-, XG- and XM-tags set. Will only check first mapped read, so assumes that the first mapped read in the BAM is representative of all mapped reads in the BAM.
-print 'Checking that the XR-, XG- and XM-tags are set for the first mapped read...'
 for read in BAM:
     if read.is_unmapped:
         continue
     # Check XR-tag
     if not 'XR' in [x[0] for x in read.tags]:
-        exit_msg = "ERROR: The first mapped read does not contain an XR-tag. The XR-tag stores the read conversion state for the alignment and is required by comethylation.py.\n SAM/BAM files created by Bismark should already have the XR-tag set.\n If your SAM/BAM was created with another program you will need to add the correct XR-tags before proceeding. The script bismarkify.py may be able to help you with this."
+        exit_msg = "ERROR: The first mapped read does not contain an XR-tag. The XR-tag stores the read conversion state for the alignment and is required by comethylation.py.\n SAM/BAM files created by Bismark should already have the XR-tag set.\n If your SAM/BAM was created with another program you will need to add the correct XR-tags before proceeding. The script bismarkify.py may be able to help you with this.\n"
         sys.exit(exit_msg)
     # Check XG-tag
     if not 'XG' in [x[0] for x in read.tags]:
-        exit_msg = "ERROR: The first mapped read does not contain an XG-tag. The XG-tag stores the read conversion state for the alignment and is required by comethylation.py.\n SAM/BAM files created by Bismark should already have the XG-tag set.\n If your SAM/BAM was created with another program you will need to add the correct XG-tags before proceeding. The script bismarkify.py may be able to help you with this."
+        exit_msg = "ERROR: The first mapped read does not contain an XG-tag. The XG-tag stores the read conversion state for the alignment and is required by comethylation.py.\n SAM/BAM files created by Bismark should already have the XG-tag set.\n If your SAM/BAM was created with another program you will need to add the correct XG-tags before proceeding. The script bismarkify.py may be able to help you with this.\n"
         sys.exit(exit_msg)
     # Check XG-tag
     if not 'XM' in [x[0] for x in read.tags]:
-        exit_msg = "ERROR: The first mapped read does not contain an XM-tag. The XMtag stores the methylation call string for the alignment and is required by comethylation.py.\n SAM/BAM files created by Bismark should already have the XM-tag set.\n If your SAM/BAM was created with another program you will need to add the correct XM-tags before proceeding. The script bismarkify.py may be able to help you with this."
+        exit_msg = "ERROR: The first mapped read does not contain an XM-tag. The XM-tag stores the methylation call string for the alignment and is required by comethylation.py.\n SAM/BAM files created by Bismark should already have the XM-tag set.\n If your SAM/BAM was created with another program you will need to add the correct XM-tags before proceeding. The script bismarkify.py may be able to help you with this.\n"
         sys.exit(exit_msg)
     else:
-        print 'Verified that the XR-, XG- and XM-tags are set for the first mapped read'
+        print 'Verified that the XR-, XG- and XM-tags are set for the first mapped read\n'
         # Reset BAM to start
         BAM.reset()
         break
@@ -998,18 +1004,28 @@ for read in BAM:
         sys.exit(exit_msg)
 
 # Write results to disk
-print 'Writing output to', OUT.name, '...'
+print ''.join(['Extracted all ',  methylation_type, ' ', str(m), '-tuples.'])
+print 'Now writing output to', OUT.name, '...\n'
 write_methylation_m_tuples_to_file(methylation_m_tuples, m)
 
-# Print some summary information to HIST and STDOUT
-print 'Number of DNA fragments in file:', int(n_fragment)
-print 'Number of DNA fragments (read-pairs) skipped due to overlapping sequence not passing QC filter:', int(n_fragment_skipped_due_to_bad_overlap)
+# Print some summary information to STDOUT
+print 'Summary of the number of DNA fragments processed by comethylation.py'
+print 'Number of DNA fragments in file = ', int(n_fragment)
+print ''.join(['Number of DNA fragments skipped due to failing the --overlappingPairedEndFilter ', overlap_check, ' filter = ', str(n_fragment_skipped_due_to_bad_overlap)])
+print ''.join(['Number of DNA fragments skipped due to failing the --minMapQ filter = ', str(n_fragment_skipped_due_to_low_mapq)])
+print ''.join(['Number of DNA fragments skipped due to being marked as PCR duplicates = ', str(n_fragment_skipped_due_to_duplicate)])
+print ''.join(['Number of DNA fragments skipped due to mates mapping to different chromosomes = ', str(n_fragment_skipped_due_to_diff_chr)])
+print ''.join(['Number of DNA fragments skipped due to the read or its mate being unmapped =' , str(n_fragment_skipped_due_to_unmapped_read_or_mate)])
+print ''.join(['Number of DNA fragments skipped due to the readpair being improperly paired = ', str(n_fragment_skipped_due_to_improper_pair)])
+print ''.join(['Number of DNA fragments skipped due to an indel in the read or its mate = ', str(n_fragment_skipped_due_to_indel)])
 n_informative_fragments = 0
 for k, v in n_methylation_loci_per_read.iteritems():
     if k >= m:
         n_informative_fragments += v
-print ''.join(['Number of reads or readpairs informative for co-methylation ', str(m), '-tuples = ', str(n_informative_fragments), ' (', str(round(n_informative_fragments / float(n_fragment) * 100, 1)), '% of total fragments)'])
-print 'Writing histogram of number of', args.methylationType, 'methylation loci per DNA fragment that passed QC filters to', HIST.name, '...'
+print ''.join(['Number of reads or readpairs informative for comethylation ', str(m), '-tuples = ', str(n_informative_fragments), ' (', str(round(n_informative_fragments / float(n_fragment) * 100, 1)), '% of total fragments)\n'])
+
+# Write histogram to HIST with the number of methylation loci per DNA fragment that passed QC filters
+print 'Writing histogram with the number of', args.methylationType, 'methylation loci per DNA fragment that passed QC filters to', HIST.name, '...'
 HIST.write('n\tcount\n')
 for k, v in iter(sorted(n_methylation_loci_per_read.iteritems())):
     HIST.write(''.join([str(k), '\t', str(v), '\n']))
