@@ -310,7 +310,7 @@ def fix_old_bismark(read):
 	elif read.flag == 179:
 		read.flag = 163
 	else:
-		exit_msg = ''.join(['Unexpected FLAG (', str(read.flag), ') for read ', read.qname, 'Sorry, --oldBismark is unable to deal with this FLAG. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.'])
+		exit_msg = ''.join(['ERROR: Unexpected FLAG (', str(read.flag), ') for read ', read.qname, 'Sorry, --oldBismark is unable to deal with this FLAG. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.'])
 		sys.exit(exit_msg)
 	return read    
 
@@ -783,7 +783,7 @@ elif methylation_type == 'CHH':
     if args.strandSpecific:
         ob_strand_offset = 0
     else:
-        exit_msg = 'CHH-methylation is not strand-symmetric and thus the --strandSpecific option must be specified.'
+        exit_msg = 'ERROR: CHH-methylation is not strand-symmetric and thus the --strandSpecific option must be specified.'
         sys.exit(exit_msg)
 else:
     sys.exit("--methylationType must be one of 'CG', 'CHG' or 'CHH'")
