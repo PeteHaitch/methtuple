@@ -798,6 +798,7 @@ min_mapq = args.minMapQ
 n_fragment = 0 # The number of DNA fragments. One single-end read contributes one to the count and each half of a readpair contributes half a count.
 n_fragment_skipped_due_to_bad_overlap = 0 # The number of DNA fragments (read-pairs) skipped due to the overlapping sequencing not passing the appropriate filter
 n_fragment_skipped_due_to_low_mapq = 0
+n_fragment_skipped_due_to_duplicate = 0
 n_methylation_loci_per_read = {} # Dictionary of the number of methylation loci that passed QC per read
 methylation_m_tuples = {} # Dictionary of m-tuples of methylation loci with keys of form chromosome:position_1:position_2 and values corresponding to a WithinFragmentComethylationMTuple instance
 
@@ -878,6 +879,9 @@ for read in BAM:
         n_fragment += 1
         # Skip duplicate reads if command line parameter --ignoreDuplicates is set and read is marked as a duplicate
         if args.ignoreDuplicates and read.is_duplicate:
+            failed_read_msg = '\t'.join[read_1.qname, 'marked as duplicate\n']
+            FAILED_QC.write(failed_read_msg)
+            n_fragment_skipped_due_to_duplicate += 1
             continue
         # Skip read-pairs if either mate's mapQ is less than min_mapq
         if read_1.mapq < min_mapq or read_2.mapq < min_mapq:
@@ -919,6 +923,9 @@ for read in BAM:
         n_fragment += 1
         # Skip duplicates reads if command line parameter --ignoreDuplicates is set and read is marked as a duplicate
         if args.ignoreDuplicates and read.is_duplicate:
+            failed_read_msg = '\t'.join[read.qname, 'marked as duplicate\n']
+            FAILED_QC.write(failed_read_msg)
+            n_fragment_skipped_due_to_duplicate += 1
             continue
         # Skip read if read's mapQ is less than min_mapq
         if read.mapq < min_mapq:
