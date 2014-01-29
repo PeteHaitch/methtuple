@@ -120,6 +120,7 @@ args = parser.parse_args()
 BAM = pysam.Samfile(args.BAM)
 OUT = open(".".join([args.sampleName, args.methylationType, str(args.mTuple), "tsv"]), "w")
 HIST = open("".join([args.sampleName, ".", args.methylationType, "_per_read.hist"]), "w")
+FAILED_QC = open("".join([args.sampleName, ".reads_that_failed_QC.txt"]), "w")
 
 #### Function definitions ####
 def ignore_first_n_bases(read, methylation_index, n):
@@ -153,7 +154,7 @@ def ignore_first_n_bases(read, methylation_index, n):
         else:
             exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag.'])
             sys.exit(exit_msg)
-            methylation_index = []
+            #methylation_index = []
     # Paired-end reads: read_1
     elif read.is_paired and read.is_read1:
         # read_1 aligned to OT-strand |------>
@@ -169,7 +170,7 @@ def ignore_first_n_bases(read, methylation_index, n):
         else:
             exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag.'])
             sys.exit(exit_msg)
-            methylation_index = []
+            #methylation_index = []
     # Paired-end reads: read_2
     elif read.is_paired and read.is_read2:
         # read_2 aligned to OT-strand <------|
@@ -185,12 +186,12 @@ def ignore_first_n_bases(read, methylation_index, n):
         else:
             exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag.'])
             sys.exit(exit_msg)
-            methylation_index = []
-    # Skipping read because it does not have necessary information to infer whether read is paired or whether the read is read_1 or read_2 of the readpair.
+            #methylation_index = []
+    # ERROR: read does not have necessary information to infer whether read is paired or whether the read is read_1 or read_2 of the readpair. This should never happen as it should have already been caught in the main loop of the program.
     else:
-        warning_msg = ''.join(['Skipping read ', read.qname, '. Missing 0x01, 0x40 or 0x80 FLAG bit (paired-read FLAG information)'])
-        warnings.warn(warning_msg)
-        methylation_index = []
+        exit_msg = ''.join['ERROR: Read ', read.qname, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.']
+        sys.exit(exit_msg)
+        #methylation_index = []
     return [x for x in methylation_index if x not in ignore_these_bases]
 
 def ignore_last_n_bases(read, methylation_index, n):
@@ -224,7 +225,7 @@ def ignore_last_n_bases(read, methylation_index, n):
         else:
             exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag.'])
             sys.exit(exit_msg)
-            methylation_index = []
+            #methylation_index = []
     # Paired-end reads: read_1
     elif read.is_paired and read.is_read1:
         # read_1 aligned to OT-strand |------>
@@ -240,7 +241,7 @@ def ignore_last_n_bases(read, methylation_index, n):
         else:
             exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag.'])
             sys.exit(exit_msg)
-            methylation_index = []
+            #methylation_index = []
     # Paired-end reads: read_2
     elif read.is_paired and read.is_read2:
         # read_2 aligned to OT-strand <------|
@@ -256,12 +257,12 @@ def ignore_last_n_bases(read, methylation_index, n):
         else:
             exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag.'])
             sys.exit(exit_msg)
-            methylation_index = []
-    # Skipping read because it does not have necessary information to infer whether read is paired or whether the read is read_1 or read_2 of the readpair.
+            #methylation_index = []
+    # ERROR: read does not have necessary information to infer whether read is paired or whether the read is read_1 or read_2 of the readpair. This should never happen as it should have already been caught in the main loop of the program.
     else:
-        warning_msg = ''.join(['Skipping read ', read.qname, '. Missing 0x01, 0x40 or 0x80 FLAG bit (paired-read FLAG information)'])
-        warnings.warn(warning_msg)
-        methylation_index = []
+        exit_msg = ''.join['ERROR: Read ', read.qname, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.']
+        sys.exit(exit_msg)
+        #methylation_index = []
     return [x for x in methylation_index if x not in ignore_these_bases]
         
 def ignore_low_quality_bases(read, methylation_index, min_qual, phred_offset):
@@ -507,7 +508,7 @@ class WithinFragmentComethylationMTuple:
                 warning_msg = ''.join(['Skipping readpair ', read.qname, ' as XG-tags or XR-tags are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
                 warnings.warn(warning_msg)             
 
-def extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_end_r1, min_qual, min_mapq, phred_offset, ob_strand_offset):
+def extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_end_r1, min_qual, phred_offset, ob_strand_offset):
     """Extracts m-tuples of methylation loci from a single-end read and adds the comethylation m-tuple to the methylation_m_tuples object.
     
     Args:
@@ -520,7 +521,6 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
         ignore_start_r1: How many bases to ignore from start (5' end) of read.
         ignore_end_r1: How many bases to ignore from end (3' end) of read.
         min_qual: Ignore bases with quality-score less than this value.
-        min_mapq: Ignore reads with a mapQ less than this value.
         phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
         ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
     Returns:
@@ -536,11 +536,6 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
         methylation_index = ignore_last_n_bases(read, methylation_index, ignore_end_r1)
     # Ignore any positions with a base quality less than min_qual
     methylation_index = ignore_low_quality_bases(read, methylation_index, min_qual, phred_offset)
-    # Ignore any reads with mapQ less than min_mapq. Do this by setting the methylation_index = []
-    if read.mapq < min_mapq:
-        methylation_index = []
-        warning_msg = ''.join(['Ignoring read ', read.qname, ' since its mapQ < ', str(min_mapq)])
-        warnings.warn(warning_msg)
     n_methylation_loci = len(methylation_index)
     # Case A: >= m methylation loci in the read
     if n_methylation_loci >= m:
@@ -566,7 +561,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
                     methylation_m_tuples[m_tuple_id].increment_count(''.join([read.opt('XM')[j] for j in methylation_index[i:(i + m)]]), methylation_type, read, None)
     return methylation_m_tuples, n_methylation_loci
 
-def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_start_r2, ignore_end_r1, ignore_end_r2, min_qual, min_mapq, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap):
+def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_start_r2, ignore_end_r1, ignore_end_r2, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap):
     """Extracts m-tuples of methylation loci from a readpair and adds the comethylation m-tuple to the methylation_m_tuples object.
     
     Args:
@@ -582,7 +577,6 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         ignore_end_r1: How many bases to ignore from end (3' end) of read_1.
         ignore_end_r2: How many bases to ignore from end (3' end) of read_2.
         min_qual: Ignore bases with quality-score less than this value.
-        min_mapq: Ignore reads with mapQ less than this value.
         phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
         ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
         overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (none), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark)
@@ -594,25 +588,19 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
     # Identify methylation events in read, e.g. CpGs or CHHs. The methylation_pattern is specified by a command line argument (e.g. Z/z corresponds to CpG)
     methylation_index_1 = [midx.start() for midx in re.finditer(methylation_pattern, read_1.opt('XM'))]
     methylation_index_2 = [midx.start() for midx in re.finditer(methylation_pattern, read_2.opt('XM'))]
-    # Ignore any start or end positions of read if required
-    if (ignore_start_r1 > 0) | (ignore_start_r2 > 0):
+    # Ignore any start or end positions of read_1 or read_2 if required
+    if ignore_start_r1 > 0:
         methylation_index_1 = ignore_first_n_bases(read_1, methylation_index_1, ignore_start_r1)
-        methylation_index_2 = ignore_first_n_bases(read_2, methylation_index_2, ignore_start_r2)
-    if (ignore_end_r1 > 0) | (ignore_end_r2 > 0):
+    if ignore_end_r1 > 0:
         methylation_index_1 = ignore_last_n_bases(read_1, methylation_index_1, ignore_end_r1)
+    if ignore_start_r2 > 0:
+        methylation_index_2 = ignore_first_n_bases(read_2, methylation_index_2, ignore_start_r2)
+    if ignore_end_r2 > 0:
         methylation_index_2 = ignore_last_n_bases(read_2, methylation_index_2, ignore_end_r2)
     # Ignore any positions with a base quality less than  min_qual
     methylation_index_1 = ignore_low_quality_bases(read_1, methylation_index_1, min_qual, phred_offset)
     methylation_index_2 = ignore_low_quality_bases(read_2, methylation_index_2, min_qual, phred_offset)
-    # Ignore any reads with mapQ less than min_mapq. Do this by setting methylation_index_1 = [] (in the case of read_1) and methylation_index_2 = [] (in the case of read_2)
-    if read_1.mapq < min_mapq:
-        methylation_index_1 = []
-        warning_msg = ''.join(['Ignoring read_1 of readpair ', read_1.qname, ' since its mapQ < ', str(min_mapq)])
-        warnings.warn(warning_msg)
-    if read_2.mapq < min_mapq:
-        methylation_index_2 = []
-        warning_msg = ''.join(['Ignoring read_2 of readpair ', read_2.qname, ' since its mapQ < ', str(min_mapq)])
-        warnings.warn(warning_msg)
+
     # Check for overlapping reads from a readpair.
     # If reads overlap check whether the overlapping sequence passes the filter given by overlap_check.
     # If the overlapping sequence does not pass the filter report a warning, increment a counter and skip the readpair (by setting methylation_index_1 and methylation_index_2 to be the empty list).
@@ -809,6 +797,7 @@ min_mapq = args.minMapQ
 
 n_fragment = 0 # The number of DNA fragments. One single-end read contributes one to the count and each half of a readpair contributes half a count.
 n_fragment_skipped_due_to_bad_overlap = 0 # The number of DNA fragments (read-pairs) skipped due to the overlapping sequencing not passing the appropriate filter
+n_fragment_skipped_due_to_low_mapq = 0
 n_methylation_loci_per_read = {} # Dictionary of the number of methylation loci that passed QC per read
 methylation_m_tuples = {} # Dictionary of m-tuples of methylation loci with keys of form chromosome:position_1:position_2 and values corresponding to a WithinFragmentComethylationMTuple instance
 
@@ -887,8 +876,14 @@ for read in BAM:
             read = fix_old_bismark(read)
         read_2 = read
         n_fragment += 1
-        # Skip duplicates reads if command line parameter --ignoreDuplicates is set
+        # Skip duplicate reads if command line parameter --ignoreDuplicates is set and read is marked as a duplicate
         if args.ignoreDuplicates and read.is_duplicate:
+            continue
+        # Skip read-pairs if either mate's mapQ is less than min_mapq
+        if read_1.mapq < min_mapq or read_2.mapq < min_mapq:
+            failed_read_msg = '\t'.join[read_1.qname, 'mapQ < --minMapQ\n']
+            FAILED_QC.write(failed_read_msg)
+            n_fragment_skipped_due_to_low_mapq += 1
             continue
         # Skip read if either mate is unmapped
         if read_1.is_unmapped or read_2.is_unmapped:
@@ -904,7 +899,7 @@ for read in BAM:
         # Check that read_1 and read_2 are aligned to the same chromosome and have identical read-names.
         # If not, skip the readpair.
         if read_1.tid == read_2.tid and read_1.qname == read_2.qname:
-            methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_start_r2, ignore_end_r1, ignore_end_r2, min_qual, min_mapq, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap)
+            methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_start_r2, ignore_end_r1, ignore_end_r2, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap)
             # Update the n_methylation_loci_per_read dictionary
             if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
                 n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
@@ -922,8 +917,14 @@ for read in BAM:
     # Read is single-end
     elif not read.is_paired:
         n_fragment += 1
-        # Skip duplicates reads if command line parameter --ignoreDuplicates is set
+        # Skip duplicates reads if command line parameter --ignoreDuplicates is set and read is marked as a duplicate
         if args.ignoreDuplicates and read.is_duplicate:
+            continue
+        # Skip read if read's mapQ is less than min_mapq
+        if read.mapq < min_mapq:
+            failed_read_msg = '\t'.join[read.qname, 'mapQ < --minMapQ\n']
+            FAILED_QC.write(failed_read_msg)
+            n_fragment_skipped_due_to_low_mapq += 1
             continue
         # Skip read if it is unmapped
         if read.is_unmapped:
@@ -931,15 +932,14 @@ for read in BAM:
         # Skip reads containing indels
         if does_read_contain_indel(read):
             continue
-        methylation_m_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_end_r1, min_qual, min_mapq, phred_offset, ob_strand_offset)
+        methylation_m_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_end_r1, min_qual, phred_offset, ob_strand_offset)
         if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
             n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
         n_methylation_loci_per_read[n_methylation_loci_in_fragment] += 1
-    # Read is neither single-end or a mate from a read-pair. This is odd and shouldn't happen.
+    # Read is neither single-end nor a mate from a read-pair. This shouldn't happen.
     else:
-        exit_msg = ''.join(["Read is neither a single-end read nor part of a paired-end read. Check the SAM FLAG values are correctly set for read:", read.qname])
+        exit_msg = ''.join['ERROR: Read ', read.qname, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.']
         sys.exit(exit_msg)
-        continue
 
 # Write results to disk
 print 'Writing output to', OUT.name, '...'
@@ -962,4 +962,5 @@ for k, v in iter(sorted(n_methylation_loci_per_read.iteritems())):
 BAM.close()
 OUT.close()
 HIST.close()
+FAILED_QC.close()
 
