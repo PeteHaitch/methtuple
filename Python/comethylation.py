@@ -872,17 +872,21 @@ for read in BAM:
     # Read is first in a read-pair
     if read.is_paired and read.is_read1:
         # Fix QNAME and FLAG values if --oldBismark flag is set
-        if(args.oldBismark):
+        if args.oldBismark:
             read = fix_old_bismark(read)
         read_1 = read
         continue
     # Read is second in a read-pair
     elif read.is_paired and read.is_read2:
         # Fix QNAME and FLAG values if --oldBismark flag is set
-        if(args.oldBismark):
+        if args.oldBismark:
             read = fix_old_bismark(read)
         read_2 = read
         n_fragment += 1
+        # Check that the data are from directional BS-seq experiment
+        if not ((read_1.opt('XG') == 'CT' and read_1.opt('XR') == 'CT') or ( read_1.opt('XG') == 'GA' and read_1.opt('XR') == 'CT')):
+            exit_msg = "ERROR: The XR-tag and XG-tag of ", read.qname, " are not compatible with the directional bisulfite-sequencing protocol. Sorry, comethylation.py can only process data from the directional protocol."
+            sys.exit(exit_msg)
         # Skip duplicate reads if command line parameter --ignoreDuplicates is set and read is marked as a duplicate
         if args.ignoreDuplicates and read.is_duplicate:
             failed_read_msg = '\t'.join[read_1.qname, 'marked as duplicate\n']
@@ -948,11 +952,15 @@ for read in BAM:
             read_1 = None
             read_2 = None
         else:
-            exit_msg = "ERROR: The name of read_1 is not identical to to that of read_2 for read-pair ", read_1.qname, read_2.qname, ". Please sort your paired-end BAM file in queryname order with Picard's SortSam function."
+            exit_msg = ''.join(["ERROR: The name of read_1 is not identical to to that of read_2 for read-pair ", read_1.qname, read_2.qname, ". Please sort your paired-end BAM file in queryname order with Picard's SortSam function."])
             sys.exit(exit_msg)
     # Read is single-end
     elif not read.is_paired:
         n_fragment += 1
+        # Check that the data are from directional BS-seq experiment
+        if not ((read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA') or (read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA')):
+            exit_msg = "ERROR: The XR-tag and XG-tag of ", read_1.qname, " are not compatible with the directional bisulfite-sequencing protocol. Sorry, comethylation.py can only process data from the directional protocol."
+            sys.exit(exit_msg)
         # Skip duplicates reads if command line parameter --ignoreDuplicates is set and read is marked as a duplicate
         if args.ignoreDuplicates and read.is_duplicate:
             failed_read_msg = '\t'.join[read.qname, 'marked as duplicate\n']
