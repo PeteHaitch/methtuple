@@ -151,8 +151,8 @@ def ignore_first_n_bases(read, methylation_index, n):
                 if i >= (read.alen - n):
                     ignore_these_bases.append(i)
         else:
-            warning_msg = ''.join(['Skipping read ', read.qname, '. Incompatible or missing XG-tag or XR-tag.'])
-            warnings.warn(warning_msg)
+            exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag.'])
+            sys.exit(exit_msg)
             methylation_index = []
     # Paired-end reads: read_1
     elif read.is_paired and read.is_read1:
@@ -167,8 +167,8 @@ def ignore_first_n_bases(read, methylation_index, n):
                 if i >= (read.alen - n):
                     ignore_these_bases.append(i)
         else:
-            warning_msg = ''.join(['Skipping read ', read.qname, '. Incompatible or missing XG-tag or XR-tag.'])
-            warnings.warn(warning_msg)
+            exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag.'])
+            sys.exit(exit_msg)
             methylation_index = []
     # Paired-end reads: read_2
     elif read.is_paired and read.is_read2:
@@ -183,8 +183,8 @@ def ignore_first_n_bases(read, methylation_index, n):
                 if i < n:
                     ignore_these_bases.append(i)
         else:
-            warning_msg = ''.join(['Skipping read ', read.qname, '. Incompatible or missing XG-tag or XR-tag.'])
-            warnings.warn(warning_msg)
+            exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag.'])
+            sys.exit(exit_msg)
             methylation_index = []
     # Skipping read because it does not have necessary information to infer whether read is paired or whether the read is read_1 or read_2 of the readpair.
     else:
@@ -222,8 +222,8 @@ def ignore_last_n_bases(read, methylation_index, n):
                 if i < n:
                     ignore_these_bases.append(i)
         else:
-            warning_msg = ''.join(['Skipping read ', read.qname, '. Incompatible or missing XG-tag or XR-tag.'])
-            warnings.warn(warning_msg)
+            exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag.'])
+            sys.exit(exit_msg)
             methylation_index = []
     # Paired-end reads: read_1
     elif read.is_paired and read.is_read1:
@@ -238,8 +238,8 @@ def ignore_last_n_bases(read, methylation_index, n):
                 if i < n:
                     ignore_these_bases.append(i)
         else:
-            warning_msg = ''.join(['Skipping read ', read.qname, '. Incompatible or missing XG-tag or XR-tag.'])
-            warnings.warn(warning_msg)
+            exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag.'])
+            sys.exit(exit_msg)
             methylation_index = []
     # Paired-end reads: read_2
     elif read.is_paired and read.is_read2:
@@ -254,8 +254,8 @@ def ignore_last_n_bases(read, methylation_index, n):
                 if i  >= (read.alen - n):
                     ignore_these_bases.append(i)
         else:
-            warning_msg = ''.join(['Skipping read ', read.qname, '. Incompatible or missing XG-tag or XR-tag.'])
-            warnings.warn(warning_msg)
+            exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag.'])
+            sys.exit(exit_msg)
             methylation_index = []
     # Skipping read because it does not have necessary information to infer whether read is paired or whether the read is read_1 or read_2 of the readpair.
     else:
