@@ -75,9 +75,6 @@ parser.add_argument('--oldBismark',
 parser.add_argument('--ignoreDuplicates',
                     action = 'store_true',
                     help ='Ignore reads that have been flagged as PCR duplicates by Picard\'s MarkDuplicates function')
-parser.add_argument('--ignoreImproperPairs',
-                    action = 'store_true',
-                    help ='Ignore improper readpairs')
 parser.add_argument('--ignoreStart_r1', metavar = '<int>',
                     type = int,
                     default=0,
@@ -111,6 +108,9 @@ parser.add_argument('--overlappingPairedEndFilter', metavar = '<string>',
 parser.add_argument('--strandSpecific',
                     action = 'store_true',
                     help = "Produce strand-specific counts, i.e. don't collapse methylation calls across Watson and Crick strands (default for CHH methylation)")
+parser.add_argument('--useImproperPairs',
+                    action = 'store_true',
+                    help ='Do not filter out improper readpairs. The definition of a proper readpair is aligner-specific and the value set with the 0x2 bit in the SAM flag')
 parser.add_argument('--version',
                     action='version', version='%(prog)s 0.3.1')
 
@@ -801,6 +801,7 @@ n_fragment_skipped_due_to_low_mapq = 0 # The number of DNA fragments skipped due
 n_fragment_skipped_due_to_duplicate = 0 # The number of DNA fragments skipped due to them being marked as duplicates
 n_fragment_skipped_due_to_diff_chr = 0  # The number of DNA fragments skipped due to the mates being aligned to different chromosomes
 n_fragment_skipped_due_to_unmapped_read_or_mate = 0 # The number of DNA fragments skipped due to the read or its mate being unmapped
+n_fragment_skipped_due_to_improper_pair = 0 # The number of DNA fragments skipped due to the readpair being improperly paired
 n_methylation_loci_per_read = {} # Dictionary of the number of methylation loci that passed QC per read
 methylation_m_tuples = {} # Dictionary of m-tuples of methylation loci with keys of form chromosome:position_1:position_2 and values corresponding to a WithinFragmentComethylationMTuple instance
 
@@ -817,8 +818,10 @@ if args.oldBismark:
     print 'Assuming file is a paired-end SAM/BAM created with Bismark version < 0.8.3'
 if args.ignoreDuplicates:
     print 'Ignoring reads marked as PCR duplicates'
-if args.ignoreImproperPairs:
+if not args.useImproperPairs:
     print 'Ignoring improper readpairs'
+else:
+    print 'Not filtering out readpairs that are marked as improperly paired. The definition of a proper readpair is aligner-specific and the value is set with the 0x2 bit in the SAM flag'
 print 'Assuming quality scores are Phred', phred_offset
 print "Ignoring", ignore_start_r1, "bp from 5' end of each read if data are single-end or of each read_1 if data are paired end"
 print "Ignoring", ignore_start_r2, "bp from 5' end of each read_2 if data are paired end"
@@ -906,10 +909,14 @@ for read in BAM:
             read_1 = None
             read_2 = None
             continue
-        # Skip improperly paired-reads if command line parameter --ignoreImproperPairs is set
-        if args.ignoreImproperPairs and not read.is_proper_pair:
-            warning_msg = ''.join(['Skipping read-pair ', read_1.qname, ' as it is not properly paired.'])
-            warnings.warn(warning_msg)
+        # Skip improperly paired-reads unless --useImproperPairs flag is set
+        if not args.useImproperPairs and not read.is_proper_pair:
+            failed_read_msg = '\t'.join[read_1.qname, 'read is not mapped in proper pair\n']
+            FAILED_QC.write(failed_read_msg)
+            n_fragment_skipped_due_to_improper_pair += 1
+            # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
+            read_1 = None
+            read_2 = None
             continue
         # Skip read if mates are mapped to different chromosomes
         if read_1.tid != read_2.tid:
