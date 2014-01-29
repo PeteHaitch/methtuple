@@ -434,7 +434,7 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
                     ignore_these_bases.append(i)
                     methylation_index_1 = [x for x in methylation_index_1 if x not in ignore_these_bases]
     else:
-        warning_msg = ''.join(['Skipping readpair ', read.qname, ' as XG-tags or XR-tags are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
+        warning_msg = ''.join(['XG-tags or XR-tags for readpair ', read_1.qname, ' are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
         warnings.warn(warning_msg)
         methylation_index_1 = []
         methylation_index_2 = []
@@ -486,11 +486,11 @@ class WithinFragmentComethylationMTuple:
                 if comethylation_state in self.counts.keys():
                     self.counts[comethylation_state] += 1
                 else:
-                    warning_msg = ''.join(['Skipping read ', read_1.qname, ' due to invalid co-methylation string = ', comethylation_state])
+                    warning_msg = ''.join([read_1.qname, ' has an invalid comethylation string = ', comethylation_state])
                     warnings.warn(warning_msg)
             # Read not compatible with 2-strand protocol, so skip it
             else:
-                warning_msg = ''.join(['Skipping read ', read.qname, ' as XG-tags or XR-tags are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
+                warning_msg = ''.join(['XG-tags or XR-tags for readpair ', read_1.qname, ' are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
                 warnings.warn(warning_msg)
         # Paired-end
         elif read_1.is_paired and read_2.is_paired and read_1.is_read1 and read_2.is_read2:
@@ -498,14 +498,14 @@ class WithinFragmentComethylationMTuple:
                 if comethylation_state in self.counts.keys():
                     self.counts[comethylation_state] += 1
                 else:
-                    warning_msg = ''.join(['Skipping read ', read_1.qname, ' due to invalid co-methylation string = ', comethylation_state])
+                    warning_msg = ''.join([read_1.qname, ' has an invalid comethylation string = ', comethylation_state])
                     warnings.warn(warning_msg)
             elif not read_1.is_read1 or not read_2.is_read2:
-                warning_msg = ''.join(['Skipping readpair ', read.qname, ' as read_1 or read_2 does not appear to be correctly set.'])
+                warning_msg = ''.join(['read_1 or read_2 is incorrectly set for readpair ', read_1.qname])
                 warnings.warn(warning_msg)
             # Readpair not compatible with 2-strand protocol, so skip it
             else:
-                warning_msg = ''.join(['Skipping readpair ', read.qname, ' as XG-tags or XR-tags are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
+                warning_msg = ''.join(['XG-tags or XR-tags for readpair ', read_1.qname, ' are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
                 warnings.warn(warning_msg)             
 
 def extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_end_r1, min_qual, phred_offset, ob_strand_offset):
@@ -561,7 +561,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
                     methylation_m_tuples[m_tuple_id].increment_count(''.join([read.opt('XM')[j] for j in methylation_index[i:(i + m)]]), methylation_type, read, None)
     return methylation_m_tuples, n_methylation_loci
 
-def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_start_r2, ignore_end_r1, ignore_end_r2, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap):
+def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_start_r2, ignore_end_r1, ignore_end_r2, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC):
     """Extracts m-tuples of methylation loci from a readpair and adds the comethylation m-tuple to the methylation_m_tuples object.
     
     Args:
@@ -581,6 +581,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
         overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (none), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark)
         n_fragment_skipped_due_to_bad_overlap: The total number of fragments (read-pairs) skipped due to the overlapping sequencing not passing the filter.
+        FAILED_QC: The file object where the QNAME of readpairs that fail the overlap check are written, along with the reason the readpairs failed
     Returns:
         methylation_m_tuples: An updated version of methylation_m_tuples
         n_methylation_loci: The number of methylation loci extracted from the read.
@@ -609,8 +610,8 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         if is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
             methylation_index_1, methylation_index_2 = ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap, overlap_check)
         else:
-            warning_msg = ''.join(['Skipping readpair ', read.qname, ' as overlapping sequence does not pass filter specified by --overlappingPairedEndFilter ', overlap_check])
-            warnings.warn(warning_msg)
+            failed_read_msg = '\t'.join[read_1.qname, ''.join(['failed the --overlappingPairedEndFilter ', overlap_check, '\n'])]
+            FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_bad_overlap += 1
             methylation_index_1 = []
             methylation_index_2 = []
@@ -810,8 +811,7 @@ methylation_m_tuples = {} # Dictionary of m-tuples of methylation loci with keys
 # Print key variable names and command line parameter options to STDOUT
 print 'Input file =', BAM.filename
 print 'Output file =', OUT.name
-warning_msg = 'methylation m-tuples may have intervening methylation events (i.e. NIC > 0). These generally occur in paired-end reads with non-overlapping mates but can also be caused by filtering methylation calls by base quality, read-position, etc. These should be post-hoc filtered.'
-warnings.warn(warning_msg)
+print 'Methylation m-tuples may have intervening methylation events (i.e. NIC > 0). These generally occur in paired-end reads with non-overlapping mates but can also be caused by filtering methylation calls by base quality, read-position, etc. These should be post-hoc filtered.'
 if (m < 1) or (m != floor(m)):
     exit_msg = "ERROR: --mTuple must be an integer greater than or equal to 1."
     sys.exit(exit_msg)
@@ -943,7 +943,7 @@ for read in BAM:
             continue
         # Check that read_1 and read_2 have identical read-names. If not, skip the readpair.
         if read_1.qname == read_2.qname:
-            methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_start_r2, ignore_end_r1, ignore_end_r2, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap)
+            methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_start_r2, ignore_end_r1, ignore_end_r2, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC)
             # Update the n_methylation_loci_per_read dictionary
             if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
                 n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
