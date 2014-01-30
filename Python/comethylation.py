@@ -1,15 +1,5 @@
 #!/usr/bin/env python
-import re
-from numpy import array
-import argparse
-import sys
-import csv
-import pysam
-import warnings
-from operator import itemgetter, attrgetter
-import itertools
-from math import floor
-import os
+# Try importing the required modules and report a helpful error message if it fails
 
 #### LICENSE ####
 ## Copyright (C) 2012 - 2014 Peter Hickey (peter.hickey@gmail.com)
@@ -55,6 +45,22 @@ import os
 # z for not methylated C in CpG context (was converted)
 # U for methylated C in "unknown" context, e.g. CNN-context, (was protected). Non-standard Bismark XM-tag values; unique to output of XM_tag.py.
 # u for not methylated C in "unknown"-context, e.g. CNN-context, (was converted). Non-standard Bismark XM-tag values; unique to output of XM_tag.py.
+
+#### Import required modules ####
+import re
+import argparse
+import sys
+import csv
+import warnings
+import operator
+import itertools
+import math
+import os
+try:
+    import pysam # The only required module that is not a part of the Python Standard Library
+except ImportError:
+    exit_msg = 'ERROR: comethylation.py requires the Pysam module. Please install it from https://code.google.com/p/pysam/ before continuing.'
+    sys.exit(exit_msg)
 
 #### Command line parser ####
 parser = argparse.ArgumentParser(description='Extract within-fragment co-methylation measurements at CpGs from the aligned reads of a BS-Seq experiment. WARNING: Currently only works for the two-strand BS-seq protocol for reads without soft-clipping or indels. Requires Bismark-style BAM files including XG-, XR- and XM-tags and corrected SAM flags.')
@@ -464,7 +470,7 @@ class WithinFragmentComethylationMTuple:
         self.chromosome = chromosome
         self.chromosome_index = chromosome_index
         self.positions = positions
-        tmp_k = list((itertools.product(('U', 'M'), repeat = m))) # Step 1 of creating the keys: create all combinations of 'U', 'M' of length m
+        tmp_k = list((itertools.product(('U', 'M'), repeat = m))) # Step 1 of creating the keys: create all combinations of 'U', 'M' of length m by Cartesian product
         k = sorted([''.join(a) for a in tmp_k]) # Sort those keys for consistency's sake
         self.counts = dict(zip(k, [0] * (2 ** m))) # Create the dictionary with all counts set to 0
     def display(self): 
@@ -756,7 +762,7 @@ def write_methylation_m_tuples_to_file(methylation_m_tuples, m):
     # Write each m-tuple of methylation loci to file using a nested for-loop
     # (1) Loop over chromosomes by increasing chromosome_index order
     # (2) Loop over positions by increasing order
-    for this_m_tuple in sorted(methylation_m_tuples.values(), key = attrgetter('chromosome_index', 'positions')):
+    for this_m_tuple in sorted(methylation_m_tuples.values(), key = operator.attrgetter('chromosome_index', 'positions')):
         this_m_tuple_ordered_counts = []
         for i in sorted(this_m_tuple.counts.iterkeys()):
             this_m_tuple_ordered_counts.append(this_m_tuple.counts[i])
@@ -823,11 +829,11 @@ if not args.noFailedQCFile:
 else:
     print 'There will be no file of reads that fail to pass QC filters\n'
 
-if (m < 1) or (m != floor(m)):
+if (m < 1) or (m != math.floor(m)):
     exit_msg = "ERROR: --mTuple must be an integer greater than or equal to 1."
     sys.exit(exit_msg)
 
-print 'Assuming quality scores are Phred', phred_offset, '\n'
+print ''.join(['Assuming quality scores are Phred', phred_offset, '\n'])
 
 if args.oldBismark:
     print 'Assuming file is a paired-end SAM/BAM created with Bismark version < 0.8.3\n'
@@ -848,7 +854,7 @@ print 'Ignoring reads with mapQ less than', min_mapq
 if overlap_check == 'sequence':
     print 'Ignoring paired-end reads that have overlapping mates if the overlapping sequences are not identical\n'
 elif overlap_check == 'XM':
-    print 'Ignoring paired-end reads that have overlapping mates if the XM-tags for the overlapping sequence are not identical\n'
+    print 'Ignoring paired-end reads that have overlapping mates if the XM-tags for the overlapping sequences are not identical\n'
 elif overlap_check == 'quality':
     print 'Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only the mate with the higher quality scores in the overlapping region shall be used\n'
 elif overlap_check == 'bismark':
@@ -1020,19 +1026,19 @@ write_methylation_m_tuples_to_file(methylation_m_tuples, m)
 
 # Print some summary information to STDOUT
 print 'Summary of the number of DNA fragments processed by comethylation.py'
-print 'Number of DNA fragments in file = ', int(n_fragment)
+print ''.join(['Number of DNA fragments in file = ', str(n_fragment)])
 print ''.join(['Number of DNA fragments skipped due to failing the --overlappingPairedEndFilter ', overlap_check, ' filter = ', str(n_fragment_skipped_due_to_bad_overlap)])
 print ''.join(['Number of DNA fragments skipped due to failing the --minMapQ filter = ', str(n_fragment_skipped_due_to_low_mapq)])
 print ''.join(['Number of DNA fragments skipped due to being marked as PCR duplicates = ', str(n_fragment_skipped_due_to_duplicate)])
 print ''.join(['Number of DNA fragments skipped due to mates mapping to different chromosomes = ', str(n_fragment_skipped_due_to_diff_chr)])
-print ''.join(['Number of DNA fragments skipped due to the read or its mate being unmapped =' , str(n_fragment_skipped_due_to_unmapped_read_or_mate)])
+print ''.join(['Number of DNA fragments skipped due to the read or its mate being unmapped = ' , str(n_fragment_skipped_due_to_unmapped_read_or_mate)])
 print ''.join(['Number of DNA fragments skipped due to the readpair being improperly paired = ', str(n_fragment_skipped_due_to_improper_pair)])
 print ''.join(['Number of DNA fragments skipped due to an indel in the read or its mate = ', str(n_fragment_skipped_due_to_indel)])
 n_informative_fragments = 0
 for k, v in n_methylation_loci_per_read.iteritems():
     if k >= m:
         n_informative_fragments += v
-print ''.join(['Number of DNA fragments informative for comethylation ', str(m), '-tuples = ', str(n_informative_fragments), ' (', str(round(n_informative_fragments / float(n_fragment) * 100, 1)), '% of total fragments)\n'])
+print ''.join(['Number of DNA fragments informative for ', methylation_type, ' ', str(m), '-tuples = ', str(n_informative_fragments), ' (', str(round(n_informative_fragments / float(n_fragment) * 100, 1)), '% of total fragments)\n'])
 
 # Write histogram to HIST with the number of methylation loci per DNA fragment that passed QC filters
 print 'Writing histogram with the number of', args.methylationType, 'methylation loci per DNA fragment that passed QC filters to', HIST.name, '...'
