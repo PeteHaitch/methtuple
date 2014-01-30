@@ -121,7 +121,7 @@ parser.add_argument('--noFailedQCFile',
                     action = 'store_true',
                     help = "Do not create the file listing the reads that failed to pass a QC filter and which filter they failed")
 parser.add_argument('--version',
-                    action='version', version='%(prog)s 0.3.1')
+                    action='version', version='%(prog)s 0.99.0')
 
 args = parser.parse_args()
 
