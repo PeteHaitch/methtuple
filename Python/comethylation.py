@@ -54,7 +54,6 @@ import csv
 import warnings
 import operator
 import itertools
-import math
 import os
 try:
     import pysam # The only required module that is not a part of the Python Standard Library
@@ -114,7 +113,7 @@ parser.add_argument('--overlappingPairedEndFilter', metavar = '<string>',
                     help="What filter should be applied to any overlapping paired-end reads. Read-pairs that don't pass the filter are not used for methylation calling (options listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (quality), do no check of the overlapping bases and just use the overlapping bases from read_1 a la bismark_methylation_extractor (bismark) (default: XM).")
 parser.add_argument('--strandSpecific',
                     action = 'store_true',
-                    help = "Produce strand-specific counts, i.e. don't collapse methylation calls across Watson and Crick strands (default for CHH methylation)")
+                    help = "Produce strand-specific counts, i.e. don't collapse methylation calls across Watson and Crick strands")
 parser.add_argument('--useImproperPairs',
                     action = 'store_true',
                     help ='Do not filter out improper readpairs. The definition of a proper readpair is aligner-specific and the value set with the 0x2 bit in the SAM flag')
@@ -829,11 +828,7 @@ if not args.noFailedQCFile:
 else:
     print 'There will be no file of reads that fail to pass QC filters\n'
 
-if (m < 1) or (m != math.floor(m)):
-    exit_msg = "ERROR: --mTuple must be an integer greater than or equal to 1."
-    sys.exit(exit_msg)
-
-print ''.join(['Assuming quality scores are Phred', phred_offset, '\n'])
+print ''.join(['Assuming quality scores are Phred', str(phred_offset), '\n'])
 
 if args.oldBismark:
     print 'Assuming file is a paired-end SAM/BAM created with Bismark version < 0.8.3\n'
