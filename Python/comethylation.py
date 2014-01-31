@@ -460,7 +460,7 @@ class WithinFragmentComethylationMTuple:
         self.chromosome_index = chromosome_index
         self.positions = positions
         tmp_k = list((itertools.product(('U', 'M'), repeat = m))) # Step 1 of creating the keys: create all combinations of 'U', 'M' of length m by Cartesian product
-        k = sorted([''.join(a) for a in tmp_k]) # Sort those keys for consistency's sake
+        k = [''.join(a) for a in tmp_k] # No need to sort because these are just dictionary keys
         self.counts = dict(zip(k, [0] * (2 ** m))) # Create the dictionary with all counts set to 0
     def display(self): 
         """Display a WithinFragmentComethylationMTuple instance."""
