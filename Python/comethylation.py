@@ -72,9 +72,8 @@ parser.add_argument('--mTuple', metavar = '<int>',
                     type = int,
                     default=2,
                     help='The size of the methylation-loci m-tuples (i.e. the choice of m); must be an integer > 1 (default: 2).')
-parser.add_argument('--methylationType', metavar = '<string>',
-                    default ="CG",
-                    help='The type of methylation loci to study: CG or CHG (default: CG; CHH not yet implemented).')
+parser.add_argument('--methylationType', metavar = '<string>', action = 'append',
+                    help='The type of methylation loci to study: CG, CHG, CHH or CNN. This option may be specified multiple times in order to study multiple methylation types simultaneously, e.g. --methylationType CG --methylationType CHG')
 parser.add_argument('--oldBismark',
                     action = 'store_true',
                     help ='SAM/BAM created with Bismark version < 0.8.3. The FLAG and QNAME field in SAM/BAM files created by these older versions of Bismark differed from the SAM specifications and need to be adjusted on the fly by comethylation.py')
@@ -121,18 +120,9 @@ parser.add_argument('--noFailedQCFile',
                     action = 'store_true',
                     help = "Do not create the file listing the reads that failed to pass a QC filter and which filter they failed")
 parser.add_argument('--version',
-                    action='version', version='%(prog)s 0.99.0')
+                    action='version', version='%(prog)s 0.99.1')
 
 args = parser.parse_args()
-
-#### Open SAM/BAM file and output files ####
-BAM = pysam.Samfile(args.BAM)
-OUT = open(".".join([args.sampleName, args.methylationType, str(args.mTuple), "tsv"]), "w")
-HIST = open("".join([args.sampleName, ".", args.methylationType, "_per_read.hist"]), "w")
-if not args.noFailedQCFile:
-    FAILED_QC = open("".join([args.sampleName, ".reads_that_failed_QC.txt"]), "w")
-else:
-    FAILED_QC = open(os.devnull, "w")
 
 #### Function definitions ####
 def ignore_first_n_bases(read, methylation_index, n):
@@ -460,7 +450,7 @@ class WithinFragmentComethylationMTuple:
         chromosome_index: An index to be used when sorting a set of WithinFragmentComethylationMTuple instances by chromosome name.
         m: The "m" in m-tuples, i.e. size of the methylation-loci m-tuples.
         positions: A sorted list of 1-based positions (position_1, position_2, ..., position_m) of length = m-tuple, where position_i is the position of the i-th methylation locus in the methylation-loci m-tuple (with reference to the OT-strand). NB: position_1 < position_2 < ... < position_m by definition.
-        methylation_type: The type of methylation event, e.g. CG, CHH or CHG.
+        methylation_type: The type of methylation event: CG, CHG, CHH, CNN, CG/CHG, CG/CHH, CG/CNN, CHG/CHH, CHG/CNN, CHH/CNN, CG/CHG/CHH, CG/CHG/CNN, CG/CHH/CNN, CHG/CHH/CNN OR CG/CHG/CHH/CNN
         counts: A dictionary storing the counts for each of the 2^m comethylation states combined across strands giving a total of 2^m keys and associated values (counts).
     """
     def __init__(self, chromosome, chromosome_index, m, positions, methylation_type):
@@ -479,45 +469,45 @@ class WithinFragmentComethylationMTuple:
         print 'Counts =', self.counts
     def m_tuple_id(self):
         print ''.join([self.chromosome, ':', '-'.join([str(a) for a in self.positions])])
-    def increment_count(self, comethylation_state, methylation_type, read_1, read_2):
+    def increment_count(self, comethylation_state, read_1, read_2):
         """Increment the counts attribute based on the comethylation_state that has been extracted from read_1 and read_2. NB: read_2 should be set to None if data is single-end."""
-        # Replace Bismark methylated and unmethylated characters with M and U, depending on the methylation type.
-        if methylation_type == 'CG':
+        # Collapse the 9 possible characters in the comethylation_state (., Z, z, X, x, H, h, U, u) to (., M, U, *unchanged*) based on the methylation_type parameter. 
+        if 'CG' in self.methylation_type.split('/'):
             comethylation_state = comethylation_state.replace('Z', 'M')
             comethylation_state = comethylation_state.replace('z', 'U')
-        elif methylation_type == 'CHG':
+        if 'CHG' in self.methylation_type.split('/'):
             comethylation_state = comethylation_state.replace('X', 'M')
             comethylation_state = comethylation_state.replace('x', 'U')
-        elif methylation_type == 'CHH':
+        if 'CHH' in self.methylation_type.split('/'):
             comethylation_state = comethylation_state.replace('H', 'M')
             comethylation_state = comethylation_state.replace('h', 'U')
+        if 'CNN' in self.methylation_type.split('/'):
+            comethylation_state = comethylation_state.replace('U', 'M')
+            comethylation_state = comethylation_state.replace('u', 'U')
+
+        # Check whether there are any unexpected, and therefore invalid, characters in comethylation_state
+        if not re.search('[^MU]', comethylation_state) is None:
+            exit_msg = ''.join([read_1.qname, ' has an invalid comethylation string = ', comethylation_state, '.\nThis should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.'])
+            sys.exit(exit_msg)
+
         # Single-end
         if read_2 is None and not read_1.is_paired:
-            # Check that XG- and XR-tags make sense with 2-strand protocol data
+            # Check that XG- and XR-tags are compatible directional bisulfite-sequencing protocol. If not then skip the read and report a warning
             if (read_1.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and not read_1.is_paired) or ( read_1.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and not read_1.is_paired):
-                if comethylation_state in self.counts.keys():
-                    self.counts[comethylation_state] += 1
-                else:
-                    warning_msg = ''.join([read_1.qname, ' has an invalid comethylation string = ', comethylation_state])
-                    warnings.warn(warning_msg)
-            # Read not compatible with 2-strand protocol, so skip it
+                self.counts[comethylation_state] += 1
             else:
-                warning_msg = ''.join(['XG-tags or XR-tags for readpair ', read_1.qname, ' are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
+                warning_msg = ''.join(['XG-tags or XR-tags for readpair ', read_1.qname, ' are not compatible with the directional bisulfite-sequencing protocol (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
                 warnings.warn(warning_msg)
         # Paired-end
         elif read_1.is_paired and read_2.is_paired and read_1.is_read1 and read_2.is_read2:
+            # Check that XG- and XR-tags are compatible directional bisulfite-sequencing protocol. If not then skip the read and report a warning
             if (read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA') or (read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA'):
-                if comethylation_state in self.counts.keys():
-                    self.counts[comethylation_state] += 1
-                else:
-                    warning_msg = ''.join([read_1.qname, ' has an invalid comethylation string = ', comethylation_state])
-                    warnings.warn(warning_msg)
+                self.counts[comethylation_state] += 1
             elif not read_1.is_read1 or not read_2.is_read2:
                 warning_msg = ''.join(['read_1 or read_2 is incorrectly set for readpair ', read_1.qname])
                 warnings.warn(warning_msg)
-            # Readpair not compatible with 2-strand protocol, so skip it
             else:
-                warning_msg = ''.join(['XG-tags or XR-tags for readpair ', read_1.qname, ' are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
+                warning_msg = ''.join(['XG-tags or XR-tags for readpair ', read_1.qname, ' are not compatible with the directional bisulfite-sequencing protocol (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
                 warnings.warn(warning_msg)             
 
 def extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_end_r1, min_qual, phred_offset, ob_strand_offset):
@@ -568,9 +558,9 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
                 # Check whether m-tuple has already been observed. If not, create a WithinFragmentMethylationMTuple instance for it and increment its count. Otherwise, just increment its count.
                 if not m_tuple_id in methylation_m_tuples:
                     methylation_m_tuples[m_tuple_id] = WithinFragmentComethylationMTuple(BAM.getrname(read.tid), read.tid, m, this_m_tuple_positions, methylation_type) # read.tid acts as the chromosome_index required by WithinFragmentComethylationMTuple class
-                    methylation_m_tuples[m_tuple_id].increment_count(''.join([read.opt('XM')[j] for j in methylation_index[i:(i + m)]]), methylation_type, read, None)
+                    methylation_m_tuples[m_tuple_id].increment_count(''.join([read.opt('XM')[j] for j in methylation_index[i:(i + m)]]), read, None)
                 else:
-                    methylation_m_tuples[m_tuple_id].increment_count(''.join([read.opt('XM')[j] for j in methylation_index[i:(i + m)]]), methylation_type, read, None)
+                    methylation_m_tuples[m_tuple_id].increment_count(''.join([read.opt('XM')[j] for j in methylation_index[i:(i + m)]]), read, None)
     return methylation_m_tuples, n_methylation_loci
 
 def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_start_r2, ignore_end_r1, ignore_end_r2, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC):
@@ -653,9 +643,9 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                         # Check whether m-tuple has already been observed. If not, create a WithinFragmentMethylationMTuple instance for it and increment its count. Otherwise, just increment its count.
                         if not m_tuple_id in methylation_m_tuples:
                             methylation_m_tuples[m_tuple_id] = WithinFragmentComethylationMTuple(BAM.getrname(read_1.tid), read_1.tid, m, this_m_tuple_positions_1, methylation_type) # read_1.tid acts as the chromosome_index required by WithinFragmentComethylationMTuple class
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]]), methylation_type, read_1, read_2)
+                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]]), read_1, read_2)
                         else:
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]]), methylation_type, read_1, read_2)
+                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]]), read_1, read_2)
                 # Second, create all m-tuples of methylation loci where the leftmost locus is on read_1 and the rightmost locus is on read_2
                 num_shared_m_tuples = max(len(methylation_index_1) + len(methylation_index_2) - m + 1, 0) - max(len(methylation_index_1) - m + 1, 0) - max(len(methylation_index_2) - m + 1, 0) # the number of m-tuples that span read_1 and read_2
                 leftmost_shared_locus_index = max(0, len(methylation_index_1) - m + 1) # The index of the leftmost locus to be part of a "shared" m-tuple. The rightmost_shared_locus_index = min(m - 2, len(methylation_index_2) - 1), however this is not required
@@ -672,9 +662,9 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                     # Check whether m-tuple has already been observed. If not, create a WithinFragmentMethylationMTuple instance for it and increment its count. Otherwise, just increment its count.
                         if not m_tuple_id in methylation_m_tuples:
                             methylation_m_tuples[m_tuple_id] = WithinFragmentComethylationMTuple(BAM.getrname(read_1.tid), read_1.tid, m, this_m_tuple_positions_1 + this_m_tuple_positions_2, methylation_type) # read_1.tid acts as the chromosome_index required by WithinFragmentComethylationMTuple class
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[(leftmost_shared_locus_index + i):]] + [read_2.opt('XM')[j] for j in methylation_index_2[:(m - len(this_m_tuple_positions_1))]]), methylation_type, read_1, read_2)
+                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[(leftmost_shared_locus_index + i):]] + [read_2.opt('XM')[j] for j in methylation_index_2[:(m - len(this_m_tuple_positions_1))]]), read_1, read_2)
                         else:
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[(leftmost_shared_locus_index + i):]] + [read_2.opt('XM')[j] for j in methylation_index_2[:(m - len(this_m_tuple_positions_1))]]), methylation_type, read_1, read_2)
+                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[(leftmost_shared_locus_index + i):]] + [read_2.opt('XM')[j] for j in methylation_index_2[:(m - len(this_m_tuple_positions_1))]]), read_1, read_2)
                 # Finally, create all m-tuples of methylation loci where each locus is from read_2.        
                 if len(methylation_index_2) >= m:
                     for i in range(0, len(methylation_index_2) - m + 1): # For a read containing k methylation loci there are (k - m + 1) m-tuples.:
@@ -684,9 +674,9 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                         # Check whether m-tuple has already been observed. If not, create a WithinFragmentMethylationMTuple instance for it and increment its count.
                         if not m_tuple_id in methylation_m_tuples:
                             methylation_m_tuples[m_tuple_id] = WithinFragmentComethylationMTuple(BAM.getrname(read_2.tid), read_2.tid, m, this_m_tuple_positions_2, methylation_type) # read_2.tid acts as the chromosome_index required by WithinFragmentComethylationMTuple class
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), methylation_type, read_1, read_2)
+                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), read_1, read_2)
                         else:
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), methylation_type, read_1, read_2)
+                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), read_1, read_2)
         # Case 2: Readpair aligns to OB-strand
         elif read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
             # Translate co-ordinates "ob_strand_offset" bases to the left so that it points to the C on the OT-strand of the methylation locus
@@ -706,9 +696,9 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                         # Check whether m-tuple has already been observed. If not, create a WithinFragmentMethylationMTuple instance for it and increment its count.
                         if not m_tuple_id in methylation_m_tuples:
                             methylation_m_tuples[m_tuple_id] = WithinFragmentComethylationMTuple(BAM.getrname(read_1.tid), read_1.tid, m, this_m_tuple_positions_1, methylation_type) # read_1.tid acts as the chromosome_index required by WithinFragmentComethylationMTuple class
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]]), methylation_type, read_1, read_2)
+                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]]), read_1, read_2)
                         else:
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]]), methylation_type, read_1, read_2)
+                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]]), read_1, read_2)
                 # Second, create all m-tuples of methylation loci where the leftmost locus is on read_1 and the rightmost locus is on read_2
                 num_shared_m_tuples = max(len(methylation_index_1) + len(methylation_index_2) - m + 1, 0) - max(len(methylation_index_1) - m + 1, 0) - max(len(methylation_index_2) - m + 1, 0) # the number of m-tuples that span read_1 and read_2
                 leftmost_shared_locus_index = max(0, len(methylation_index_2) - m + 1) # The index of the leftmost locus to be part of a "shared" m-tuple. The rightmost_shared_locus_index = min(m - 2, len(methylation_index_1) - 1), however this is not required (m - 2 = m - 1 - 1, because Python lists are 0-indexed)
@@ -725,9 +715,9 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                     # Check whether m-tuple has already been observed. If not, create a WithinFragmentMethylationMTuple instance for it and increment its count.
                         if not m_tuple_id in methylation_m_tuples:
                             methylation_m_tuples[m_tuple_id] = WithinFragmentComethylationMTuple(BAM.getrname(read_1.tid), read_1.tid, m, this_m_tuple_positions_2 + this_m_tuple_positions_1, methylation_type) # read_1.tid acts as the chromosome_index required by WithinFragmentComethylationMTuple class
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[(leftmost_shared_locus_index + i):]] + [read_1.opt('XM')[j] for j in methylation_index_1[:(m - len(this_m_tuple_positions_2))]]), methylation_type, read_1, read_2)
+                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[(leftmost_shared_locus_index + i):]] + [read_1.opt('XM')[j] for j in methylation_index_1[:(m - len(this_m_tuple_positions_2))]]), read_1, read_2)
                         else:
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[(leftmost_shared_locus_index + i):]] + [read_1.opt('XM')[j] for j in methylation_index_1[:(m - len(this_m_tuple_positions_2))]]), methylation_type, read_1, read_2)
+                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[(leftmost_shared_locus_index + i):]] + [read_1.opt('XM')[j] for j in methylation_index_1[:(m - len(this_m_tuple_positions_2))]]), read_1, read_2)
                 # Finally, create all m-tuples of methylation loci where each locus is from read_2.        
                 if len(methylation_index_2) >= m:
                     for i in range(0, len(methylation_index_2) - m + 1): # For a read containing m methylation loci there are (m - m-tuple + 1) m-tuples.:
@@ -737,14 +727,11 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                         # Check whether m-tuple has already been observed. If not, create a WithinFragmentMethylationMTuple instance for it and increment its count.
                         if not m_tuple_id in methylation_m_tuples:
                             methylation_m_tuples[m_tuple_id] = WithinFragmentComethylationMTuple(BAM.getrname(read_2.tid), read_2.tid, m, this_m_tuple_positions_2, methylation_type) # read_2.tid acts as the chromosome_index required by WithinFragmentComethylationMTuple class
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), methylation_type, read_1, read_2)
+                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), read_1, read_2)
                         else:
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), methylation_type, read_1, read_2)
+                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), read_1, read_2)
     return methylation_m_tuples, n_methylation_loci, n_fragment_skipped_due_to_bad_overlap
                                     
-# tab_writer writes a tab-separated output file to the filehandle OUT
-tab_writer = csv.writer(OUT, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
-
 def write_methylation_m_tuples_to_file(methylation_m_tuples, m):
     """Write the methylation_m_tuples instance to a tab-separated file. The m-tuples are ordered by chromosome and genomic co-ordinates.
     
@@ -776,29 +763,65 @@ else:
     phred_offset = 33
 # Set the "m" in "m-tuple", i.e. the size of the methylation-loci m-tuples
 m = args.mTuple
-# Set the methylation type to be used in the analysis
+# Iterate over the list of methylation types stored in args.methylationType and create the proper REGEXP for searching for that methylation pattern in the XM-tag. Also, set the ob_strand_offset variable
 methylation_type = args.methylationType
-if methylation_type == 'CG':
+# There are 4 methylation types and therefore 2^4 = 16 possible subsets (including the empty set). Each subset must be dealt with separately.
+# If the --strandSpecific flag is set then we do not collapse across strands (i.e. ob_strand_offset = 0). If the flag is not set then what happens depends on the value(s) of --methylationType
+if args.strandSpecific:
+    ob_strand_offset = 0
+# Firstly, deal with the cases where only a single methylation type is specified
+if sorted(methylation_type) == ['CG']:
     methylation_pattern = re.compile(r'[Zz]')
-    if args.strandSpecific:
-        ob_strand_offset = 0
-    else:
+    if not args.strandSpecific:
         ob_strand_offset = 1
-elif methylation_type == 'CHG':
+elif sorted(methylation_type) == ['CHG']:
     methylation_pattern = re.compile(r'[Xx]')
-    if args.strandSpecific:
-        ob_strand_offset = 0
-    else:
+    if not args.strandSpecific:
         ob_strand_offset = 2
-elif methylation_type == 'CHH':
+elif sorted(methylation_type) == ['CHH']:
     methylation_pattern = re.compile(r'[Hh]')
-    if args.strandSpecific:
-        ob_strand_offset = 0
-    else:
+    if not args.strandSpecific:
         exit_msg = 'ERROR: CHH-methylation is not strand-symmetric and thus the --strandSpecific option must be specified.'
         sys.exit(exit_msg)
+elif sorted(methylation_type) == ['CNN']:
+    methylation_pattern = re.compile(r'[Uu]')
+    if not args.strandSpecific:
+        exit_msg = 'ERROR: CNN-methylation is not strand-symmetric and thus the --strandSpecific option must be specified.'
+        sys.exit(exit_msg)
+# Secondly, deal with the cases where multiple methylation types are specified or where an incompatible methylation type has been specified
 else:
-    sys.exit("--methylationType must be one of 'CG', 'CHG' or 'CHH'")
+    # If multiple methylation types are specified then the --strandSpecific option must be set
+    if not args.strandSpecific:
+        exit_msg = 'ERROR: The --strandSpecific option must be specified if multiple methylation types are passed via the --methylationType flag.'
+        sys.exit(exit_msg)
+    if sorted(methylation_type) == ['CG', 'CHG']:
+        methylation_pattern = re.compile(r'[ZzXx]')
+    elif sorted(methylation_type) == ['CG', 'CHH']:
+        methylation_pattern = re.compile(r'[ZzHh]')
+    elif sorted(methylation_type) == ['CG', 'CNN']:
+        methylation_pattern = re.compile(r'[ZzUU]')
+    elif sorted(methylation_type) == ['CHG', 'CHH']:
+        methylation_pattern = re.compile(r'[XxHh]')
+    elif sorted(methylation_type) == ['CHG', 'CNN']:
+        methylation_pattern = re.compile(r'[XxUu]')
+    elif sorted(methylation_type) == ['CHH', 'CNN']:
+        methylation_pattern = re.compile(r'[HhUu]')
+    elif sorted(methylation_type) == ['CG', 'CHG', 'CHH']:
+        methylation_pattern = re.compile(r'[ZzXxHh]')
+    elif sorted(methylation_type) == ['CG', 'CHG', 'CNN']:
+        methylation_pattern = re.compile(r'[ZzXxUU]')
+    elif sorted(methylation_type) == ['CG', 'CHH', 'CNN']:
+        methylation_pattern = re.compile(r'[ZzHhUu]')
+    elif sorted(methylation_type) == ['CHG', 'CHH', 'CNN']:
+        methylation_pattern = re.compile(r'[XxHhUu]')
+    elif sorted(methylation_type) == ['CG', 'CHG', 'CHH', 'CNN']:
+        methylation_pattern = re.compile(r'[ZzXxHhUu]')
+    else:
+        exit_msg = "--methylationType must be one 'CG', 'CHG', 'CHH' or 'CNN'. Specify this command multiple times to simultaneously study multiple methylation types, for example, --methylationType CG --methylationType CHG"
+        sys.exit(exit_msg)
+
+# Reformat the variable methylation_type to be a single string
+methylation_type = '/'.join(sorted(methylation_type))
     
 overlap_check = args.overlappingPairedEndFilter
 ignore_start_r1 = args.ignoreStart_r1
@@ -820,9 +843,23 @@ n_methylation_loci_per_read = {} # Dictionary of the number of methylation loci 
 methylation_m_tuples = {} # Dictionary of m-tuples of methylation loci with keys of form chromosome:position_1:position_2 and values corresponding to a WithinFragmentComethylationMTuple instance
 
 #### The main program. Loops over the BAM file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or readpair. ####
+# Open SAM/BAM file and output files
+BAM = pysam.Samfile(args.BAM)
+OUT = open(".".join([args.sampleName, '_'.join(methylation_type.split('/')), str(args.mTuple), "tsv"]), "w")
+HIST = open("".join([args.sampleName, '.', '_'.join(methylation_type.split('/')), "_per_read.hist"]), "w")
+if not args.noFailedQCFile:
+    FAILED_QC = open("".join([args.sampleName, ".reads_that_failed_QC.txt"]), "w")
+else:
+    FAILED_QC = open(os.devnull, "w")
+
+# tab_writer writes a tab-separated output file to the filehandle OUT
+tab_writer = csv.writer(OUT, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
+
 # Print key variable names and command line parameter options to STDOUT
 print 'Input BAM file =', BAM.filename
 print ''.join(['Output file of ', methylation_type, ' ', str(m), '-tuples = ', OUT.name])
+if args.strandSpecific:
+    print 'The output will be strand-specific'
 if not args.noFailedQCFile:
     print 'Reads that fail to pass QC filters will be written to =', FAILED_QC.name, '\n'
 else:
@@ -901,8 +938,8 @@ for read in BAM:
         read_2 = read
         n_fragment += 1
         # Check that the data are from directional BS-seq experiment
-        if not ((read_1.opt('XG') == 'CT' and read_1.opt('XR') == 'CT') or ( read_1.opt('XG') == 'GA' and read_1.opt('XR') == 'CT')):
-            exit_msg = "ERROR: The XR-tag and XG-tag of ", read.qname, " are not compatible with the directional bisulfite-sequencing protocol. Sorry, comethylation.py can only process data from the directional protocol."
+        if not ((read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA') or (read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA')):
+            exit_msg = "ERROR: The XR-tag and XG-tag of ", read_1.qname, " are not compatible with the directional bisulfite-sequencing protocol. Sorry, comethylation.py can only process data from the directional protocol."
             sys.exit(exit_msg)
         # Skip duplicate reads if command line parameter --ignoreDuplicates is set and read is marked as a duplicate
         if args.ignoreDuplicates and read.is_duplicate:
@@ -975,8 +1012,8 @@ for read in BAM:
     elif not read.is_paired:
         n_fragment += 1
         # Check that the data are from directional BS-seq experiment
-        if not ((read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA') or (read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA')):
-            exit_msg = "ERROR: The XR-tag and XG-tag of ", read_1.qname, " are not compatible with the directional bisulfite-sequencing protocol. Sorry, comethylation.py can only process data from the directional protocol."
+        if not ((read.opt('XG') == 'CT' and read.opt('XR') == 'CT') or ( read.opt('XG') == 'GA' and read.opt('XR') == 'CT')):
+            exit_msg = "ERROR: The XR-tag and XG-tag of ", read.qname, " are not compatible with the directional bisulfite-sequencing protocol. Sorry, comethylation.py can only process data from the directional protocol."
             sys.exit(exit_msg)
         # Skip duplicates reads if command line parameter --ignoreDuplicates is set and read is marked as a duplicate
         if args.ignoreDuplicates and read.is_duplicate:
@@ -1036,7 +1073,7 @@ for k, v in n_methylation_loci_per_read.iteritems():
 print ''.join(['Number of DNA fragments informative for ', methylation_type, ' ', str(m), '-tuples = ', str(n_informative_fragments), ' (', str(round(n_informative_fragments / float(n_fragment) * 100, 1)), '% of total fragments)\n'])
 
 # Write histogram to HIST with the number of methylation loci per DNA fragment that passed QC filters
-print 'Writing histogram with the number of', args.methylationType, 'methylation loci per DNA fragment that passed QC filters to', HIST.name, '...'
+print 'Writing histogram with the number of', methylation_type, 'methylation loci per DNA fragment that passed QC filters to', HIST.name, '...'
 HIST.write('n\tcount\n')
 for k, v in iter(sorted(n_methylation_loci_per_read.iteritems())):
     HIST.write(''.join([str(k), '\t', str(v), '\n']))
