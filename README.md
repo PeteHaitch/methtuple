@@ -27,8 +27,12 @@ Don't despair if your data were not aligned with Bismark. Althought other aligne
 
 Usage
 =============
+The main options to pass `comethylation.py` are the size of the m-tuple (`--mTuple`); the type of methylation, which is some combination of CG, CHG, CHH and CNN (`--methylationType`); any filters to be applied to reads or positions within reads (see below); the BAM file; and the sample name, which will be used as a prefix for all output files.
+
+Note that to simultaneously study multiple methylation types the `--methylationType` parameter must be specified multiple times, e.g. to study CG and CHH methylation `--methylationType CG --methylationType CHH`.
+
+A full list of options is available by running `python comethylation.py --help`.
 ```
-python comethylation.py --help
 usage: comethylation.py [-h] [--mTuple <int>] [--methylationType <string>]
                         [--oldBismark] [--ignoreDuplicates]
                         [--ignoreStart_r1 <int>] [--ignoreStart_r2 <int>]
@@ -127,8 +131,15 @@ __TODO__
 Limitations
 =============
 __TODO__
-* __Comethylation__ only works with data aligned with the Bismark mapping software.
-* __Comethylation__ can only process _directional_ (aka _2-strand_ or _Lister protocol_) bisulfite-sequencing data. It will not work with _non-directional_ (aka _4-strand_ or _Cokus protocol_) bisulfite-sequencing data, nor will it work with PBAT data.
+__comethylation.py__
+* Only works natively with data aligned with the Bismark mapping software.
+* Can only process _directional_ (aka _2-strand_ or _Lister protocol_) bisulfite-sequencing data. It will not work with _non-directional_ (aka _4-strand_ or _Cokus protocol_) bisulfite-sequencing data, nor will it work with PBAT data.
+* Will skip paired-end reads where either mate is unmapped.
+* Will skip any read containing an indel. It is difficult, although not impossible, to assign coordinates to a cytosine within an indel. To avoid this complication, `comethylation.py` currently skips any reads containing an indel. This may be fixed in future releases.
+* May not work with soft-clipped reads. Some aligners, such as Bowtie2 and BWA` will soft-clip reads in order to produce a better alignment. 
+* The `--oldBismark` option is a bit crude. Specifically it assumes there are no '/' characters in the read names (`QNAME`) and that he SAM/BAM has not been processed with any other programs, e.g. Picard's MarkDuplicates, that might change the `FLAG` field.
+* Bismark always sets the mapping quality (`mapQ`) as the value 255, which means unavailable. Thus the `--minMapQ` option will not have any effect.
+* 
 
 Questions
 =============
