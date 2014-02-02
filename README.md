@@ -135,7 +135,7 @@ __TODO__
 Limitations and notes
 =============
 `comethylation.py` was designed to work with Bismark and with data generated from the standard directional bisulfite-sequencing protocol. These are current limitations and their status:
-* Only works natively with data aligned with the Bismark mapping software. I am writing a helper script so that data aligned with other popular aligners may be processed with `comethylation.py`.
+* Only works natively with data aligned with the Bismark mapping software. I am writing a helper script so that data aligned with other popular aligners may be processed with `comethylation.py`. This will be included in the next release.
 * Can only process _directional_ (aka _2-strand_ or _Lister protocol_) bisulfite-sequencing data. It will not work with _non-directional_ (aka _4-strand_ or _Cokus protocol_) bisulfite-sequencing data, nor will it work with PBAT data. This is a low priority for me since most data is generated from the directional protocol.
 * Will skip any read containing an indel. It is difficult, although not impossible, to assign coordinates to a cytosine within an indel. To avoid this complication, `comethylation.py` currently skips any reads containing an indel. This may be fixed in future releases. I aim to improve the handling of indels in the next release.
 * The `--oldBismark` option is a bit crude. Specifically, it assumes that there are no '/' characters in the read names (`QNAME`) and that he SAM/BAM has not been processed with any other programs, e.g. Picard's MarkDuplicates, that might change the `FLAG` field. I am happy to improve this if requested.
