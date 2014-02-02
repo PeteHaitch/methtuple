@@ -62,7 +62,7 @@ except ImportError:
     sys.exit(exit_msg)
 
 #### Command line parser ####
-parser = argparse.ArgumentParser(description='Extract within-fragment co-methylation measurements at CpGs from the aligned reads of a BS-Seq experiment. WARNING: Currently only works for the two-strand BS-seq protocol for reads without soft-clipping or indels. Requires Bismark-style BAM files including XG-, XR- and XM-tags and corrected SAM flags.')
+parser = argparse.ArgumentParser(description='Extract within-fragment co-methylation measurements at methylation loci from the aligned reads of a bisulfite-sequencing experiment.\nWARNING: Requires Bismark-style BAM files including XG-, XR- and XM-tags and corrected SAM flags. Currently only supports the directional (aka 2-strand) bisulfite-sequencing protocol.')
 parser.add_argument('BAM', metavar = 'BAM',
                     help ='The path to the SAM/BAM file')
 parser.add_argument('sampleName',
