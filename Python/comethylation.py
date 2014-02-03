@@ -61,6 +61,10 @@ except ImportError:
     exit_msg = 'ERROR: comethylation.py requires the Pysam module. Please install it from https://code.google.com/p/pysam/ before continuing.'
     sys.exit(exit_msg)
 
+#### Version number ####
+__version_info__ = ('0','99','2')
+__version__ = '.'.join(__version_info__)
+
 #### Command line parser ####
 parser = argparse.ArgumentParser(description='Extract within-fragment co-methylation measurements at methylation loci from the aligned reads of a bisulfite-sequencing experiment.\nWARNING: Requires Bismark-style BAM files including XG-, XR- and XM-tags and corrected SAM flags. Currently only supports the directional (aka 2-strand) bisulfite-sequencing protocol.')
 parser.add_argument('BAM', metavar = 'BAM',
@@ -120,7 +124,7 @@ parser.add_argument('--noFailedQCFile',
                     action = 'store_true',
                     help = "Do not create the file listing the reads that failed to pass a QC filter and which filter they failed")
 parser.add_argument('--version',
-                    action='version', version='%(prog)s 0.99.1')
+                    action='version', version="%(prog)s (v"+__version__+")")
 
 args = parser.parse_args()
 
@@ -856,6 +860,7 @@ else:
 tab_writer = csv.writer(OUT, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
 
 # Print key variable names and command line parameter options to STDOUT
+print "comethylation.py (v"+__version__+")\n"
 print 'Input BAM file =', BAM.filename
 print ''.join(['Output file of ', methylation_type, ' ', str(m), '-tuples = ', OUT.name])
 if args.strandSpecific:
