@@ -191,7 +191,7 @@ def ignore_first_n_bases(read, methylation_index, n):
             #methylation_index = []
     # ERROR: read does not have necessary information to infer whether read is paired or whether the read is read_1 or read_2 of the readpair. This should never happen as it should have already been caught in the main loop of the program.
     else:
-        exit_msg = ''.join['ERROR: Read ', read.qname, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.']
+        exit_msg = ''.join(['ERROR: Read ', read.qname, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.'])
         sys.exit(exit_msg)
         #methylation_index = []
     return [x for x in methylation_index if x not in ignore_these_bases]
@@ -262,7 +262,7 @@ def ignore_last_n_bases(read, methylation_index, n):
             #methylation_index = []
     # ERROR: read does not have necessary information to infer whether read is paired or whether the read is read_1 or read_2 of the readpair. This should never happen as it should have already been caught in the main loop of the program.
     else:
-        exit_msg = ''.join['ERROR: Read ', read.qname, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.']
+        exit_msg = ''.join(['ERROR: Read ', read.qname, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.'])
         sys.exit(exit_msg)
         #methylation_index = []
     return [x for x in methylation_index if x not in ignore_these_bases]
@@ -943,7 +943,7 @@ for read in BAM:
             sys.exit(exit_msg)
         # Skip duplicate reads if command line parameter --ignoreDuplicates is set and read is marked as a duplicate
         if args.ignoreDuplicates and read.is_duplicate:
-            failed_read_msg = '\t'.join[read_1.qname, 'marked as duplicate\n']
+            failed_read_msg = '\t'.join([read_1.qname, 'marked as duplicate\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_duplicate += 1
             # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
@@ -952,7 +952,7 @@ for read in BAM:
             continue
         # Skip read-pairs if either mate's mapQ is less than min_mapq
         if read_1.mapq < min_mapq or read_2.mapq < min_mapq:
-            failed_read_msg = '\t'.join[read_1.qname, 'mapQ < --minMapQ\n']
+            failed_read_msg = '\t'.join([read_1.qname, 'mapQ < --minMapQ\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_low_mapq += 1
             # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
@@ -961,7 +961,7 @@ for read in BAM:
             continue
         # Skip read if either mate is unmapped
         if read_1.is_unmapped or read_2.is_unmapped:
-            failed_read_msg = '\t'.join[read_1.qname, 'read or its mate is unmapped\n']
+            failed_read_msg = '\t'.join([read_1.qname, 'read or its mate is unmapped\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_unmapped_read_or_mate += 1
             # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
@@ -970,7 +970,7 @@ for read in BAM:
             continue
         # Skip improperly paired-reads unless --useImproperPairs flag is set
         if not args.useImproperPairs and not read.is_proper_pair:
-            failed_read_msg = '\t'.join[read_1.qname, 'read is not mapped in proper pair\n']
+            failed_read_msg = '\t'.join([read_1.qname, 'read is not mapped in proper pair\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_improper_pair += 1
             # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
@@ -979,7 +979,7 @@ for read in BAM:
             continue
         # Skip read if mates are mapped to different chromosomes
         if read_1.tid != read_2.tid:
-            failed_read_msg = '\t'.join[read_1.qname, 'mates map to different chromosomes\n']
+            failed_read_msg = '\t'.join([read_1.qname, 'mates map to different chromosomes\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_diff_chr += 1
             # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
@@ -988,7 +988,7 @@ for read in BAM:
             continue
         # Skip reads containing indels
         if does_read_contain_indel(read_1) or does_read_contain_indel(read_2):
-            failed_read_msg = '\t'.join[read_1.qname, 'read has indel\n']
+            failed_read_msg = '\t'.join([read_1.qname, 'read has indel\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_indel += 1
             # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
@@ -1017,25 +1017,25 @@ for read in BAM:
             sys.exit(exit_msg)
         # Skip duplicates reads if command line parameter --ignoreDuplicates is set and read is marked as a duplicate
         if args.ignoreDuplicates and read.is_duplicate:
-            failed_read_msg = '\t'.join[read.qname, 'marked as duplicate\n']
+            failed_read_msg = '\t'.join([read.qname, 'marked as duplicate\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_duplicate += 1
             continue
         # Skip read if read's mapQ is less than min_mapq
         if read.mapq < min_mapq:
-            failed_read_msg = '\t'.join[read.qname, 'mapQ < --minMapQ\n']
+            failed_read_msg = '\t'.join([read.qname, 'mapQ < --minMapQ\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_low_mapq += 1
             continue
         # Skip read if it is unmapped
         if read.is_unmapped:
-            failed_read_msg = '\t'.join[read.qname, 'read is unmapped\n']
+            failed_read_msg = '\t'.join([read.qname, 'read is unmapped\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_unmapped_read_or_mate += 1
             continue
         # Skip reads containing indels
         if does_read_contain_indel(read):
-            failed_read_msg = '\t'.join[read.qname, 'read has indel\n']
+            failed_read_msg = '\t'.join([read.qname, 'read has indel\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_indel += 1
             # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
@@ -1048,7 +1048,7 @@ for read in BAM:
         n_methylation_loci_per_read[n_methylation_loci_in_fragment] += 1
     # Read is neither single-end nor a mate from a read-pair. This shouldn't happen.
     else:
-        exit_msg = ''.join['ERROR: Read ', read.qname, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.']
+        exit_msg = ''.join(['ERROR: Read ', read.qname, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.'])
         sys.exit(exit_msg)
 
 # Write results to disk
