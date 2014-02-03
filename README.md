@@ -18,9 +18,9 @@ Installation and requirements
 =============
 __Comethylation__ is written in Python and relies upon the Pysam module. Users must install Pysam before using __Comethylation__. Pysam is available from https://code.google.com/p/pysam/.
 
-The script `comethylation.py` extracts and tabules m-tuples from a single SAM/BAM file of bisulfite sequencing data. 
+The script `comethylation.py` extracts and tabules m-tuples from a single BAM file of bisulfite sequencing data. 
 
-The SAM/BAM file must have been created with Bismark because `comethylation.py` uses Bismark's custom `XM`, `XR` and `XG` SAM tags. The `XM` tag is used to infer the methylation state of each sequenced cytosine while the `XR` and `XG` tags are used to infer the orientation and strand of the alignment. If the data were aligned with Bismark version < 0.8.3 please use the `--oldBismark` flag. A future version of __Comethylation__ will include a script to support the use of SAM/BAM files created with other popular bisulfite aligners such as __BSMAP__, __BSmooth__ and __Novoalign__.
+The BAM file must have been created with Bismark because `comethylation.py` uses Bismark's custom `XM`, `XR` and `XG` SAM tags. The `XM` tag is used to infer the methylation state of each sequenced cytosine while the `XR` and `XG` tags are used to infer the orientation and strand of the alignment. If the data were aligned with Bismark version < 0.8.3 please use the `--oldBismark` flag. A future version of __Comethylation__ will include a script to support the use of BAM files created with other popular bisulfite aligners such as __BSMAP__, __BSmooth__ and __Novoalign__.
 
 Usage
 =============
@@ -57,7 +57,7 @@ flags. Currently only supports the directional (aka 2-strand) bisulfite-
 sequencing protocol.
 
 positional arguments:
-  BAM                   The path to the SAM/BAM file
+  BAM                   The path to the BAM file
   sampleName            The name of the sample. All output files will have
                         this prefix.
 
@@ -71,8 +71,8 @@ optional arguments:
                         order to study multiple methylation types
                         simultaneously, e.g. --methylationType CG
                         --methylationType CHG
-  --oldBismark          SAM/BAM created with Bismark version < 0.8.3. The FLAG
-                        and QNAME field in SAM/BAM files created by these
+  --oldBismark          BAM created with Bismark version < 0.8.3. The FLAG
+                        and QNAME field in BAM files created by these
                         older versions of Bismark differed from the SAM
                         specifications and need to be adjusted on the fly by
                         comethylation.py
@@ -100,7 +100,7 @@ optional arguments:
                         lower base-quality is ignored.
   --minMapQ <int>       Minimum mapping quality mapQ (default: 0). Any read
                         with a lower mapQ is ignored. WARNING: This option has
-                        no effect with SAM/BAM files created with Bismark.
+                        no effect with BAM files created with Bismark.
                         Bismark sets all mapQ values to 255, which indicates
                         that the mapping quality is not available.
   --phred64             Quality scores are encoded as Phred64 (default:
@@ -138,7 +138,7 @@ Limitations and notes
 * Only works natively with data aligned with the Bismark mapping software. I am writing a helper script so that data aligned with other popular aligners may be processed with `comethylation.py`. This will be included in the next release.
 * Can only process _directional_ (aka _2-strand_ or _Lister protocol_) bisulfite-sequencing data. It will not work with _non-directional_ (aka _4-strand_ or _Cokus protocol_) bisulfite-sequencing data, nor will it work with PBAT data. This is a low priority for me since most data is generated from the directional protocol.
 * Will skip any read containing an indel. It is difficult, although not impossible, to assign coordinates to a cytosine within an indel. To avoid this complication, `comethylation.py` currently skips any reads containing an indel. This may be fixed in future releases. I aim to improve the handling of indels in the next release.
-* The `--oldBismark` option is a bit crude. Specifically, it assumes that there are no '/' characters in the read names (`QNAME`) and that he SAM/BAM has not been processed with any other programs, e.g. Picard's MarkDuplicates, that might change the `FLAG` field. I am happy to improve this if requested.
+* The `--oldBismark` option is a bit crude. Specifically, it assumes that there are no '/' characters in the read names (`QNAME`) and that the BAM has not been processed with any other programs, e.g. Picard's MarkDuplicates, that might change the `FLAG` field. I am happy to improve this if requested.
 
 __Other notes__
 * Bismark always sets the mapping quality (`mapQ`) as the value 255, which means unavailable. Thus the `--minMapQ` option will not have any effect for Bismark data.
