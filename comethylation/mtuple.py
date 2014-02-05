@@ -1,3 +1,8 @@
+import re
+import itertools
+
+
+
 class WithinFragmentComethylationMTuple:
     """A WithinFragmentComethylationMTuple instance stores the within-fragment comethylation counts for a single m-tuple of methylation loci, e.g. a methylation-loci m-tuple.
     

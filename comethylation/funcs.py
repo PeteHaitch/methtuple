@@ -1,5 +1,11 @@
 from mtuple import *
 
+import re
+import csv
+import operator
+
+
+
 #### Function definitions ####
 def ignore_first_n_bases(read, methylation_index, n):
     """Ignore methylation loci occuring in the first n bases of a read. A methylation locus may be one of CpG, CHH, CHG or CNN.
@@ -540,12 +546,17 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                             methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), read_1, read_2)
     return methylation_m_tuples, n_methylation_loci, n_fragment_skipped_due_to_bad_overlap
                                     
-def write_methylation_m_tuples_to_file(methylation_m_tuples, m):
+def write_methylation_m_tuples_to_file(methylation_m_tuples, m, OUT):
     """Write the methylation_m_tuples instance to a tab-separated file. The m-tuples are ordered by chromosome and genomic co-ordinates.
     
     Args:
-        methylation_m_tuples: A dictionary storing all observed m-tuples of methylation events and their WithinFragmentComethylationMTuple instance. 
+        methylation_m_tuples: A dictionary storing all observed m-tuples of methylation events and their WithinFragmentComethylationMTuple instance.
+        m:
+        OUT: The file to write output to.
     """
+    # tab_writer writes a tab-separated output file to the filehandle OUT
+    tab_writer = csv.writer(OUT, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
+
     # Create the header row
     header = ['chr'] + ['pos' + str(i) for i in range(1, m + 1)]
     example_row = WithinFragmentComethylationMTuple('chr1', 1, m, [0] * m, 'CG').counts

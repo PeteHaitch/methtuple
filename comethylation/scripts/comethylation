@@ -225,9 +225,6 @@ if not args.noFailedQCFile:
 else:
     FAILED_QC = open(os.devnull, "w")
 
-# tab_writer writes a tab-separated output file to the filehandle OUT
-tab_writer = csv.writer(OUT, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
-
 # Print key variable names and command line parameter options to STDOUT
 print "comethylation.py (v"+__version__+")\n"
 print 'Input BAM file =', BAM.filename
@@ -428,7 +425,7 @@ for read in BAM:
 # Write results to disk
 print ''.join(['Extracted all ',  methylation_type, ' ', str(m), '-tuples.'])
 print 'Now writing output to', OUT.name, '...\n'
-write_methylation_m_tuples_to_file(methylation_m_tuples, m)
+write_methylation_m_tuples_to_file(methylation_m_tuples, m, OUT)
 
 # Print some summary information to STDOUT
 print 'Summary of the number of DNA fragments processed by comethylation.py'
