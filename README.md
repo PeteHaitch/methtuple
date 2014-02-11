@@ -1,7 +1,7 @@
 Comethylation
 =============
 
-__Comethylation__ is a methylation caller for methylation events that co-occur on the same DNA fragment from high-throughput bisulfite sequening data, such as methylC-seq. A typical read from such an experiment reports a binary methylated or unmethylated measurement at multiple loci, where each read originates from a single cell. In theory this allows us to investigate the co-occurence of methylation marks at the level of a single cell, however, there is no publicly available software for such an analysis. __Comethylation__ is the first such software.
+__Comethylation__ is a methylation caller for methylation events that co-occur on the same DNA fragment from high-throughput bisulfite sequencing data, such as methylC-seq. A typical read from such an experiment reports a binary methylated or unmethylated measurement at multiple loci, where each read originates from a single cell. In theory this allows us to investigate the co-occurence of methylation marks at the level of a single cell, however, there is no publicly available software for such an analysis. __Comethylation__ is the first such software.
 
 Method
 =============
