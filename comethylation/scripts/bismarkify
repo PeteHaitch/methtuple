@@ -96,7 +96,7 @@ def get_padded_ref_seq(read, ref, IN): # 'read' is an AlignedRead object, 'ref' 
                     try:
                         refseq = ''.join([ref.fetch(IN.getrname(read.tid), start = (read.pos - 2) , end = read.aend).upper(), 'NN']) # FIXME: Process CIGAR so that correct start and end are obtained
                     except ValueError:
-                        warning_msg "Skipped read: Unable to extract reference sequence for read", read.qname
+                        warning_msg = "Skipped read: Unable to extract reference sequence for read {0}".format(read.qname)
                         warnings.warn(warning_msg)
                         refseq = ''.join('N' for i in xrange(read.qlen))
     return refseq
