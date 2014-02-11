@@ -110,12 +110,12 @@ do
 	mv ${OUTDIR}/${m}_tuples/*.hist ${OUTDIR}/${m}_tuples/hist
 	# Create the genome-level files, i.e. the concatenated files
 	EXTENSION=$(basename ${OUTDIR}/${m}_tuples/${SAMPLE_NAME}_${CHROMS[0]}.*.tsv | cut -d "." -f 2-)
-	touch ${OUTDIR}/${m}_tuples/${SAMPLE_NAME}.${EXTENSION}
+	head -n 1 ${OUTDIR}/${m}_tuples/${SAMPLE_NAME}_${CHROMS[@]}.${EXTENSION} > ${OUTDIR}/${m}_tuples/${SAMPLE_NAME}.${EXTENSION} # Add the header
 	touch ${OUTDIR}/${m}_tuples/${SAMPLE_NAME}.reads_that_failed_QC.txt
 	Rscript tabulate_hist.r ${OUTDIR}/${m}_tuples/hist
 	for CHROM in ${CHROMS[@]}
 	do      
-		cat ${OUTDIR}/${m}_tuples/${SAMPLE_NAME}_${CHROM}.${EXTENSION} >> ${OUTDIR}/${m}_tuples/${SAMPLE_NAME}.${EXTENSION}
+		cat ${OUTDIR}/${m}_tuples/${SAMPLE_NAME}_${CHROM}.${EXTENSION} | grep -v -P  "^chr\tpos1" >> ${OUTDIR}/${m}_tuples/${SAMPLE_NAME}.${EXTENSION} # Skip the header
 		rm ${OUTDIR}/${m}_tuples/${SAMPLE_NAME}_${CHROM}.${EXTENSION}
 		cat ${OUTDIR}/${m}_tuples/${SAMPLE_NAME}_${CHROM}.reads_that_failed_QC.txt >> ${OUTDIR}/${m}_tuples/${SAMPLE_NAME}.reads_that_failed_QC.txt
 		rm ${OUTDIR}/${m}_tuples/${SAMPLE_NAME}_${CHROM}.reads_that_failed_QC.txt
