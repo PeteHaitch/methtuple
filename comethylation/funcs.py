@@ -17,11 +17,14 @@ def ignore_first_n_bases(read, methylation_index, n):
         [0, 5]
 
         corresponds to a read with a methylation locus at the first and sixth positions of the read.
-        n: The number of bases to exclude from the start of each read. The start of a read is the first *sequenced* base, not the leftmost aligned base.
+        n: The number of bases to exclude from the start of each read. The start of a read is the first _sequenced_ base, not the leftmost aligned base.
 
     Returns:
         An updated version of methylation_index. Will report a warning if the FLAG does not encode whether the read is part of a paired-end or which mate of the paired-end read it is. Will report an error and call sys.exit() if the XR-tag or XG-tag is incompatible or missing.
     """
+    if (n < 0) or (round(n) != n):
+        raise ValueError("ignore_first_n_bases: 'n' must be a positive integer")
+
     ignore_these_bases = []
     # Single-end reads
     if not read.is_paired:
