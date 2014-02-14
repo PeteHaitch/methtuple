@@ -3,6 +3,7 @@ from mtuple import *
 import re
 import csv
 import operator
+import sys
 
 #### Function definitions ####
 def ignore_first_n_bases(read, methylation_index, n):
