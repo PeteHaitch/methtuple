@@ -10,7 +10,7 @@ from comethylation import *
 from comethylation.mtuple import *
 from comethylation.funcs import *
 
-class IgnoreFirstNBases(unittest.TestCase):
+class TestIgnoreFirstNBases(unittest.TestCase):
 	'''Test the function ignore_first_n_bases
 	'''
 
@@ -135,7 +135,7 @@ class IgnoreFirstNBases(unittest.TestCase):
 		self.assertEqual(ignore_first_n_bases(self.obr_1, self.obm_1, 100000000), [])
 		self.assertEqual(ignore_first_n_bases(self.obr_2, self.obm_2, 100000000), [])
 
-class IgnoreLastNBases(unittest.TestCase):
+class TestIgnoreLastNBases(unittest.TestCase):
 	'''Test the function ignore_last_n_bases
 	'''
 
@@ -260,7 +260,7 @@ class IgnoreLastNBases(unittest.TestCase):
 		self.assertEqual(ignore_last_n_bases(self.obr_1, self.obm_1, 100000000), [])
 		self.assertEqual(ignore_last_n_bases(self.obr_2, self.obm_2, 100000000), [])
 
-class IgnoreLowQualityBases(unittest.TestCase):
+class TestIgnoreLowQualityBases(unittest.TestCase):
 	'''Test the function ignore_low_quality_bases
 	'''
 
@@ -338,7 +338,7 @@ class IgnoreLowQualityBases(unittest.TestCase):
 	def test_bad_phred_offset(self):
 		self.assertRaises(ValueError, ignore_low_quality_bases, self.p33, self.p33m, 10, 34)
 
-class FixOldBismark(unittest.TestCase):
+class TestFixOldBismark(unittest.TestCase):
 	'''Test the function fix_old_bismark
 	'''
 
@@ -380,6 +380,62 @@ class FixOldBismark(unittest.TestCase):
 			fix_old_bismark(self.read)
 			self.assertEqual(cm.exception.code, 1)
 
+class TestIsOverlappingSequenceIdentical(unittest.TestCase):
+	'''Test the function is_overlapping_sequence_identical
+	'''
+
+	def setUp(self):
+
+		def buildRead1():
+			'''build an example read_1 aligned to OT-strand.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "SRR400564.3629193_HAL:1133:C010EABXX:8:2101:17797:125338_length=101"
+			read.seq = "TTTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTGA"
+			read.flag = 99
+			read.rname = 0
+			read.pos = 854
+			read.mapq = 255
+			read.cigar = [(0,101)]
+			read.rnext = 0
+			read.mpos = 899
+			read.isize = 101
+			read.qual = "BBCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@:"
+			read.tags = read.tags + [("XG", "CT")] + [("XM", "hh..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z..")] + [("XR", "CT")]
+			return read
+
+		def buildRead2():
+			'''build an example read_2 aligned to OT-strand.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "SRR400564.3629193_HAL:1133:C010EABXX:8:2101:17797:125338_length=101"
+			read.seq = "TATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTGATTTTTATTGAATGTATTTGTTAGGTTGTTGAGTGTTAAATCGTAA"
+			read.flag = 147
+			read.rname = 0
+			read.pos = 899
+			read.mapq = 255
+			read.cigar = [(0,101)]
+			read.rnext = 0
+			read.mpos = 854
+			read.isize = 101
+			read.qual = "DDDDBDDCDDDDDDCCEDEFFFFFGGHHHHIIJJIHHHJIJIIJJJIIGJJIJIJJJJJJJJJIJJJJIJJJJJJJJJJJJIJJJJJJHHGGHFFFFFCCC"
+			read.tags = read.tags + [("XG", "CT")] + [("XM", "h..x...x..x..xZ....h.h.....h.....x.......h.........h.z......h.x......h..........x...............Z.h..")] + [("XR", "GA")]
+			return read
+
+		# Create the reads
+		read_1 = buildRead1()
+		read_2 = buildRead2()
+	
+	def test_sequence(self):
+		self.assertTrue(False)
+	def test_XM(self):
+		self.assertTrue(False)
+	def test_quality(self):
+		self.assertTrue(False)
+	def test_bismark(self):
+		self.assertTrue(False)
+	def test_n_overlap(self):
+		self.assertTrue(False)
 
 # FIXME: Remove?
 if __name__ == '__main__':
