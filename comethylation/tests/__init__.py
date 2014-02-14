@@ -3,6 +3,7 @@
 
 import unittest
 import pysam
+import sys
 
 from comethylation import *
 
@@ -260,7 +261,7 @@ class IgnoreLastNBases(unittest.TestCase):
 		self.assertEqual(ignore_last_n_bases(self.obr_2, self.obm_2, 100000000), [])
 
 class IgnoreLowQualityBases(unittest.TestCase):
-	'''Test the function ignore_first_n_bases
+	'''Test the function ignore_low_quality_bases
 	'''
 
 	def setUp(self):
@@ -336,6 +337,48 @@ class IgnoreLowQualityBases(unittest.TestCase):
 
 	def test_bad_phred_offset(self):
 		self.assertRaises(ValueError, ignore_low_quality_bases, self.p33, self.p33m, 10, 34)
+
+class FixOldBismark(unittest.TestCase):
+	'''Test the function fix_old_bismark
+	'''
+
+	def setUp(self):
+
+		def buildOTRead1():
+			'''build an example read_1 aligned to OT-strand.
+			'''
+
+			read = pysam.AlignedRead()
+			read.qname = "ADS-adipose_chr1_8"
+			read.seq = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
+			read.flag = 99
+			read.rname = 1
+			read.pos = 451
+			read.mapq = 255
+			read.cigar = [(0,61)]
+			read.rnext = 1
+			read.mpos = 513
+			read.isize = 121
+			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			#read.tags = read.tags + [("XG", "CT")] + [("XM", "..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....")] + [("XR", "CT")] # Not required for testing fix_old_bismark
+			return read
+
+		# Create the read
+		self.read = buildOTRead1()
+
+	def test_fix_old_bismark(self):
+		self.read.flag = 67
+		self.assertEqual(fix_old_bismark(self.read).flag, 99)
+		self.read.flag = 115
+		self.assertEqual(fix_old_bismark(self.read).flag, 83)
+		self.read.flag = 131
+		self.assertEqual(fix_old_bismark(self.read).flag, 147)
+		self.read.flag = 179
+		self.assertEqual(fix_old_bismark(self.read).flag, 163)
+		self.read.flag = 2
+		with self.assertRaises(SystemExit) as cm:
+			fix_old_bismark(self.read)
+			self.assertEqual(cm.exception.code, 1)
 
 
 # FIXME: Remove?
