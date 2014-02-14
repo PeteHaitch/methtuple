@@ -259,6 +259,84 @@ class IgnoreLastNBases(unittest.TestCase):
 		self.assertEqual(ignore_last_n_bases(self.obr_1, self.obm_1, 100000000), [])
 		self.assertEqual(ignore_last_n_bases(self.obr_2, self.obm_2, 100000000), [])
 
+class IgnoreLowQualityBases(unittest.TestCase):
+	'''Test the function ignore_first_n_bases
+	'''
+
+	def setUp(self):
+
+		def buildPhred33():
+			'''build an example read_1 aligned to OT-strand.
+			'''
+
+			read = pysam.AlignedRead()
+			read.qname = "ADS-adipose_chr1_8"
+			read.seq = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
+			read.flag = 99
+			read.rname = 1
+			read.pos = 451
+			read.mapq = 255
+			read.cigar = [(0,61)]
+			read.rnext = 1
+			read.mpos = 513
+			read.isize = 121
+			read.qual = "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" # Phred33 = 0
+			read.tags = read.tags + [("XG", "CT")] + [("XM", "..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....")] + [("XR", "CT")]
+			return read
+
+		def buildPhred64():
+			'''build an example read_1 aligned to OT-strand.
+			'''
+
+			read = pysam.AlignedRead()
+			read.qname = "ADS-adipose_chr1_8"
+			read.seq = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
+			read.flag = 99
+			read.rname = 1
+			read.pos = 451
+			read.mapq = 255
+			read.cigar = [(0,61)]
+			read.rnext = 1
+			read.mpos = 513
+			read.isize = 121
+			read.qual = "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" # Phred64 = 0
+			read.tags = read.tags + [("XG", "CT")] + [("XM", "..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....")] + [("XR", "CT")]
+			return read
+
+
+		# Create the reads and methylation indexes (using CpGs)
+		self.p33 = buildPhred33()
+		self.p64 = buildPhred64()
+		self.p33m = [18, 20, 33, 38, 42, 46]
+		self.p64m = [18, 20, 33, 38, 42, 46]
+
+	def test_no_low_qual_filter(self):
+		# Shouldn't change methylation indexes
+		self.assertEqual(ignore_low_quality_bases(self.p33, self.p33m, 0, 33), [18, 20, 33, 38, 42, 46])
+		self.assertEqual(ignore_low_quality_bases(self.p64, self.p64m, 0, 64), [18, 20, 33, 38, 42, 46])
+
+	def test_all_fail_low_qual_filter(self):
+		# Should remove all elements from methylation indexes 
+		self.assertEqual(ignore_low_quality_bases(self.p33, self.p33m, 1, 33), [])
+		self.assertEqual(ignore_low_quality_bases(self.p64, self.p64m, 1, 64), [])
+
+	def test_some_fail_low_qual_filter(self):
+		# Should remove all but the first element of the methylation index
+		self.p33.qual = "!!!!!!!!!!!!!!!!!!#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" # Change one base to have Phred33 = 2
+		self.p64.qual = "@@@@@@@@@@@@@@@@@@B@#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" # Change one base to have Phred64 = 2
+		self.assertEqual(ignore_low_quality_bases(self.p33, self.p33m, 2, 33), [18])
+		self.assertEqual(ignore_low_quality_bases(self.p64, self.p64m, 2, 64), [18])
+
+	def test_bad_min_qual(self):
+		# Should raise an exception
+		self.assertRaises(ValueError, ignore_low_quality_bases, self.p33, self.p33m, -10, 33)
+		self.assertRaises(ValueError, ignore_low_quality_bases, self.p33, self.p33m, -10, 64)
+		self.assertRaises(ValueError, ignore_low_quality_bases, self.p33, self.p33m, 3.4, 33)
+		self.assertRaises(ValueError, ignore_low_quality_bases, self.p33, self.p33m, 3.4, 64)
+
+	def test_bad_phred_offset(self):
+		self.assertRaises(ValueError, ignore_low_quality_bases, self.p33, self.p33m, 10, 34)
+
 
 # FIXME: Remove?
 if __name__ == '__main__':

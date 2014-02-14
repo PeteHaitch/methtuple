@@ -4,8 +4,6 @@ import re
 import csv
 import operator
 
-
-
 #### Function definitions ####
 def ignore_first_n_bases(read, methylation_index, n):
     """Ignore methylation loci occuring in the first n bases of a read. A methylation locus may be one of CpG, CHH, CHG or CNN.
@@ -97,7 +95,7 @@ def ignore_last_n_bases(read, methylation_index, n):
         An updated version of methylation_index. Will report a warning if the FLAG does not encode whether the read is part of a paired-end or which mate of the paired-end read it is. Will report an error and call sys.exit() if the XR-tag or XG-tag is incompatible or missing.
     """
     if (n < 0) or (round(n) != n):
-        raise ValueError("ignore_first_n_bases: 'n' must be a positive integer")
+        raise ValueError("ignore_last_n_bases: 'n' must be a positive integer")
 
     ignore_these_bases = []
     # Single-end reads
@@ -172,6 +170,11 @@ def ignore_low_quality_bases(read, methylation_index, min_qual, phred_offset):
         An updated version of methylation_index.
     
     """
+    if (min_qual < 0) or (round(min_qual) != min_qual):
+        raise ValueError("ignore_low_quality_bases: 'low_qual' must be a positive integer")
+    if phred_offset != 33 and phred_offset != 64:
+        raise ValueError("ignore_low_quality_bases: 'phred_offset' must be a 33 or 64")
+
     ignore_these_bases = []
     for i in methylation_index:
         if (ord(read.qual[i]) - phred_offset) < min_qual:
