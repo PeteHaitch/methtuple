@@ -458,6 +458,42 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 		self.assertEqual(n_overlap, self.read_1.tlen)
 		self.assertEqual(n_overlap, self.read_2.tlen)
 
+class TestDoesReadContainIndel(unittest.TestCase):
+	'''Test the function does_read_contain_indel
+	'''
+
+	def setUp(self):
+
+		def buildRead1():
+			'''build an example read_1 aligned to OT-strand.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "tr"
+			read.seq = "TTTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTG"
+			read.flag = 99
+			read.rname = 0
+			read.pos = 854
+			read.mapq = 255
+			read.cigar = [(0,100)]
+			read.rnext = 0
+			read.mpos = 855
+			read.isize = 100
+			read.qual = "BBCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@"
+			read.tags = read.tags + [("XG", "CT")] + [("XM", "hh..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z.")] + [("XR", "CT")]
+			return read
+
+		# Create the reads
+		self.read_1 = buildRead1()
+
+	def test_no_indel(self):
+		self.assertFalse(does_read_contain_indel(self.read_1))
+
+	def test_insertion(self):
+		self.read_1.cigar = [(0, 50), (1, 50)]
+		self.assertTrue(does_read_contain_indel(self.read_1))
+	def test_deletion(self):
+		self.read_1.cigar = [(0, 50), (2, 50)]
+		self.assertTrue(does_read_contain_indel(self.read_1))
 
 
 # FIXME: Remove?
