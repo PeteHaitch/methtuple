@@ -390,52 +390,75 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 			'''build an example read_1 aligned to OT-strand.
 			'''
 			read = pysam.AlignedRead()
-			read.qname = "SRR400564.3629193_HAL:1133:C010EABXX:8:2101:17797:125338_length=101"
-			read.seq = "TTTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTGA"
+			read.qname = "tr"
+			read.seq = "TTTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTG"
 			read.flag = 99
 			read.rname = 0
 			read.pos = 854
 			read.mapq = 255
-			read.cigar = [(0,101)]
+			read.cigar = [(0,100)]
 			read.rnext = 0
-			read.mpos = 899
-			read.isize = 101
-			read.qual = "BBCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@:"
-			read.tags = read.tags + [("XG", "CT")] + [("XM", "hh..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z..")] + [("XR", "CT")]
+			read.mpos = 855
+			read.isize = 100
+			read.qual = "BBCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@"
+			read.tags = read.tags + [("XG", "CT")] + [("XM", "hh..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z.")] + [("XR", "CT")]
 			return read
 
 		def buildRead2():
 			'''build an example read_2 aligned to OT-strand.
 			'''
 			read = pysam.AlignedRead()
-			read.qname = "SRR400564.3629193_HAL:1133:C010EABXX:8:2101:17797:125338_length=101"
-			read.seq = "TATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTGATTTTTATTGAATGTATTTGTTAGGTTGTTGAGTGTTAAATCGTAA"
+			read.qname = "tr"
+			read.seq = "TTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTGA"
 			read.flag = 147
 			read.rname = 0
-			read.pos = 899
+			read.pos = 855
 			read.mapq = 255
-			read.cigar = [(0,101)]
+			read.cigar = [(0,100)]
 			read.rnext = 0
 			read.mpos = 854
-			read.isize = 101
-			read.qual = "DDDDBDDCDDDDDDCCEDEFFFFFGGHHHHIIJJIHHHJIJIIJJJIIGJJIJIJJJJJJJJJIJJJJIJJJJJJJJJJJJIJJJJJJHHGGHFFFFFCCC"
-			read.tags = read.tags + [("XG", "CT")] + [("XM", "h..x...x..x..xZ....h.h.....h.....x.......h.........h.z......h.x......h..........x...............Z.h..")] + [("XR", "GA")]
+			read.isize = 100
+			read.qual = "BCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@:"
+			read.tags = read.tags + [("XG", "CT")] + [("XM", "h..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z..")] + [("XR", "GA")]
 			return read
 
 		# Create the reads
-		read_1 = buildRead1()
-		read_2 = buildRead2()
+		self.read_1 = buildRead1()
+		self.read_2 = buildRead2()
 	
 	def test_sequence(self):
-		self.assertTrue(False)
+		self.assertTrue(is_overlapping_sequence_identical(self.read_1, self.read_2, 99, 'sequence'))
+		self.mod_read_1 = self.read_1
+		self.mod_read_1.seq = ''.join([self.read_1.seq[:59], 'T', self.read_1.seq[60:]]) # Change a 'C' to a 'T'
+		self.assertFalse(is_overlapping_sequence_identical(self.mod_read_1, self.read_2, 99, 'sequence'))
+
 	def test_XM(self):
-		self.assertTrue(False)
+		self.assertTrue(is_overlapping_sequence_identical(self.read_1, self.read_2, 99, 'XM'))
+		self.mod_read_1 = pysam.AlignedRead()
+		self.mod_read_1.qname = self.read_1.qname
+		self.mod_read_1.seq = self.read_1.seq
+		self.mod_read_1.flag = self.read_1.flag
+		self.mod_read_1.rname = self.read_1.rname
+		self.mod_read_1.pos = self.read_1.pos
+		self.mod_read_1.mapq = self.read_1.mapq
+		self.mod_read_1.cigar = self.read_1.cigar
+		self.mod_read_1.rnext = self.read_1.rnext
+		self.mod_read_1.mpos = self.read_1.mpos
+		self.mod_read_1.isize = self.read_1.isize
+		self.mod_read_1.qual = self.read_1.qual
+		self.mod_read_1.tags = self.mod_read_1.tags + [("XG", "CT")] + [("XM", "hh..h.....x........x....hh.h....h......x.....h..x...x..x..xz....h.h.....h.....x.......h.........h.z.")] + [("XR", "CT")] # Change a 'Z' to a 'z' at cycle 60
+		self.assertFalse(is_overlapping_sequence_identical(self.mod_read_1, self.read_2, 99, 'XM'))
+
 	def test_quality(self):
-		self.assertTrue(False)
+		self.assertTrue(is_overlapping_sequence_identical(self.read_1, self.read_2, 99, 'quality'))
 	def test_bismark(self):
-		self.assertTrue(False)
+		self.assertTrue(is_overlapping_sequence_identical(self.read_1, self.read_2, 99, 'bismark'))
 	def test_n_overlap(self):
-		self.assertTrue(False)
+		n_overlap = self.read_1.alen + self.read_2.alen - abs(self.read_1.tlen)
+		self.assertEqual(n_overlap, self.read_1.tlen)
+		self.assertEqual(n_overlap, self.read_2.tlen)
+
+
 
 # FIXME: Remove?
 if __name__ == '__main__':

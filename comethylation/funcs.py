@@ -218,7 +218,7 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
         overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (quality), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark)
 
     Returns:
-        True if the overlapping sequence passes the filter, False otherwise (NB: this means that readpairs that trigger the warning for having mis-specified XG- or XR-tags will also return 'False').
+        True if the overlapping sequence passes the filter, False otherwise (NB: this means that readpairs that trigger the warning for having mis-specified XG- or XR-tags will also return 'False'). Furthermore, if 'overlap_check = quality' or 'overlap_check = bismark' the result is always True.
     """
     # Readpair aligns to OT-strand
     if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
