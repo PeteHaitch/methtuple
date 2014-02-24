@@ -491,10 +491,75 @@ class TestDoesReadContainIndel(unittest.TestCase):
 	def test_insertion(self):
 		self.read_1.cigar = [(0, 50), (1, 50)]
 		self.assertTrue(does_read_contain_indel(self.read_1))
+
 	def test_deletion(self):
 		self.read_1.cigar = [(0, 50), (2, 50)]
 		self.assertTrue(does_read_contain_indel(self.read_1))
 
+class TestDoesReadContainComplicatedCigar(unittest.TestCase):
+	'''Test the function does_read_contain_complicated_cigar
+	'''
+
+	def setUp(self):
+
+		def buildRead1():
+			'''build an example read_1 aligned to OT-strand.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "tr"
+			read.seq = "TTTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTG"
+			read.flag = 99
+			read.rname = 0
+			read.pos = 854
+			read.mapq = 255
+			read.cigar = [(0,100)]
+			read.rnext = 0
+			read.mpos = 855
+			read.isize = 100
+			read.qual = "BBCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@"
+			read.tags = read.tags + [("XG", "CT")] + [("XM", "hh..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z.")] + [("XR", "CT")]
+			return read
+
+		# Create the reads
+		self.read_1 = buildRead1()
+
+	def test_simple_cigar(self):
+		self.assertFalse(does_read_contain_complicated_cigar(self.read_1))
+
+	def test_insertion(self):
+		self.read_1.cigar = [(0, 50), (1, 50)]
+		self.assertFalse(does_read_contain_complicated_cigar(self.read_1))
+
+	def test_deletion(self):
+		self.read_1.cigar = [(0, 50), (2, 50)]
+		self.assertFalse(does_read_contain_complicated_cigar(self.read_1))
+
+	def test_ref_skip(self):
+		self.read_1.cigar = [(0, 50), (3, 50)]
+		self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
+
+	def test_soft_clip(self):
+		self.read_1.cigar = [(0, 50), (4, 50)]
+		self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
+
+	def test_hard_clip(self):
+		self.read_1.cigar = [(0, 50), (5, 50)]
+		self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
+
+	def test_pad(self):
+		self.read_1.cigar = [(0, 50), (6, 50)]
+		self.assertTrue(False) # Check the definition of BAM_CPAD
+		#self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
+
+	def test_equal(self):
+		self.read_1.cigar = [(0, 50), (7, 50)]
+		self.assertTrue(False) # Check the definition of BAM_CEQUAL
+		#self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
+
+	def test_diff(self):
+		self.read_1.cigar = [(0, 50), (8, 50)]
+		self.assertTrue(False) # Check the definition of BAM_CDIFF
+		#self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
 
 # FIXME: Remove?
 if __name__ == '__main__':
