@@ -102,33 +102,33 @@ class TestIgnoreFirstNBases(unittest.TestCase):
 		self.obm_1 = [3, 11, 17, 19, 29, 49, 57, 60]
 		self.obm_2 = [1, 5, 33, 50]
 
-	def test_N0(self):
+	def test_n_0(self):
 		# Shouldn't change methylation indexes
 		self.assertEqual(ignore_first_n_bases(self.otr_1, self.otm_1, 0), [18, 20, 33, 38, 42, 46])
 		self.assertEqual(ignore_first_n_bases(self.otr_2, self.otm_2, 0), [12, 29, 50, 58])
 		self.assertEqual(ignore_first_n_bases(self.obr_1, self.obm_1, 0), [3, 11, 17, 19, 29, 49, 57, 60])
 		self.assertEqual(ignore_first_n_bases(self.obr_2, self.obm_2, 0), [1, 5, 33, 50])
 
-	def test_NOffByOne(self):
+	def test_n_off_by_one(self):
 		# Shouldn't change methylation indexes
 		self.assertEqual(ignore_first_n_bases(self.otr_1, self.otm_1, 18), [18, 20, 33, 38, 42, 46])
 		self.assertEqual(ignore_first_n_bases(self.otr_2, self.otm_2, 0), [12, 29, 50, 58])
 		self.assertEqual(ignore_first_n_bases(self.obr_1, self.obm_1, 2), [3, 11, 17, 19, 29, 49, 57, 60])
 		self.assertEqual(ignore_first_n_bases(self.obr_2, self.obm_2, 1), [1, 5, 33, 50])
 
-	def test_IgnoreOne(self):
+	def test__ignore_one(self):
 		# Should remove one element from methylation indexes in accordance with the strand/orientation of the read
 		self.assertEqual(ignore_first_n_bases(self.otr_1, self.otm_1, 19), [20, 33, 38, 42, 46])
 		self.assertEqual(ignore_first_n_bases(self.otr_2, self.otm_2, 1), [12, 29, 50])
 		self.assertEqual(ignore_first_n_bases(self.obr_1, self.obm_1, 3), [3, 11, 17, 19, 29, 49, 57])
 		self.assertEqual(ignore_first_n_bases(self.obr_2, self.obm_2, 2), [5, 33, 50])
 
-	def test_BadN(self):
+	def test_bad_n(self):
 		# Should raise an exception
 		self.assertRaises(ValueError, ignore_first_n_bases, self.otr_1, self.otm_1, -10)
 		self.assertRaises(ValueError, ignore_first_n_bases, self.otr_1, self.otm_1, 3.4)
 
-	def test_IgnoreAll(self):
+	def test_ignore_all(self):
 		# Should remove all elements from methylation indexes (assuming read-lengths are < 100,000,000)
 		self.assertEqual(ignore_first_n_bases(self.otr_1, self.otm_1, 100000000), [])
 		self.assertEqual(ignore_first_n_bases(self.otr_2, self.otm_2, 100000000), [])
@@ -227,33 +227,33 @@ class TestIgnoreLastNBases(unittest.TestCase):
 		self.obm_1 = [3, 11, 17, 19, 29, 49, 57, 60]
 		self.obm_2 = [1, 5, 33, 50]
 
-	def test_N0(self):
+	def test_n_0(self):
 		# Shouldn't change methylation indexes
 		self.assertEqual(ignore_last_n_bases(self.otr_1, self.otm_1, 0), [18, 20, 33, 38, 42, 46])
 		self.assertEqual(ignore_last_n_bases(self.otr_2, self.otm_2, 0), [12, 29, 50, 58])
 		self.assertEqual(ignore_last_n_bases(self.obr_1, self.obm_1, 0), [3, 11, 17, 19, 29, 49, 57, 60])
 		self.assertEqual(ignore_last_n_bases(self.obr_2, self.obm_2, 0), [1, 5, 33, 50])
 
-	def test_NOffByOne(self):
+	def test_n_off_by_one(self):
 		# Shouldn't change methylation indexes
 		self.assertEqual(ignore_last_n_bases(self.otr_1, self.otm_1, 14), [18, 20, 33, 38, 42, 46])
 		self.assertEqual(ignore_last_n_bases(self.otr_2, self.otm_2, 12), [12, 29, 50, 58])
 		self.assertEqual(ignore_last_n_bases(self.obr_1, self.obm_1, 3), [3, 11, 17, 19, 29, 49, 57, 60])
 		self.assertEqual(ignore_last_n_bases(self.obr_2, self.obm_2, 16), [1, 5, 33, 50])
 
-	def test_IgnoreOne(self):
+	def test_ignore_one(self):
 		# Should remove one element from methylation indexes in accordance with the strand/orientation of the read
 		self.assertEqual(ignore_last_n_bases(self.otr_1, self.otm_1, 15), [18, 20, 33, 38, 42])
 		self.assertEqual(ignore_last_n_bases(self.otr_2, self.otm_2, 13), [29, 50, 58])
 		self.assertEqual(ignore_last_n_bases(self.obr_1, self.obm_1, 4), [11, 17, 19, 29, 49, 57, 60])
 		self.assertEqual(ignore_last_n_bases(self.obr_2, self.obm_2, 17), [1, 5, 33])
 
-	def test_BadN(self):
+	def test_bad_n(self):
 		# Should raise an exception
 		self.assertRaises(ValueError, ignore_last_n_bases, self.otr_1, self.otm_1, -10)
 		self.assertRaises(ValueError, ignore_last_n_bases, self.otr_1, self.otm_1, 3.4)
 
-	def test_IgnoreAll(self):
+	def test_ignore_all(self):
 		# Should remove all elements from methylation indexes (assuming read-lengths are < 100,000,000)
 		self.assertEqual(ignore_last_n_bases(self.otr_1, self.otm_1, 100000000), [])
 		self.assertEqual(ignore_last_n_bases(self.otr_2, self.otm_2, 100000000), [])
@@ -451,12 +451,23 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 
 	def test_quality(self):
 		self.assertTrue(is_overlapping_sequence_identical(self.read_1, self.read_2, 99, 'quality'))
+
 	def test_bismark(self):
 		self.assertTrue(is_overlapping_sequence_identical(self.read_1, self.read_2, 99, 'bismark'))
+
 	def test_n_overlap(self):
 		n_overlap = self.read_1.alen + self.read_2.alen - abs(self.read_1.tlen)
 		self.assertEqual(n_overlap, self.read_1.tlen)
 		self.assertEqual(n_overlap, self.read_2.tlen)
+
+	def test_bad_n_overlap(self):
+		# Should raise an exception
+		self.assertRaises(ValueError, is_overlapping_sequence_identical(self.read_1, self.read_2, -10, 'sequence'))
+		self.assertRaises(ValueError, is_overlapping_sequence_identical(self.read_1, self.read_2, 3.4, 'sequence'))
+
+	def test_bad_overlap_check(self):
+		self.assertRaises(ValueError, is_overlapping_sequence_identical(self.read_1, self.read_2, 10, 'apples'))
+		self.assertRaises(ValueError, is_overlapping_sequence_identical(self.read_1, self.read_2, 10, 'Bismark')) # Should be 'bismark'
 
 class TestDoesReadContainIndel(unittest.TestCase):
 	'''Test the function does_read_contain_indel
