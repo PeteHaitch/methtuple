@@ -220,6 +220,11 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
     Returns:
         True if the overlapping sequence passes the filter, False otherwise (NB: this means that readpairs that trigger the warning for having mis-specified XG- or XR-tags will also return 'False'). Furthermore, if 'overlap_check = quality' or 'overlap_check = bismark' the result is always True.
     """
+    if (n_overlap < 0) or (round(n_overlap) != n_overlap):
+        raise ValueError("is_overlapping_sequence_identical: 'n_overlap' must be a positive integer")
+    if overlap_check != 'sequence' and overlap_check != 'XM' and overlap_check != 'quality' and overlap_check != 'bismark':
+        raise ValueError("is_overlapping_sequence_identical: 'overlap_check' must be one of 'sequence', 'XM', 'quality' or 'bismark'")
+
     # Readpair aligns to OT-strand
     if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
         if overlap_check == 'sequence':
@@ -298,6 +303,11 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
     Returns:
         Updated versions of methylation_index_1 and methylation_index_2.
     """
+    if (n_overlap < 0) or (round(n_overlap) != n_overlap):
+        raise ValueError("ignore_overlapping_sequence: 'n_overlap' must be a positive integer")
+    if overlap_check != 'sequence' and overlap_check != 'XM' and overlap_check != 'quality' and overlap_check != 'bismark':
+        raise ValueError("ignore_overlapping_sequence: 'overlap_check' must be one of 'sequence', 'XM', 'quality' or 'bismark'")
+
     ignore_these_bases = []
     # Readpair aligns to OT-strand
     if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
