@@ -548,18 +548,15 @@ class TestDoesReadContainComplicatedCigar(unittest.TestCase):
 
 	def test_pad(self):
 		self.read_1.cigar = [(0, 50), (6, 50)]
-		self.assertTrue(False) # Check the definition of BAM_CPAD
-		#self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
+		self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
 
 	def test_equal(self):
 		self.read_1.cigar = [(0, 50), (7, 50)]
-		self.assertTrue(False) # Check the definition of BAM_CEQUAL
-		#self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
+		self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
 
 	def test_diff(self):
 		self.read_1.cigar = [(0, 50), (8, 50)]
-		self.assertTrue(False) # Check the definition of BAM_CDIFF
-		#self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
+		self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
 
 # FIXME: Remove?
 if __name__ == '__main__':

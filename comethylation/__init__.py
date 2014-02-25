@@ -1,4 +1,4 @@
-__version_info__ = ('0','99','4')
+__version_info__ = ('0','99','5')
 __version__ = '.'.join(__version_info__)
 
 import funcs

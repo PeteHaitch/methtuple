@@ -282,7 +282,7 @@ for read in BAM:
     if not 'XG' in [x[0] for x in read.tags]:
         exit_msg = "ERROR: The first mapped read does not contain an XG-tag. The XG-tag stores the read conversion state for the alignment and is required by comethylation.py.\n SAM/BAM files created by Bismark should already have the XG-tag set.\n If your SAM/BAM was created with another program you will need to add the correct XG-tags before proceeding. The script bismarkify.py may be able to help you with this.\n"
         sys.exit(exit_msg)
-    # Check XG-tag
+    # Check XM-tag
     if not 'XM' in [x[0] for x in read.tags]:
         exit_msg = "ERROR: The first mapped read does not contain an XM-tag. The XM-tag stores the methylation call string for the alignment and is required by comethylation.py.\n SAM/BAM files created by Bismark should already have the XM-tag set.\n If your SAM/BAM was created with another program you will need to add the correct XM-tags before proceeding. The script bismarkify.py may be able to help you with this.\n"
         sys.exit(exit_msg)
@@ -357,6 +357,15 @@ for read in BAM:
             read_1 = None
             read_2 = None
             continue
+        # Skip reads containing complicated CIGAR strings, i.e. anything except 'M', 'I' or 'D'
+        if does_read_contain_complicated_cigar(read_1) or does_read_contain_complicated_cigar(read_2):
+            failed_read_msg = '\t'.join([read_1.qname, 'read has complicated CIGAR\n'])
+            FAILED_QC.write(failed_read_msg)
+            n_fragment_skipped_due_to_indel += 1
+            # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
+            read_1 = None
+            read_2 = None
+            continue
         # Skip reads containing indels
         if does_read_contain_indel(read_1) or does_read_contain_indel(read_2):
             failed_read_msg = '\t'.join([read_1.qname, 'read has indel\n'])
@@ -391,20 +400,38 @@ for read in BAM:
             failed_read_msg = '\t'.join([read.qname, 'marked as duplicate\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_duplicate += 1
+            # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
+            read_1 = None
+            read_2 = None
             continue
         # Skip read if read's mapQ is less than min_mapq
         if read.mapq < min_mapq:
             failed_read_msg = '\t'.join([read.qname, 'mapQ < --minMapQ\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_low_mapq += 1
+            # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
+            read_1 = None
+            read_2 = None
             continue
         # Skip read if it is unmapped
         if read.is_unmapped:
             failed_read_msg = '\t'.join([read.qname, 'read is unmapped\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_unmapped_read_or_mate += 1
+            # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
+            read_1 = None
+            read_2 = None
             continue
-        # Skip reads containing indels
+        # Skip read if it has a complicated CIGAR
+        if does_read_contain_complicated_cigar(read):
+            '\t'.join([read.qname, 'read has complicated CIGAR\n'])
+            FAILED_QC.write(failed_read_msg)
+            n_fragment_skipped_due_to_indel += 1
+            # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
+            read_1 = None
+            read_2 = None
+            continue
+        # Skip read if it contains an indel
         if does_read_contain_indel(read):
             failed_read_msg = '\t'.join([read.qname, 'read has indel\n'])
             FAILED_QC.write(failed_read_msg)
@@ -416,6 +443,7 @@ for read in BAM:
         methylation_m_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_end_r1, min_qual, phred_offset, ob_strand_offset)
         if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
             n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
+
         n_methylation_loci_per_read[n_methylation_loci_in_fragment] += 1
     # Read is neither single-end nor a mate from a read-pair. This shouldn't happen.
     else:
