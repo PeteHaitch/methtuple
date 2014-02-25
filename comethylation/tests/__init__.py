@@ -466,6 +466,7 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 		self.assertRaises(ValueError, is_overlapping_sequence_identical, self.read_1, self.read_2, 3.4, 'sequence')
 
 	def test_bad_overlap_check(self):
+		# Should raise an exception
 		self.assertRaises(ValueError, is_overlapping_sequence_identical, self.read_1, self.read_2, 10, 'apples')
 		self.assertRaises(ValueError, is_overlapping_sequence_identical, self.read_1, self.read_2, 10, 'Bismark') # Should be 'bismark'
 
@@ -568,6 +569,153 @@ class TestDoesReadContainComplicatedCigar(unittest.TestCase):
 	def test_diff(self):
 		self.read_1.cigar = [(0, 50), (8, 50)]
 		self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
+
+class TestIgnoreOverlappingSequence(unittest.TestCase):
+	'''Test the function ignore_overlapping_sequence
+	'''
+
+	def setUp(self):
+
+		def buildOTRead1():
+			'''build an example read_1 aligned to OT-strand.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "otr"
+			read.seq = "TTTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTG"
+			read.flag = 99
+			read.rname = 0
+			read.pos = 854
+			read.mapq = 255
+			read.cigar = [(0,100)]
+			read.rnext = 0
+			read.mpos = 855
+			read.isize = 100
+			read.qual = "BBCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@"
+			read.tags = read.tags + [("XG", "CT")] + [("XM", "hh..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z.")] + [("XR", "CT")]
+			return read
+
+		def buildOTRead2():
+			'''build an example read_2 aligned to OT-strand.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "otr"
+			read.seq = "TTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTGA"
+			read.flag = 147
+			read.rname = 0
+			read.pos = 855
+			read.mapq = 255
+			read.cigar = [(0,100)]
+			read.rnext = 0
+			read.mpos = 854
+			read.isize = 100
+			read.qual = "BCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@:"
+			read.tags = read.tags + [("XG", "CT")] + [("XM", "h..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z..")] + [("XR", "GA")]
+			return read
+
+		def buildOBRead1():
+			'''build an example read_1 aligned to OB-strand
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "otb"
+			read.seq = "ACGCAACTCCGCCCTCGCGATACTCTCCGAATCTATACTAAAAAAAACGCAACTCCGCCGAC"
+			read.flag = 83
+			read.rname = 1
+			read.pos = 494
+			read.mapq = 255
+			read.cigar = [(0,62)]
+			read.rnext = 1
+			read.mpos = 493
+			read.isize = 63
+			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.tags = read.tags + [("XG", "GA")] + [("XM", "..Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx.")] + [("XR", "CT")]
+			return read
+
+		def buildOBRead2():
+			'''build an example read_2 aligned to OB-strand.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "otb"
+			read.seq = "AACGCAACTCCGCCCTCGCGATACTCTCCGAATCTATACTAAAAAAAACGCAACTCCGCCGA"
+			read.flag = 163
+			read.rname = 1
+			read.pos = 493
+			read.mapq = 255
+			read.cigar = [(0,62)]
+			read.rnext = 1
+			read.mpos = 494
+			read.isize = 63
+			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.tags = read.tags + [("XG", "GA")] + [("XM", "...Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx")] + [("XR", "GA")]
+			return read
+
+		# Create the reads
+		self.read_1 = buildOTRead1()
+		self.read_2 = buildOTRead2()
+
+		# Create the reads and methylation indexes (using CpGs)
+		self.otr_1 = buildOTRead1()
+		self.otr_2 = buildOTRead2()
+		self.obr_1 = buildOBRead1()
+		self.obr_2 = buildOBRead2()
+		self.otm_1 = [59, 98]
+		self.otm_2 = [58, 97]
+		self.obm_1 = [2, 10, 16, 18, 28, 48, 56, 59]
+		self.obm_2 = [3, 11, 17, 19, 29, 49, 57, 60]
+
+	def test_bismark(self):
+		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'bismark'), ([59, 98], []))
+		self.assertEqual(ignore_overlapping_sequence(self.obr_1, self.obr_2, self.obm_1, self.obm_2, 99, 'bismark'), ([2, 10, 16, 18, 28, 48, 56, 59], []))
+		# Make read_2 have higher quality bases than read_1
+		self.otr_1.qual = 'B' * len(self.otr_1.seq)
+		self.otr_2.qual = 'K' * len(self.otr_2.seq)
+		self.obr_1.qual = 'B' * len(self.obr_1.seq)
+		self.obr_2.qual = 'K' * len(self.obr_2.seq)
+		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'bismark'), ([59, 98], []))
+		self.assertEqual(ignore_overlapping_sequence(self.obr_1, self.obr_2, self.obm_1, self.obm_2, 99, 'bismark'), ([2, 10, 16, 18, 28, 48, 56, 59], []))
+
+	def test_quality(self):
+		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'quality'), ([59, 98], []))
+		self.assertEqual(ignore_overlapping_sequence(self.obr_1, self.obr_2, self.obm_1, self.obm_2, 99, 'quality'), ([2, 10, 16, 18, 28, 48, 56, 59], []))
+		# Make read_2 have higher quality bases than read_1
+		self.otr_1.qual = 'B' * len(self.otr_1.seq)
+		self.otr_2.qual = 'K' * len(self.otr_2.seq)
+		self.obr_1.qual = 'B' * len(self.obr_1.seq)
+		self.obr_2.qual = 'K' * len(self.obr_2.seq)
+		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'quality'), ([], [58, 97]))
+		self.assertEqual(ignore_overlapping_sequence(self.obr_1, self.obr_2, self.obm_1, self.obm_2, 99, 'quality'), ([], [3, 11, 17, 19, 29, 49, 57, 60]))
+
+	def test_XM(self):
+		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'XM'), ([59, 98], []))
+		self.assertEqual(ignore_overlapping_sequence(self.obr_1, self.obr_2, self.obm_1, self.obm_2, 99, 'XM'), ([2, 10, 16, 18, 28, 48, 56, 59], []))
+		# Make read_2 have higher quality bases than read_1
+		self.otr_1.qual = 'B' * len(self.otr_1.seq)
+		self.otr_2.qual = 'K' * len(self.otr_2.seq)
+		self.obr_1.qual = 'B' * len(self.obr_1.seq)
+		self.obr_2.qual = 'K' * len(self.obr_2.seq)
+		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'XM'), ([], [58, 97]))
+		self.assertEqual(ignore_overlapping_sequence(self.obr_1, self.obr_2, self.obm_1, self.obm_2, 99, 'XM'), ([], [3, 11, 17, 19, 29, 49, 57, 60]))
+
+
+	def test_sequence(self):
+		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'sequence'), ([59, 98], []))
+		# Make read_2 have higher quality bases than read_1
+		self.otr_1.qual = 'B' * len(self.otr_1.seq)
+		self.otr_2.qual = 'K' * len(self.otr_2.seq)
+		self.obr_1.qual = 'B' * len(self.obr_1.seq)
+		self.obr_2.qual = 'K' * len(self.obr_2.seq)
+		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'sequence'), ([], [58, 97]))
+		self.assertEqual(ignore_overlapping_sequence(self.obr_1, self.obr_2, self.obm_1, self.obm_2, 99, 'sequence'), ([], [3, 11, 17, 19, 29, 49, 57, 60]))
+
+
+	def test_bad_n_overlap(self):
+		# Should raise an exception
+		self.assertRaises(ValueError, ignore_overlapping_sequence, self.otr_1, self.otr_2, self.otm_1, self.otm_2, -10, 'sequence')
+		self.assertRaises(ValueError, ignore_overlapping_sequence, self.otr_1, self.otr_2, self.otm_1, self.otm_2, 3.4, 'sequence')
+
+	def test_bad_overlap_check(self):
+		# Should raise an exception
+		self.assertRaises(ValueError, ignore_overlapping_sequence, self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'apples')
+		self.assertRaises(ValueError, ignore_overlapping_sequence, self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'Bismark') # Should be 'bismark'
 
 # FIXME: Remove?
 if __name__ == '__main__':
