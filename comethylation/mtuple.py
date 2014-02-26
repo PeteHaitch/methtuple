@@ -17,11 +17,12 @@ class WithinFragmentComethylationMTuple:
         """
         Initiates WithinFragmentComethylationMTuple for a single m-tuple of methylation events with co-ordinates given by arguments (chromosome, positions) and sets all counts to zero.
         """
+        # Argument checks
         if len(positions) != m:
             raise ValueError("__init__ WithinFragmentComethylationMTuple: 'm' must be equal to len(positions)")
         if not all([x in ['CG', 'CHG', 'CHH', 'CNN'] for x in methylation_type.split('/')]):
             raise ValueError("__initi__ WithinFragmentComethylationMTuple: 'methylation_type' must be one or more of 'CG', 'CHG', 'CHH' or 'CNN'. Multiple values must be separated by the '/' character.")
-
+        # Initialise object of class WithinFragmentComethylationMTuple
         self.methylation_type = methylation_type
         self.chromosome = chromosome
         self.chromosome_index = chromosome_index
@@ -32,6 +33,7 @@ class WithinFragmentComethylationMTuple:
     def display(self): 
         """Display a WithinFragmentComethylationMTuple instance."""
         print 'Methylation type =', self.methylation_type
+        print 'm = ', len(self.positions)
         print 'Positions =', self.chromosome, ':', self.positions
         print 'Counts =', self.counts
     def m_tuple_id(self):
@@ -55,6 +57,9 @@ class WithinFragmentComethylationMTuple:
         # Check whether there are any unexpected, and therefore invalid, characters in comethylation_state
         if not re.search('[^MU]', comethylation_state) is None:
             exit_msg = ''.join([read_1.qname, ' has an invalid comethylation string = ', comethylation_state, '.\nThis should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.'])
+            sys.exit(exit_msg)
+        if (len(comethylation_state) != len(self.positions)):
+            exit_msg = ''.join(['Length of comethylation string (', str(len(comethylation_state)), ') does not equal m (', str(len(self.positions)), '). \nThis should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.'])
             sys.exit(exit_msg)
 
         # Single-end
