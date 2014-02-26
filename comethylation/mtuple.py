@@ -54,7 +54,7 @@ class WithinFragmentComethylationMTuple:
         # Single-end
         if read_2 is None and not read_1.is_paired:
             # Check that XG- and XR-tags are compatible directional bisulfite-sequencing protocol. If not then skip the read and report a warning
-            if (read_1.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and not read_1.is_paired) or ( read_1.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and not read_1.is_paired):
+            if (read_1.opt('XG') == 'CT' and read_1.opt('XR') == 'CT') or ( read_1.opt('XG') == 'GA' and read_1.opt('XR') == 'CT'):
                 self.counts[comethylation_state] += 1
             else:
                 warning_msg = ''.join(['XG-tags or XR-tags for readpair ', read_1.qname, ' are not compatible with the directional bisulfite-sequencing protocol (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
