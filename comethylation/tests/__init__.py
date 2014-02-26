@@ -1011,6 +1011,97 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 		os.remove(self.BAM.filename)
 		os.remove(self.FAILED_QC.name)
 
+class TestWithinFragmentComethylationMTuple(unittest.TestCase):
+	'''Test the class WithinFragmentComethylationMTuple and its methods
+	'''
+
+	def setUp(self):
+
+		def buildOTRead():
+			'''build an example read aligned to OT-strand.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "@SALK_2077_FC6295TAAXX:2:107:9396:15019#0/1"
+			read.seq = "GGGGAAGGTGTTATGGAGTTTTTTACGATTTTTAGTCGTTTTCGTTTTTTTTTGTTTGTGGTTGTTGCGGTGGCGGTAGAGGAGGG"
+			read.flag = 0
+			read.rname = 0
+			read.pos = 4536
+			read.mapq = 255
+			read.cigar = [(0,86)]
+			read.rnext = 0
+			read.pnext = 0
+			read.isize = 0
+			read.qual = "DBDB2;@>)@@F?EFG@GBGGGGDDBG@DGGGGEEFHHEGHHHHEFHHHHFHHHFHHHGHGBCEAA@?@?/A@>@3,.6,AA,@>="
+			read.tags = read.tags + [("XG", "CT")] + [("XM", "...........h......hhhhh..Z....hhx...Z..hh.Z..hh.hh.x..hx.....x..x..Z.....Z..x.........")] + [("XR", "CT")]
+			return read
+
+		def buildOBRead():
+			'''build an example read aligned to OB-strand.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "@ECKER_1116_FC623CNAAXX:2:21:18515:1127#0/1"
+			read.seq = "CTTCCTAACAAACAACTACACCACTACCTAACGCTATACCCTTCCTTTACTCTACCCACTAAAAACAATATTTATCATAAACCT"
+			read.flag = 16
+			read.rname = 0
+			read.pos = 3334
+			read.mapq = 255
+			read.cigar = [(0,84)]
+			read.rnext = 0
+			read.pnext = 0
+			read.isize = 0
+			read.qual = "G7@G@BGB@GGGGGDIEEBIBA<AHEGEEEGGGDDEDFFEIIHIIGGDGGGGGGGGGGDGDBED<FAAFEGGGGGIHIFIGBDG"
+			read.tags = read.tags + [("XG", "GA")] + [("XM", "......x...xh..x..x.......x...xh.Z..x.h..........h....x...z..xh.h..zx.h...h....hhh...")] + [("XR", "CT")]
+			return read
+
+		def buildBAM():
+			'''build a BAM file
+			'''
+			header = { 'HD': {'VN': '1.0'}, 'SQ': [{'LN': 10000, 'SN': 'chr1'}, {'LN': 20000, 'SN': 'chr2'}] }
+			tempfile_path = tempfile.mkstemp()[1]
+			BAM = pysam.Samfile(tempfile_path, "wb", header = header)
+			return BAM
+
+		# Create the reads, BAM file and methylation m-tuples
+		self.otr = buildOTRead()
+		self.obr = buildOBRead()
+		self.BAM = buildBAM()
+		self.BAM.write(self.otr)
+		self.BAM.write(self.obr)
+		self.BAM.close()
+		self.BAM = pysam.Samfile(self.BAM.filename, 'rb')
+#		self.otm = [25, 36, 42, 67, 73]
+#		self.obm = [32, 57, 66]
+#		self.otmcgchg = [25, 32, 36, 42, 51, 55, 61, 64, 67, 73, 76]
+		self.wfotr = WithinFragmentComethylationMTuple(self.BAM.getrname(self.otr.tid), self.otr.tid, 2, [25, 36], 'CG')
+		self.wfobr = WithinFragmentComethylationMTuple(self.BAM.getrname(self.obr.tid), self.otr.tid, 2, [32, 57], 'CG')
+		self.wfotrcgchg = WithinFragmentComethylationMTuple(self.BAM.getrname(self.otr.tid), self.otr.tid, 3, [25, 32, 36], 'CG/CHG')
+
+	def test_init(self):
+		self.assertEqual(self.wfotr.methylation_type, 'CG')
+		self.assertEqual(self.wfotr.chromosome, self.BAM.getrname(self.otr.tid))
+		self.assertEqual(self.wfotr.chromosome_index, self.otr.tid)
+		self.assertEqual(self.wfotr.positions, [25, 36])
+		self.assertEqual(self.wfotr.counts, {'UU': 0, 'UM': 0, 'MM': 0, 'MU': 0})
+		self.assertEqual(self.wfobr.methylation_type, 'CG')
+		self.assertEqual(self.wfobr.chromosome, self.BAM.getrname(self.obr.tid))
+		self.assertEqual(self.wfobr.chromosome_index, self.obr.tid)
+		self.assertEqual(self.wfobr.positions, [32, 57])
+		self.assertEqual(self.wfobr.counts, {'UU': 0, 'UM': 0, 'MM': 0, 'MU': 0})
+		self.assertEqual(self.wfotrcgchg.methylation_type, 'CG/CHG')
+		self.assertEqual(self.wfotrcgchg.chromosome, self.BAM.getrname(self.otr.tid))
+		self.assertEqual(self.wfotrcgchg.chromosome_index, self.otr.tid)
+		self.assertEqual(self.wfotrcgchg.positions, [25, 32, 36])
+		self.assertEqual(self.wfotrcgchg.counts, {'MUU': 0, 'UMU': 0, 'UUU': 0, 'MMU': 0, 'UUM': 0, 'MUM': 0, 'UMM': 0, 'MMM': 0})
+
+	def test_invalid_m(self):
+		## FIXME: Install comethylation (v0.99.6) to make this test pass (I implemented a check of 'm' in v0.99.6)
+		self.assertRaises(ValueError, WithinFragmentComethylationMTuple, self.BAM.getrname(self.otr.tid), self.otr.tid, 3, [25, 36], 'CG')
+
+	def test_increment_count(self):
+		self.assertTrue(False)
+
+	def tearDown(self):
+		os.remove(self.BAM.filename)
 
 # FIXME: Remove?
 if __name__ == '__main__':

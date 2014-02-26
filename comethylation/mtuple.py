@@ -15,7 +15,11 @@ class WithinFragmentComethylationMTuple:
         counts: A dictionary storing the counts for each of the 2^m comethylation states combined across strands giving a total of 2^m keys and associated values (counts).
     """
     def __init__(self, chromosome, chromosome_index, m, positions, methylation_type):
-        """Initiates WithinFragmentComethylationMTuple for a single m-tuple of methylation events with co-ordinates given by arguments (chromosome, positions) and sets all counts to zero."""
+        """
+        Initiates WithinFragmentComethylationMTuple for a single m-tuple of methylation events with co-ordinates given by arguments (chromosome, positions) and sets all counts to zero.
+        """
+        if len(positions) != m:
+            raise ValueError("__init__ WithinFragmentComethylationMTuple: 'm' must be equal to len(positions)")
         self.methylation_type = methylation_type
         self.chromosome = chromosome
         self.chromosome_index = chromosome_index
