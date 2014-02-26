@@ -11,7 +11,7 @@ requires = ['pysam']
 
 setup(
   name='comethylation',
-  version='0.99.8',
+  version='0.99.9',
   description='comethylation',
   long_description=README + '\n\n' +  CHANGES,
   classifiers=[

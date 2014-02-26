@@ -63,24 +63,24 @@ class WithinFragmentComethylationMTuple:
             sys.exit(exit_msg)
 
         # Single-end
-        if read_2 is None and not read_1.is_paired:
+        if (read_2 is None) and (not read_1.is_paired):
             # Check that XG- and XR-tags are compatible directional bisulfite-sequencing protocol. If not then skip the read and report a warning
             if (read_1.opt('XG') == 'CT' and read_1.opt('XR') == 'CT') or (read_1.opt('XG') == 'GA' and read_1.opt('XR') == 'CT'):
                 self.counts[comethylation_state] += 1
             else:
-                warning_msg = ''.join(['XG-tags or XR-tags for readpair ', read_1.qname, ' are not compatible with the directional bisulfite-sequencing protocol (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
-                warnings.warn(warning_msg)
+                exit_msg = ''.join(["ERROR: The XR-tag and XG-tag of ", read_1.qname, " is not compatible with the directional bisulfite-sequencing protocol. Sorry, comethylation can only process data from the directional protocol."])
+                sys.exit(exit_msg)
         # Paired-end
         elif read_1.is_paired and read_2.is_paired and read_1.is_read1 and read_2.is_read2:
             # Check that XG- and XR-tags are compatible directional bisulfite-sequencing protocol. If not then skip the read and report a warning
             if (read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA') or (read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA'):
                 self.counts[comethylation_state] += 1
             elif not read_1.is_read1 or not read_2.is_read2:
-                warning_msg = ''.join(['read_1 or read_2 is incorrectly set for readpair ', read_1.qname])
-                warnings.warn(warning_msg)
+                exit_msg = ''.join(['ERROR: read_1 or read_2 is incorrectly set for readpair ', read_1.qname])
+                sys.exit(exit_msg)
             else:
-                warning_msg = ''.join(['XG-tags or XR-tags for readpair ', read_1.qname, ' are not compatible with the directional bisulfite-sequencing protocol (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
-                warnings.warn(warning_msg)             
+                exit_msg = ''.join(["ERROR: The XR-tag and XG-tag of ", read_1.qname, " are not compatible with the directional bisulfite-sequencing protocol. Sorry, comethylation can only process data from the directional protocol."])
+                sys.exit(exit_msg)
 
 
 
