@@ -20,6 +20,9 @@ class WithinFragmentComethylationMTuple:
         """
         if len(positions) != m:
             raise ValueError("__init__ WithinFragmentComethylationMTuple: 'm' must be equal to len(positions)")
+        if not all([x in ['CG', 'CHG', 'CHH', 'CNN'] for x in methylation_type.split('/')]):
+            raise ValueError("__initi__ WithinFragmentComethylationMTuple: 'methylation_type' must be one or more of 'CG', 'CHG', 'CHH' or 'CNN'. Multiple values must be separated by the '/' character.")
+
         self.methylation_type = methylation_type
         self.chromosome = chromosome
         self.chromosome_index = chromosome_index
