@@ -1053,6 +1053,82 @@ class TestWithinFragmentComethylationMTuple(unittest.TestCase):
 			read.tags = read.tags + [("XG", "GA")] + [("XM", "......x...xh..x..x.......x...xh.Z..x.h..........h....x...z..xh.h..zx.h...h....hhh...")] + [("XR", "CT")]
 			return read
 
+		def buildOTRead1():
+			'''build an example read_1 aligned to OT-strand.
+			'''
+
+			read = pysam.AlignedRead()
+			read.qname = "ADS-adipose_chr1_8"
+			read.seq = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
+			read.flag = 99
+			read.rname = 0
+			read.pos = 450
+			read.mapq = 255
+			read.cigar = [(0,61)]
+			read.rnext = 1
+			read.pnext = 512
+			read.isize = 121
+			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.tags = read.tags + [("XG", "CT")] + [("XM", "..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....")] + [("XR", "CT")]
+			return read
+
+		def buildOTRead2():
+			'''build an example read_2 aligned to OT-strand.
+			'''
+
+			read = pysam.AlignedRead()
+			read.qname = "ADS-adipose_chr1_8"
+			read.seq = "AGAATTGTGTTTCGTTTTTAGAGTATTATCGAAATTTGTGTAGAGGATAACGTAGCTTC"
+			read.flag = 147
+			read.rname = 0
+			read.pos = 512
+			read.mapq = 255
+			read.cigar = [(0,59)]
+			read.rnext = 1
+			read.pnext = 450
+			read.isize = -121
+			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.tags = read.tags + [("XG", "CT")] + [("XM", "....x....h.xZ.hh..x......hh.xZ.....x....x......h..Z.x..H.xZ")] + [("XR", "GA")]
+			return read
+
+		def buildOBRead1():
+			'''build an example read_1 aligned to OB-strand
+			'''
+
+			read = pysam.AlignedRead()
+			read.qname = "ADS-adipose_chr1_22929891"
+			read.seq = "AACGCAACTCCGCCCTCGCGATACTCTCCGAATCTATACTAAAAAAAACGCAACTCCGCCGAC"
+			read.flag = 83
+			read.rname = 0
+			read.pos = 560
+			read.mapq = 255
+			read.cigar = [(0,63)]
+			read.rnext = 1
+			read.pnext = 492
+			read.isize = -131
+			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.tags = read.tags + [("XG", "GA")] + [("XM", "...Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx.")] + [("XR", "CT")]
+			return read
+
+		def buildOBRead2():
+			'''build an example read_2 aligned to OB-strand.
+			'''
+
+			read = pysam.AlignedRead()
+			read.qname = "ADS-adipose_chr1_22929891"
+			read.seq = "CACCCGAATCTAACCTAAAAAAAACTATACTCCGCCTTCAAAATACCACCGAAATCTATACAAAAAA"
+			read.flag = 163
+			read.rname = 0
+			read.pos = 492
+			read.mapq = 255
+			read.cigar = [(0,67)]
+			read.rnext = 1
+			read.pnext = 560
+			read.isize = 131
+			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.tags = read.tags + [("XG", "GA")] + [("XM", ".z...Zxh...x....x.hh.h....x.h....Z......x.h.......Z......x.h..x.hh.")] + [("XR", "GA")]
+			return read
+
 		def buildBAM():
 			'''build a BAM file
 			'''
@@ -1062,6 +1138,7 @@ class TestWithinFragmentComethylationMTuple(unittest.TestCase):
 			return BAM
 
 		# Create the reads, BAM file and methylation m-tuples
+		# Single-end
 		self.otr = buildOTRead()
 		self.obr = buildOBRead()
 		self.BAM = buildBAM()
@@ -1069,40 +1146,197 @@ class TestWithinFragmentComethylationMTuple(unittest.TestCase):
 		self.BAM.write(self.obr)
 		self.BAM.close()
 		self.BAM = pysam.Samfile(self.BAM.filename, 'rb')
-#		self.otm = [25, 36, 42, 67, 73]
-#		self.obm = [32, 57, 66]
-#		self.otmcgchg = [25, 32, 36, 42, 51, 55, 61, 64, 67, 73, 76]
-		self.wfotr = WithinFragmentComethylationMTuple(self.BAM.getrname(self.otr.tid), self.otr.tid, 2, [25, 36], 'CG')
-		self.wfobr = WithinFragmentComethylationMTuple(self.BAM.getrname(self.obr.tid), self.otr.tid, 2, [32, 57], 'CG')
-		self.wfotrcgchg = WithinFragmentComethylationMTuple(self.BAM.getrname(self.otr.tid), self.otr.tid, 3, [25, 32, 36], 'CG/CHG')
+		self.wfotr = WithinFragmentComethylationMTuple(self.BAM.getrname(self.otr.tid), self.otr.tid, 2, [4562, 4573], 'CG')
+		self.wfobr = WithinFragmentComethylationMTuple(self.BAM.getrname(self.obr.tid), self.otr.tid, 2, [3366, 3391], 'CG')
+		self.wfotrcgchg = WithinFragmentComethylationMTuple(self.BAM.getrname(self.otr.tid), self.otr.tid, 3, [4562, 4569, 4573], 'CG/CHG')
+		# Paired-end
+		self.otr_1 = buildOTRead1()
+		self.otr_2 = buildOTRead2()
+		self.obr_1 = buildOBRead1()
+		self.obr_2 = buildOBRead2()
+		self.BAMPE = buildBAM()
+		self.BAMPE.write(self.otr_1)
+		self.BAMPE.write(self.otr_2)
+		self.BAMPE.write(self.obr_1)
+		self.BAMPE.write(self.obr_2)
+		self.BAMPE.close()
+		self.BAMPE = pysam.Samfile(self.BAMPE.filename, 'rb')
+		self.wfotrpe = WithinFragmentComethylationMTuple(self.BAMPE.getrname(self.otr_1.tid), self.otr_1.tid, 2, [497, 525], 'CG')
+		self.wfobrpe = WithinFragmentComethylationMTuple(self.BAMPE.getrname(self.obr_1.tid), self.obr_1.tid, 2, [563, 571], 'CG') 
+		self.wfotrpecgchg = WithinFragmentComethylationMTuple(self.BAMPE.getrname(self.otr_1.tid), self.otr_1.tid, 3, [497, 525, 534], 'CG/CHG')
 
-	def test_init(self):
+	def test_init_se(self):
 		self.assertEqual(self.wfotr.methylation_type, 'CG')
 		self.assertEqual(self.wfotr.chromosome, self.BAM.getrname(self.otr.tid))
 		self.assertEqual(self.wfotr.chromosome_index, self.otr.tid)
-		self.assertEqual(self.wfotr.positions, [25, 36])
+		self.assertEqual(self.wfotr.positions, [4562, 4573])
 		self.assertEqual(self.wfotr.counts, {'UU': 0, 'UM': 0, 'MM': 0, 'MU': 0})
 		self.assertEqual(self.wfobr.methylation_type, 'CG')
 		self.assertEqual(self.wfobr.chromosome, self.BAM.getrname(self.obr.tid))
 		self.assertEqual(self.wfobr.chromosome_index, self.obr.tid)
-		self.assertEqual(self.wfobr.positions, [32, 57])
+		self.assertEqual(self.wfobr.positions, [3366, 3391])
 		self.assertEqual(self.wfobr.counts, {'UU': 0, 'UM': 0, 'MM': 0, 'MU': 0})
 		self.assertEqual(self.wfotrcgchg.methylation_type, 'CG/CHG')
 		self.assertEqual(self.wfotrcgchg.chromosome, self.BAM.getrname(self.otr.tid))
 		self.assertEqual(self.wfotrcgchg.chromosome_index, self.otr.tid)
-		self.assertEqual(self.wfotrcgchg.positions, [25, 32, 36])
+		self.assertEqual(self.wfotrcgchg.positions, [4562, 4569, 4573])
 		self.assertEqual(self.wfotrcgchg.counts, {'MUU': 0, 'UMU': 0, 'UUU': 0, 'MMU': 0, 'UUM': 0, 'MUM': 0, 'UMM': 0, 'MMM': 0})
 
-	def test_invalid_m(self):
-		## FIXME: Install comethylation (v0.99.6) to make this test pass (I implemented a check of 'm' in v0.99.6)
-		self.assertRaises(ValueError, WithinFragmentComethylationMTuple, self.BAM.getrname(self.otr.tid), self.otr.tid, 3, [25, 36], 'CG')
+	def test_init_pe(self):
+		self.assertEqual(self.wfotrpe.methylation_type, 'CG')
+		self.assertEqual(self.wfotrpe.chromosome, self.BAM.getrname(self.otr_1.tid))
+		self.assertEqual(self.wfotrpe.chromosome_index, self.otr_1.tid)
+		self.assertEqual(self.wfotrpe.positions, [497, 525])
+		self.assertEqual(self.wfotrpe.counts, {'UU': 0, 'UM': 0, 'MM': 0, 'MU': 0})
+		self.assertEqual(self.wfobrpe.methylation_type, 'CG')
+		self.assertEqual(self.wfobrpe.chromosome, self.BAM.getrname(self.obr_1.tid))
+		self.assertEqual(self.wfobrpe.chromosome_index, self.obr_1.tid)
+		self.assertEqual(self.wfobrpe.positions, [563, 571])
+		self.assertEqual(self.wfobrpe.counts, {'UU': 0, 'UM': 0, 'MM': 0, 'MU': 0})
+		self.assertEqual(self.wfotrpecgchg.methylation_type, 'CG/CHG')
+		self.assertEqual(self.wfotrpecgchg.chromosome, self.BAM.getrname(self.otr_1.tid))
+		self.assertEqual(self.wfotrcgchg.chromosome_index, self.otr_1.tid)
+		self.assertEqual(self.wfotrpecgchg.positions, [497, 525, 534])
+		self.assertEqual(self.wfotrpecgchg.counts, {'MUU': 0, 'UMU': 0, 'UUU': 0, 'MMU': 0, 'UUM': 0, 'MUM': 0, 'UMM': 0, 'MMM': 0})
 
-	def test_increment_count(self):
-		self.assertTrue(False)
+	def test_increment_count_se(self):
+		# OT-strand
+		self.wfotr.increment_count('MM', self.otr, None)
+		self.assertEqual(self.wfotr.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 0})
+		self.wfotr.increment_count('MU', self.otr, None)
+		self.assertEqual(self.wfotr.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 1})
+		self.wfotr.increment_count('UM', self.otr, None)
+		self.assertEqual(self.wfotr.counts, {'UU': 0, 'UM': 1, 'MM': 1, 'MU': 1})
+		self.wfotr.increment_count('UU', self.otr, None)
+		self.assertEqual(self.wfotr.counts, {'UU': 1, 'UM': 1, 'MM': 1, 'MU': 1})
+		self.wfotr.increment_count('MM', self.otr, None)
+		self.assertEqual(self.wfotr.counts, {'UU': 1, 'UM': 1, 'MM': 2, 'MU': 1})
+		# OB-strand
+		self.wfobr.increment_count('MM', self.obr, None)
+		self.assertEqual(self.wfobr.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 0})
+		self.wfobr.increment_count('MU', self.obr, None)
+		self.assertEqual(self.wfobr.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 1})
+		self.wfobr.increment_count('UM', self.obr, None)
+		self.assertEqual(self.wfobr.counts, {'UU': 0, 'UM': 1, 'MM': 1, 'MU': 1})
+		self.wfobr.increment_count('UU', self.obr, None)
+		self.assertEqual(self.wfobr.counts, {'UU': 1, 'UM': 1, 'MM': 1, 'MU': 1})
+		self.wfobr.increment_count('MM', self.obr, None)
+		self.assertEqual(self.wfobr.counts, {'UU': 1, 'UM': 1, 'MM': 2, 'MU': 1})
+		# Multiple methylation types
+		self.wfotrcgchg.increment_count('MMM', self.otr, None)
+		self.assertEqual(self.wfotrcgchg.counts, {'MUU': 0, 'UMU': 0, 'UUU': 0, 'MMU': 0, 'UUM': 0, 'MUM': 0, 'UMM': 0, 'MMM': 1})
+		self.wfotrcgchg.increment_count('MMU', self.otr, None)
+		self.assertEqual(self.wfotrcgchg.counts, {'MUU': 0, 'UMU': 0, 'UUU': 0, 'MMU': 1, 'UUM': 0, 'MUM': 0, 'UMM': 0, 'MMM': 1})
+		self.wfotrcgchg.increment_count('MUM', self.otr, None)
+		self.assertEqual(self.wfotrcgchg.counts, {'MUU': 0, 'UMU': 0, 'UUU': 0, 'MMU': 1, 'UUM': 0, 'MUM': 1, 'UMM': 0, 'MMM': 1})
+		self.wfotrcgchg.increment_count('MUU', self.otr, None)
+		self.assertEqual(self.wfotrcgchg.counts, {'MUU': 1, 'UMU': 0, 'UUU': 0, 'MMU': 1, 'UUM': 0, 'MUM': 1, 'UMM': 0, 'MMM': 1})
+		self.wfotrcgchg.increment_count('UMM', self.otr, None)
+		self.assertEqual(self.wfotrcgchg.counts, {'MUU': 1, 'UMU': 0, 'UUU': 0, 'MMU': 1, 'UUM': 0, 'MUM': 1, 'UMM': 1, 'MMM': 1})
+		self.wfotrcgchg.increment_count('UMU', self.otr, None)
+		self.assertEqual(self.wfotrcgchg.counts, {'MUU': 1, 'UMU': 1, 'UUU': 0, 'MMU': 1, 'UUM': 0, 'MUM': 1, 'UMM': 1, 'MMM': 1})
+		self.wfotrcgchg.increment_count('UUM', self.otr, None)
+		self.assertEqual(self.wfotrcgchg.counts, {'MUU': 1, 'UMU': 1, 'UUU': 0, 'MMU': 1, 'UUM': 1, 'MUM': 1, 'UMM': 1, 'MMM': 1})
+		self.wfotrcgchg.increment_count('UUU', self.otr, None)
+		self.assertEqual(self.wfotrcgchg.counts, {'MUU': 1, 'UMU': 1, 'UUU': 1, 'MMU': 1, 'UUM': 1, 'MUM': 1, 'UMM': 1, 'MMM': 1})
+		self.wfotrcgchg.increment_count('MMM', self.otr, None)
+		self.assertEqual(self.wfotrcgchg.counts, {'MUU': 1, 'UMU': 1, 'UUU': 1, 'MMU': 1, 'UUM': 1, 'MUM': 1, 'UMM': 1, 'MMM': 2})
+
+	def test_increment_count_pe(self):
+		# OT-strand
+		self.wfotrpe.increment_count('MM', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpe.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 0})
+		self.wfotrpe.increment_count('MU', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpe.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 1})
+		self.wfotrpe.increment_count('UM', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpe.counts, {'UU': 0, 'UM': 1, 'MM': 1, 'MU': 1})
+		self.wfotrpe.increment_count('UU', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpe.counts, {'UU': 1, 'UM': 1, 'MM': 1, 'MU': 1})
+		self.wfotrpe.increment_count('MM', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpe.counts, {'UU': 1, 'UM': 1, 'MM': 2, 'MU': 1})
+		# OB-strand
+		self.wfobrpe.increment_count('MM', self.obr_1, self.obr_2)
+		self.assertEqual(self.wfobrpe.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 0})
+		self.wfobrpe.increment_count('MU', self.obr_1, self.obr_2)
+		self.assertEqual(self.wfobrpe.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 1})
+		self.wfobrpe.increment_count('UM', self.obr_1, self.obr_2)
+		self.assertEqual(self.wfobrpe.counts, {'UU': 0, 'UM': 1, 'MM': 1, 'MU': 1})
+		self.wfobrpe.increment_count('UU', self.obr_1, self.obr_2)
+		self.assertEqual(self.wfobrpe.counts, {'UU': 1, 'UM': 1, 'MM': 1, 'MU': 1})
+		self.wfobrpe.increment_count('MM', self.obr_1, self.obr_2)
+		self.assertEqual(self.wfobrpe.counts, {'UU': 1, 'UM': 1, 'MM': 2, 'MU': 1})
+		# Multiple methylation types
+		self.wfotrpecgchg.increment_count('MMM', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpecgchg.counts, {'MUU': 0, 'UMU': 0, 'UUU': 0, 'MMU': 0, 'UUM': 0, 'MUM': 0, 'UMM': 0, 'MMM': 1})
+		self.wfotrpecgchg.increment_count('MMU', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpecgchg.counts, {'MUU': 0, 'UMU': 0, 'UUU': 0, 'MMU': 1, 'UUM': 0, 'MUM': 0, 'UMM': 0, 'MMM': 1})
+		self.wfotrpecgchg.increment_count('MUM', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpecgchg.counts, {'MUU': 0, 'UMU': 0, 'UUU': 0, 'MMU': 1, 'UUM': 0, 'MUM': 1, 'UMM': 0, 'MMM': 1})
+		self.wfotrpecgchg.increment_count('MUU', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpecgchg.counts, {'MUU': 1, 'UMU': 0, 'UUU': 0, 'MMU': 1, 'UUM': 0, 'MUM': 1, 'UMM': 0, 'MMM': 1})
+		self.wfotrpecgchg.increment_count('UMM', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpecgchg.counts, {'MUU': 1, 'UMU': 0, 'UUU': 0, 'MMU': 1, 'UUM': 0, 'MUM': 1, 'UMM': 1, 'MMM': 1})
+		self.wfotrpecgchg.increment_count('UMU', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpecgchg.counts, {'MUU': 1, 'UMU': 1, 'UUU': 0, 'MMU': 1, 'UUM': 0, 'MUM': 1, 'UMM': 1, 'MMM': 1})
+		self.wfotrpecgchg.increment_count('UUM', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpecgchg.counts, {'MUU': 1, 'UMU': 1, 'UUU': 0, 'MMU': 1, 'UUM': 1, 'MUM': 1, 'UMM': 1, 'MMM': 1})
+		self.wfotrpecgchg.increment_count('UUU', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpecgchg.counts, {'MUU': 1, 'UMU': 1, 'UUU': 1, 'MMU': 1, 'UUM': 1, 'MUM': 1, 'UMM': 1, 'MMM': 1})
+		self.wfotrpecgchg.increment_count('MMM', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpecgchg.counts, {'MUU': 1, 'UMU': 1, 'UUU': 1, 'MMU': 1, 'UUM': 1, 'MUM': 1, 'UMM': 1, 'MMM': 2})
+
+	def test_invalid_m(self):
+		self.assertRaises(ValueError, WithinFragmentComethylationMTuple, self.BAM.getrname(self.otr.tid), self.otr.tid, 3, [4562, 4573], 'CG')
+		self.assertRaises(ValueError, WithinFragmentComethylationMTuple, self.BAM.getrname(self.otr.tid), self.otr.tid, -3, [4562, 4573], 'CG')
+		self.assertRaises(ValueError, WithinFragmentComethylationMTuple, self.BAM.getrname(self.otr.tid), self.otr.tid, 3.4, [4562, 4573], 'CG')
+
+	def test_invalid_methylation_type(self):
+		self.assertRaises(ValueError, WithinFragmentComethylationMTuple, self.BAMPE.getrname(self.otr_1.tid), self.otr_1.tid, 2, [497, 525], 'CT')
+		self.assertRaises(ValueError, WithinFragmentComethylationMTuple, self.BAMPE.getrname(self.otr_1.tid), self.otr_1.tid, 2, [497, 525], 'CG-CHG')
+
+	def test_invalid_comethylation_state(self):
+		with self.assertRaises(SystemExit) as cm:
+			self.wfotr.increment_count('mm', self.otr, None)
+			self.assertEqual(cm.exception.code, 1)
+		with self.assertRaises(SystemExit) as cm:
+			self.wfotr.increment_count('MMM', self.otr, None)
+			self.assertEqual(cm.exception.code, 1)
+
+	def test_se_ctot(self):
+		self.otr.tags = []
+		self.otr.tags = self.otr.tags + [("XG", "CT")] + [("XM", "...........h......hhhhh..Z....hhx...Z..hh.Z..hh.hh.x..hx.....x..x..Z.....Z..x.........")] + [("XR", "GA")]
+		with self.assertRaises(SystemExit) as cm:
+			self.wfotr.increment_count('MM', self.otr, None)
+			self.assertEqual(cm.exception.code, 1)
+
+	def test_se_ctob(self):
+		self.obr.tags = []
+		self.obr.tags = self.obr.tags + [("XG", "GA")] + [("XM", "......x...xh..x..x.......x...xh.Z..x.h..........h....x...z..xh.h..zx.h...h....hhh...")] + [("XR", "GA")]
+		with self.assertRaises(SystemExit) as cm:
+			self.wfobr.increment_count('MM', self.obr, None)
+			self.assertEqual(cm.exception.code, 1)
+
+	def test_pe_ctot(self):
+		self.otr_1.tags = []
+		self.otr_1.tags = self.otr_1.tags + [('XG', 'CT'), ('XM', '..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....'), ('XR', 'GA')]
+		self.otr_2.tags = []
+		self.otr_2.tags = self.otr_2.tags + [('XG', 'CT'), ('XM', '....x....h.xZ.hh..x......hh.xZ.....x....x......h..Z.x..H.xZ'), ('XR', 'CT')]
+		with self.assertRaises(SystemExit) as cm:
+			self.wfotr.increment_count('MM', self.otr_1, self.otr_2)
+			self.assertEqual(cm.exception.code, 1)
+
+	def test_pe_ctob(self):
+		self.obr_1.tags = []
+		self.obr_1.tags = self.obr_1.tags + [('XG', 'GA'), ('XM', '...Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx.'), ('XR', 'GA')]
+		self.obr_2.tags = []
+		self.obr_2.tags = self.obr_2.tags + [('XG', 'GA'), ('XM', '.z...Zxh...x....x.hh.h....x.h....Z......x.h.......Z......x.h..x.hh.'), ('XR', 'CT')]
+		with self.assertRaises(SystemExit) as cm:
+			self.wfobr.increment_count('MM', self.obr_1, self.obr_2)
+			self.assertEqual(cm.exception.code, 1)
 
 	def tearDown(self):
 		os.remove(self.BAM.filename)
-
+		os.remove(self.BAMPE.filename)
 # FIXME: Remove?
 if __name__ == '__main__':
     unittest.main()
