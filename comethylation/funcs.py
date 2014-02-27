@@ -600,7 +600,7 @@ def get_strand(read):
                 sys.exit(exit_msg)
         elif read.is_read2:
             ## Check if aligned CT or CTOT-strand
-            if (read.opt('XR') == 'GA' and read.opt('XG') == 'CT') or (read.opt('XR') == 'GA' and read.opt('XG') == 'CT'):
+            if (read.opt('XR') == 'GA' and read.opt('XG') == 'CT') or (read.opt('XR') == 'CT' and read.opt('XG') == 'CT'):
                 strand = 'OT'
             ## Else, check if aligned OB- or CTOB-strand
             elif (read.opt('XR') == 'GA' and read.opt('XG') == 'GA') or (read.opt('XR') == 'CT' and read.opt('XG') == 'GA'):
