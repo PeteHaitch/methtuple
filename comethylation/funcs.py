@@ -25,59 +25,37 @@ def ignore_first_n_bases(read, methylation_index, n):
         raise ValueError("ignore_first_n_bases: 'n' must be a positive integer")
 
     ignore_these_bases = []
+    strand = get_strand(read)
     # Single-end reads
     if not read.is_paired:
-        # Read aligned to OT-strand |------>
-        if read.opt('XG') == 'CT' and read.opt('XR') == 'CT':
+        if strand == 'OT':
             for i in methylation_index:
                 if i < n:
                     ignore_these_bases.append(i)
-        # Read aligned to OB-strand <------|
-        elif read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
+        elif strand == 'OB':
             for i in methylation_index:
                 if i >= (read.alen - n):
                     ignore_these_bases.append(i)
-        else:
-            exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
-            sys.exit(exit_msg)
-            #methylation_index = []
     # Paired-end reads: read_1
     elif read.is_paired and read.is_read1:
-        # read_1 aligned to OT-strand |------>
-        if read.opt('XG') == 'CT' and read.opt('XR') == 'CT':
+        if strand == 'OT':
             for i in methylation_index:
                 if i < n:
                     ignore_these_bases.append(i)
-        # read_1 aligned to OB-strand <------|
-        elif read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
+        elif strand == 'OB':
             for i in methylation_index:
                 if i >= (read.alen - n):
                     ignore_these_bases.append(i)
-        else:
-            exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
-            sys.exit(exit_msg)
-            #methylation_index = []
     # Paired-end reads: read_2
     elif read.is_paired and read.is_read2:
-        # read_2 aligned to OT-strand <------|
-        if read.opt('XG') == 'CT' and read.opt('XR') == 'GA':
+        if strand == 'OT':
             for i in methylation_index:
                 if i >= (read.alen - n):
                     ignore_these_bases.append(i)
-        # read_2 aligned to OB-strand |------>
-        elif read.opt('XG') == 'GA' and read.opt('XR') == 'GA':
+        elif strand == 'OB':
             for i in methylation_index:
                 if i < n:
                     ignore_these_bases.append(i)
-        else:
-            exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
-            sys.exit(exit_msg)
-            #methylation_index = []
-    # ERROR: read does not have necessary information to infer whether read is paired or whether the read is read_1 or read_2 of the readpair. This should never happen as it should have already been caught in the main loop of the program.
-    else:
-        exit_msg = ''.join(['ERROR: Read ', read.qname, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.'])
-        sys.exit(exit_msg)
-        #methylation_index = []
     return [x for x in methylation_index if x not in ignore_these_bases]
 
 def ignore_last_n_bases(read, methylation_index, n):
@@ -99,59 +77,39 @@ def ignore_last_n_bases(read, methylation_index, n):
         raise ValueError("ignore_last_n_bases: 'n' must be a positive integer")
 
     ignore_these_bases = []
+    strand = get_strand(read)
     # Single-end reads
     if not read.is_paired:
-        # Read aligned to OT-strand |------>
-        if read.opt('XG') == 'CT' and read.opt('XR') == 'CT':
+        if strand == 'OT':
             for i in methylation_index:
                 if i >= (read.alen - n):
                     ignore_these_bases.append(i)
         # Read aligned to OB-strand <------|
-        elif read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
+        elif strand == 'OB':
             for i in methylation_index:
                 if i < n:
                     ignore_these_bases.append(i)
-        else:
-            exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
-            sys.exit(exit_msg)
-            #methylation_index = []
     # Paired-end reads: read_1
     elif read.is_paired and read.is_read1:
-        # read_1 aligned to OT-strand |------>
-        if read.opt('XG') == 'CT' and read.opt('XR') == 'CT':
+        if strand == 'OT':
             for i in methylation_index:
                 if i >= (read.alen - n):
                     ignore_these_bases.append(i)
         # read_1 aligned to OB-strand <------|
-        elif read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
+        elif strand == 'OB':
             for i in methylation_index:
                 if i < n:
                     ignore_these_bases.append(i)
-        else:
-            exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
-            sys.exit(exit_msg)
-            #methylation_index = []
     # Paired-end reads: read_2
     elif read.is_paired and read.is_read2:
-        # read_2 aligned to OT-strand <------|
-        if read.opt('XG') == 'CT' and read.opt('XR') == 'GA':
+        if strand == 'OT':
             for i in methylation_index:
                 if i < n:
                     ignore_these_bases.append(i)
-        # read_2 aligned to OB-strand |------>
-        elif read.opt('XG') == 'GA' and read.opt('XR') == 'GA':
+        elif strand == 'OB':
             for i in methylation_index:
                 if i  >= (read.alen - n):
                     ignore_these_bases.append(i)
-        else:
-            exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
-            sys.exit(exit_msg)
-            #methylation_index = []
-    # ERROR: read does not have necessary information to infer whether read is paired or whether the read is read_1 or read_2 of the readpair. This should never happen as it should have already been caught in the main loop of the program.
-    else:
-        exit_msg = ''.join(['ERROR: Read ', read.qname, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.'])
-        sys.exit(exit_msg)
-        #methylation_index = []
     return [x for x in methylation_index if x not in ignore_these_bases]
         
 def ignore_low_quality_bases(read, methylation_index, min_qual, phred_offset):
@@ -218,15 +176,16 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
         overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (quality), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark)
 
     Returns:
-        True if the overlapping sequence passes the filter, False otherwise (NB: this means that readpairs that trigger the warning for having mis-specified XG- or XR-tags will also return 'False'). Furthermore, if 'overlap_check = quality' or 'overlap_check = bismark' the result is always True.
+        True if the overlapping sequence passes the filter, False otherwise. Furthermore, if 'overlap_check = quality' or 'overlap_check = bismark' the result is always True.
     """
     if (n_overlap < 0) or (round(n_overlap) != n_overlap):
         raise ValueError("is_overlapping_sequence_identical: 'n_overlap' must be a positive integer")
     if overlap_check != 'sequence' and overlap_check != 'XM' and overlap_check != 'quality' and overlap_check != 'bismark':
         raise ValueError("is_overlapping_sequence_identical: 'overlap_check' must be one of 'sequence', 'XM', 'quality' or 'bismark'")
-
-    # Readpair aligns to OT-strand
-    if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
+    strand_1 = get_strand(read_1)
+    strand_2 = get_strand(read_2)
+    # Readpair is informative for OT-strand
+    if strand_1 == 'OT' and strand_2 == 'OT':
         if overlap_check == 'sequence':
             overlap_1 = read_1.seq[-n_overlap:]
             overlap_2 = read_2.seq[:n_overlap]
@@ -239,8 +198,8 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
         elif overlap_check == 'quality':
             overlap_1 = True
             overlap_2 = True
-    # Readpair aligns to OB-strand
-    elif read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
+    # Readpair is informative for OB-strand
+    elif strand_1 == 'OB' and strand_2 == 'OB':
         if overlap_check == 'sequence':
             overlap_1 = read_1.seq[:n_overlap]
             overlap_2 = read_2.seq[-n_overlap:]
@@ -254,10 +213,8 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
             overlap_1 = True
             overlap_2 = True
     else:
-        warning_msg = ''.join(['XG-tags or XR-tags for readpair ', read.qname, ' are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
-        warnings.warn(warning_msg)
-        overlap_1 = True
-        overlap_2 = False
+        exit_msg = ''.join(['ERROR: The informative strands for readpair ', read_1.qname, ',  do not agree between mates. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+        sys.exit(exit_msg)
     return overlap_1 == overlap_2
 
 def does_read_contain_indel(read):
@@ -307,10 +264,11 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
         raise ValueError("ignore_overlapping_sequence: 'n_overlap' must be a positive integer")
     if overlap_check != 'sequence' and overlap_check != 'XM' and overlap_check != 'quality' and overlap_check != 'bismark':
         raise ValueError("ignore_overlapping_sequence: 'overlap_check' must be one of 'sequence', 'XM', 'quality' or 'bismark'")
-
+    strand_1 = get_strand(read_1)
+    strand_2 = get_strand(read_2)
     ignore_these_bases = []
-    # Readpair aligns to OT-strand
-    if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
+    # Readpair is informative for OT-strand
+    if strand_1 == 'OT' and strand_2 == 'OT':
         overlap_quals_1 = sum([ord(x) for x in read_1.qual[-n_overlap:]])
         overlap_quals_2 = sum([ord(x) for x in read_2.qual[-n_overlap:]])
         if (overlap_quals_1 >= overlap_quals_2) | (overlap_check == 'bismark'): # overlap_check == 'bismark' simply means use the overlapping sequence from read_1.
@@ -323,8 +281,8 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
                 if i >= (read_1.alen - n_overlap):
                     ignore_these_bases.append(i)
                     methylation_index_1 = [x for x in methylation_index_1 if x not in ignore_these_bases]
-    # Readpair aligns to OB-strand
-    elif read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
+    # Readpair is inforamtive for OB-strand
+    elif strand_1 == 'OB' and strand_2 == 'OB':
         overlap_quals_1 = sum([ord(x) for x in read_1.qual[:n_overlap]])
         overlap_quals_2 = sum([ord(x) for x in read_2.qual[-n_overlap:]])
         if (overlap_quals_1 >= overlap_quals_2) | (overlap_check == 'bismark'): # overlap_check == 'bismark' simply means use the overlapping sequence from read_1.
@@ -338,10 +296,8 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
                     ignore_these_bases.append(i)
                     methylation_index_1 = [x for x in methylation_index_1 if x not in ignore_these_bases]
     else:
-        warning_msg = ''.join(['XG-tags or XR-tags for readpair ', read_1.qname, ' are inconsistent with OT-strand or OB-strand (XG-tags = ', read_1.opt('XG'),', ', read_2.opt('XG'), '; XR-tags = ', read_1.opt('XR'), ', ', read_2.opt('XR'), ')'])
-        warnings.warn(warning_msg)
-        methylation_index_1 = []
-        methylation_index_2 = []
+        exit_msg = ''.join(['ERROR: The informative strands for readpair ', read_1.qname, ',  do not agree between mates. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+        sys.exit(exit_msg)
     return methylation_index_1, methylation_index_2
 
 def extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_end_r1, min_qual, phred_offset, ob_strand_offset):
@@ -373,11 +329,12 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
     # Ignore any positions with a base quality less than min_qual
     methylation_index = ignore_low_quality_bases(read, methylation_index, min_qual, phred_offset)
     n_methylation_loci = len(methylation_index)
+    strand = get_strand(read)
     # Case A: >= m methylation loci in the read
     if n_methylation_loci >= m:
         positions = [read.pos + x + 1 for x in methylation_index] # +1 to transform from 0-based to 1-based co-ordinates.
-        # If read is aligned to OB-strand then translate co-ordinate "ob_strand_offset" bases to the left so that it points to the C on the OT-strand of the methylation locus.
-        if read.opt('XG') == 'GA' and read.opt('XR') == 'CT':
+        # If read is informative for the OB-strand then translate co-ordinate "ob_strand_offset" bases to the left so that it points to the C on the OT-strand of the methylation locus.
+        if strand == 'OB':
             positions = [x - ob_strand_offset for x in positions]
         # Exit if methylation loci are incorrectly ordered
         if not positions == sorted(positions):
@@ -416,7 +373,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
         ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
         overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (quality), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark)
-        n_fragment_skipped_due_to_bad_overlap: The total number of fragments (read-pairs) skipped due to the overlapping sequencing not passing the filter.
+        n_fragment_skipped_due_to_bad_overlap: The total number of fragments (readpairs) skipped due to the overlapping sequencing not passing the filter.
         FAILED_QC: The file object where the QNAME of readpairs that fail the overlap check are written, along with the reason the readpairs failed
     Returns:
         methylation_m_tuples: An updated version of methylation_m_tuples
@@ -437,6 +394,9 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
     # Ignore any positions with a base quality less than  min_qual
     methylation_index_1 = ignore_low_quality_bases(read_1, methylation_index_1, min_qual, phred_offset)
     methylation_index_2 = ignore_low_quality_bases(read_2, methylation_index_2, min_qual, phred_offset)
+    # Check strand of each mate make sense
+    strand_1 = get_strand(read_1)
+    strand_2 = get_strand(read_2)
 
     # Check for overlapping reads from a readpair.
     # If reads overlap check whether the overlapping sequence passes the filter given by overlap_check.
@@ -457,12 +417,12 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         positions_1 = [read_1.pos + x + 1 for x in methylation_index_1] # +1 to transform from 0-based to 1-based co-ordinates.
         positions_2 = [read_2.pos + x + 1 for x in methylation_index_2] # +1 to transform from 0-based to 1-based co-ordinates.
         if any(x in positions_1 for x in positions_2):
-            exit_msg = ''.join(['ERROR: For readpair ', read.qname, ', position_1 and position_2 contain a common position. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+            exit_msg = ''.join(['ERROR: For readpair ', read_1.qname, ', position_1 and position_2 contain a common position. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
             print positions_1
             print positions_2
             sys.exit(exit_msg)
-        # Case 1: Readpair aligns to OT-strand
-        if read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
+        # Case 1: Readpair is informative for OT-strand
+        if strand_1 == 'OT' and strand_2 == 'OT':
             # Exit if methylation loci are incorrectly ordered
             if not positions_1 + positions_2 == sorted(positions_1 + positions_2):
                 exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for paired-end read", read_1.qname, "which is aligned to the OT-strand.\n'positions_1 + positions_2' =", str(positions_1 + positions_2), '\nPlease log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
@@ -511,8 +471,8 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                             methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), read_1, read_2)
                         else:
                             methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), read_1, read_2)
-        # Case 2: Readpair aligns to OB-strand
-        elif read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA':
+        # Case 2: Readpair is informative for OB-strand
+        elif strand_1 == 'OB' and strand_2 == 'OB':
             # Translate co-ordinates "ob_strand_offset" bases to the left so that it points to the C on the OT-strand of the methylation locus
             positions_1 = [x - ob_strand_offset for x in positions_1]
             positions_2 = [x - ob_strand_offset for x in positions_2]
@@ -564,6 +524,9 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                             methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), read_1, read_2)
                         else:
                             methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), read_1, read_2)
+        else:
+            exit_msg = ''.join(['ERROR: The informative strands for readpair ', read_1.qname, ',  do not agree between mates. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+            sys.exit(exit_msg)
     return methylation_m_tuples, n_methylation_loci, n_fragment_skipped_due_to_bad_overlap
                                     
 def write_methylation_m_tuples_to_file(methylation_m_tuples, m, OUT):
@@ -594,6 +557,61 @@ def write_methylation_m_tuples_to_file(methylation_m_tuples, m, OUT):
         row = [this_m_tuple.chromosome] + this_m_tuple.positions + this_m_tuple_ordered_counts
         tab_writer.writerow(row)
 
+def get_strand(read):
+    """
+    Report whether a read is informative for the OT-strand or OB-strand. 
+    Currently using a strict check that ensures the reads are in the expected orientation for the given strand. 
+    See commented out lines for a less-strict version.
+    Will report an error and call sys.exit() if the XR-tag or XG-tag is incompatible or missing.
+
+    Args:
+        read: A pysam.AlignedRead instance with XR-tag and XG-tag.
+    Returns:
+        strand: For which strand the read/readpair is informative (OT or OB)
+    """
+    ## Single-end
+    if not read.is_paired:
+        ## Check if aligned to CT- or CTOT-strand
+        if (read.opt('XR') == 'CT' and read.opt('XG') == 'CT') or (read.opt('XR') == 'GA' and read.opt('XG') == 'CT'): 
+        # if read_1.opt('XG') == 'CT'
+            strand = 'OT'
+        ## Else, check if aligned to OB- or CTOB-strand
+        elif (read.opt('XR') == 'CT' and read.opt('XG') == 'GA') or (read.opt('XR') == 'GA' and read.opt('XG') == 'GA'):
+        # elif read_1.opt('XG') == 'GA'
+            strand = 'OB'
+        ## Else, something odd about this read
+        else:
+            exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+            sys.exit(exit_msg)
+    ## Paired-end
+    elif read.is_paired:
+        if read.is_read1:
+            ## Check if aligned to CT- or CTOT-strand
+            if (read.opt('XR') == 'CT' and read.opt('XG') == 'CT') or (read.opt('XR') == 'GA' and read.opt('XG') == 'CT'):
+            #if read.opt('XG') == 'CT':
+                strand = 'OT'
+            ## Else, check if aligned to OB- or CTOB-strand
+            elif (read.opt('XR') == 'CT' and read.opt('XG') == 'GA') or (read.opt('XR') == 'GA' and read.opt('XG') == 'GA'):
+            #elif read.opt('XG') == 'GA':
+                strand = 'OB'
+            ## Else, something odd about this read
+            else:
+                exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+                sys.exit(exit_msg)
+        elif read.is_read2:
+            ## Check if aligned CT or CTOT-strand
+            if (read.opt('XR') == 'GA' and read.opt('XG') == 'CT') or (read.opt('XR') == 'GA' and read.opt('XG') == 'CT'):
+                strand = 'OT'
+            ## Else, check if aligned OB- or CTOB-strand
+            elif (read.opt('XR') == 'GA' and read.opt('XG') == 'GA') or (read.opt('XR') == 'CT' and read.opt('XG') == 'GA'):
+                strand = 'OB'
+            ## Else, something odd about this read
+            else:
+                exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+                sys.exit(exit_msg)
+    else:
+        exit_msg = ''.join(['ERROR: Read ', read.qname, ' is neither a single-end read nor part of a paired-end read. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+    return strand
 
 
 __all__ = [
@@ -607,5 +625,6 @@ __all__ = [
     'ignore_overlapping_sequence',
     'extract_and_update_methylation_index_from_single_end_read',
     'extract_and_update_methylation_index_from_paired_end_reads',
-    'write_methylation_m_tuples_to_file'
+    'write_methylation_m_tuples_to_file',
+    'get_strand'
 ]

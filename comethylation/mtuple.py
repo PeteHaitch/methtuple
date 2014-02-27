@@ -39,7 +39,9 @@ class WithinFragmentComethylationMTuple:
     def m_tuple_id(self):
         print ''.join([self.chromosome, ':', '-'.join([str(a) for a in self.positions])])
     def increment_count(self, comethylation_state, read_1, read_2):
-        """Increment the counts attribute based on the comethylation_state that has been extracted from read_1 and read_2. NB: read_2 should be set to None if data is single-end."""
+        """Increment the counts attribute based on the comethylation_state that has been extracted from read_1 and read_2.
+        NB: read_2 should be set to None if data is single-end.
+        NB: No check is made of the informative strand for read_1 and read_2."""
         # Collapse the 9 possible characters in the comethylation_state (., Z, z, X, x, H, h, U, u) to (., M, U, *unchanged*) based on the methylation_type parameter. 
         if 'CG' in self.methylation_type.split('/'):
             comethylation_state = comethylation_state.replace('Z', 'M')
@@ -62,27 +64,8 @@ class WithinFragmentComethylationMTuple:
             exit_msg = ''.join(['Length of comethylation string (', str(len(comethylation_state)), ') does not equal m (', str(len(self.positions)), '). \nThis should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.'])
             sys.exit(exit_msg)
 
-        # Single-end
-        if (read_2 is None) and (not read_1.is_paired):
-            # Check that XG- and XR-tags are compatible directional bisulfite-sequencing protocol. If not then skip the read and report a warning
-            if (read_1.opt('XG') == 'CT' and read_1.opt('XR') == 'CT') or (read_1.opt('XG') == 'GA' and read_1.opt('XR') == 'CT'):
-                self.counts[comethylation_state] += 1
-            else:
-                exit_msg = ''.join(["ERROR: The XR-tag and XG-tag of ", read_1.qname, " is not compatible with the directional bisulfite-sequencing protocol. Sorry, comethylation can only process data from the directional protocol."])
-                sys.exit(exit_msg)
-        # Paired-end
-        elif read_1.is_paired and read_2.is_paired and read_1.is_read1 and read_2.is_read2:
-            # Check that XG- and XR-tags are compatible directional bisulfite-sequencing protocol. If not then skip the read and report a warning
-            if (read_1.opt('XG') == 'CT' and read_2.opt('XG') == 'CT' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA') or (read_1.opt('XG') == 'GA' and read_2.opt('XG') == 'GA' and read_1.opt('XR') == 'CT' and read_2.opt('XR') == 'GA'):
-                self.counts[comethylation_state] += 1
-            elif not read_1.is_read1 or not read_2.is_read2:
-                exit_msg = ''.join(['ERROR: read_1 or read_2 is incorrectly set for readpair ', read_1.qname])
-                sys.exit(exit_msg)
-            else:
-                exit_msg = ''.join(["ERROR: The XR-tag and XG-tag of ", read_1.qname, " are not compatible with the directional bisulfite-sequencing protocol. Sorry, comethylation can only process data from the directional protocol."])
-                sys.exit(exit_msg)
-
-
+        # Increment count
+        self.counts[comethylation_state] += 1
 
 __all__ = [
     'WithinFragmentComethylationMTuple'
