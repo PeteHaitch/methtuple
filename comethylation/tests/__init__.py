@@ -1199,8 +1199,7 @@ class TestWithinFragmentComethylationMTuple(unittest.TestCase):
 		self.assertEqual(self.wfotrpecgchg.positions, [497, 525, 534])
 		self.assertEqual(self.wfotrpecgchg.counts, {'MUU': 0, 'UMU': 0, 'UUU': 0, 'MMU': 0, 'UUM': 0, 'MUM': 0, 'UMM': 0, 'MMM': 0})
 
-	def test_increment_count_se(self):
-		# OT-strand
+	def test_increment_count_ot_se(self):
 		self.wfotr.increment_count('MM', self.otr, None)
 		self.assertEqual(self.wfotr.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 0})
 		self.wfotr.increment_count('MU', self.otr, None)
@@ -1211,7 +1210,7 @@ class TestWithinFragmentComethylationMTuple(unittest.TestCase):
 		self.assertEqual(self.wfotr.counts, {'UU': 1, 'UM': 1, 'MM': 1, 'MU': 1})
 		self.wfotr.increment_count('MM', self.otr, None)
 		self.assertEqual(self.wfotr.counts, {'UU': 1, 'UM': 1, 'MM': 2, 'MU': 1})
-		# OB-strand
+	def test_increment_count_ob_se(self):
 		self.wfobr.increment_count('MM', self.obr, None)
 		self.assertEqual(self.wfobr.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 0})
 		self.wfobr.increment_count('MU', self.obr, None)
@@ -1222,7 +1221,33 @@ class TestWithinFragmentComethylationMTuple(unittest.TestCase):
 		self.assertEqual(self.wfobr.counts, {'UU': 1, 'UM': 1, 'MM': 1, 'MU': 1})
 		self.wfobr.increment_count('MM', self.obr, None)
 		self.assertEqual(self.wfobr.counts, {'UU': 1, 'UM': 1, 'MM': 2, 'MU': 1})
-		# Multiple methylation types
+	def test_increment_count_ctot_se(self):
+		self.otr.tags = []
+		self.otr.tags = self.otr.tags + [("XG", "CT")] + [("XM", "...........h......hhhhh..Z....hhx...Z..hh.Z..hh.hh.x..hx.....x..x..Z.....Z..x.........")] + [("XR", "GA")]
+		self.wfotr.increment_count('MM', self.otr, None)
+		self.assertEqual(self.wfotr.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 0})
+		self.wfotr.increment_count('MU', self.otr, None)
+		self.assertEqual(self.wfotr.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 1})
+		self.wfotr.increment_count('UM', self.otr, None)
+		self.assertEqual(self.wfotr.counts, {'UU': 0, 'UM': 1, 'MM': 1, 'MU': 1})
+		self.wfotr.increment_count('UU', self.otr, None)
+		self.assertEqual(self.wfotr.counts, {'UU': 1, 'UM': 1, 'MM': 1, 'MU': 1})
+		self.wfotr.increment_count('MM', self.otr, None)
+		self.assertEqual(self.wfotr.counts, {'UU': 1, 'UM': 1, 'MM': 2, 'MU': 1})
+	def test_increment_count_ctob_se(self):
+		self.obr.tags = []
+		self.obr.tags = self.obr.tags + [("XG", "GA")] + [("XM", "......x...xh..x..x.......x...xh.Z..x.h..........h....x...z..xh.h..zx.h...h....hhh...")] + [("XR", "GA")]
+		self.wfobr.increment_count('MM', self.obr, None)
+		self.assertEqual(self.wfobr.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 0})
+		self.wfobr.increment_count('MU', self.obr, None)
+		self.assertEqual(self.wfobr.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 1})
+		self.wfobr.increment_count('UM', self.obr, None)
+		self.assertEqual(self.wfobr.counts, {'UU': 0, 'UM': 1, 'MM': 1, 'MU': 1})
+		self.wfobr.increment_count('UU', self.obr, None)
+		self.assertEqual(self.wfobr.counts, {'UU': 1, 'UM': 1, 'MM': 1, 'MU': 1})
+		self.wfobr.increment_count('MM', self.obr, None)
+		self.assertEqual(self.wfobr.counts, {'UU': 1, 'UM': 1, 'MM': 2, 'MU': 1})
+	def test_increment_count_multiple_methylation_types_se(self):
 		self.wfotrcgchg.increment_count('MMM', self.otr, None)
 		self.assertEqual(self.wfotrcgchg.counts, {'MUU': 0, 'UMU': 0, 'UUU': 0, 'MMU': 0, 'UUM': 0, 'MUM': 0, 'UMM': 0, 'MMM': 1})
 		self.wfotrcgchg.increment_count('MMU', self.otr, None)
@@ -1242,8 +1267,7 @@ class TestWithinFragmentComethylationMTuple(unittest.TestCase):
 		self.wfotrcgchg.increment_count('MMM', self.otr, None)
 		self.assertEqual(self.wfotrcgchg.counts, {'MUU': 1, 'UMU': 1, 'UUU': 1, 'MMU': 1, 'UUM': 1, 'MUM': 1, 'UMM': 1, 'MMM': 2})
 
-	def test_increment_count_pe(self):
-		# OT-strand
+	def test_increment_count_ot_pe(self):
 		self.wfotrpe.increment_count('MM', self.otr_1, self.otr_2)
 		self.assertEqual(self.wfotrpe.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 0})
 		self.wfotrpe.increment_count('MU', self.otr_1, self.otr_2)
@@ -1254,7 +1278,7 @@ class TestWithinFragmentComethylationMTuple(unittest.TestCase):
 		self.assertEqual(self.wfotrpe.counts, {'UU': 1, 'UM': 1, 'MM': 1, 'MU': 1})
 		self.wfotrpe.increment_count('MM', self.otr_1, self.otr_2)
 		self.assertEqual(self.wfotrpe.counts, {'UU': 1, 'UM': 1, 'MM': 2, 'MU': 1})
-		# OB-strand
+	def test_increment_count_ob_pe(self):
 		self.wfobrpe.increment_count('MM', self.obr_1, self.obr_2)
 		self.assertEqual(self.wfobrpe.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 0})
 		self.wfobrpe.increment_count('MU', self.obr_1, self.obr_2)
@@ -1265,7 +1289,39 @@ class TestWithinFragmentComethylationMTuple(unittest.TestCase):
 		self.assertEqual(self.wfobrpe.counts, {'UU': 1, 'UM': 1, 'MM': 1, 'MU': 1})
 		self.wfobrpe.increment_count('MM', self.obr_1, self.obr_2)
 		self.assertEqual(self.wfobrpe.counts, {'UU': 1, 'UM': 1, 'MM': 2, 'MU': 1})
-		# Multiple methylation types
+	def test_increment_count_ctot_pe(self):
+		self.otr_1.tags = []
+		self.otr_1.tags = self.otr_1.tags + [('XG', 'CT'), ('XM', '..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....'), ('XR', 'GA')]
+		self.otr_2.tags = []
+		self.otr_2.tags = self.otr_2.tags + [('XG', 'CT'), ('XM', '....x....h.xZ.hh..x......hh.xZ.....x....x......h..Z.x..H.xZ'), ('XR', 'CT')]
+		self.wfotrpe.increment_count('MM', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpe.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 0})
+		self.wfotrpe.increment_count('MU', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpe.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 1})
+		self.wfotrpe.increment_count('UM', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpe.counts, {'UU': 0, 'UM': 1, 'MM': 1, 'MU': 1})
+		self.wfotrpe.increment_count('UU', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpe.counts, {'UU': 1, 'UM': 1, 'MM': 1, 'MU': 1})
+		self.wfotrpe.increment_count('MM', self.otr_1, self.otr_2)
+		self.assertEqual(self.wfotrpe.counts, {'UU': 1, 'UM': 1, 'MM': 2, 'MU': 1})
+
+	def test_increment_count_ctob_pe(self):
+		self.obr_1.tags = []
+		self.obr_1.tags = self.obr_1.tags + [('XG', 'GA'), ('XM', '...Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx.'), ('XR', 'GA')]
+		self.obr_2.tags = []
+		self.obr_2.tags = self.obr_2.tags + [('XG', 'GA'), ('XM', '.z...Zxh...x....x.hh.h....x.h....Z......x.h.......Z......x.h..x.hh.'), ('XR', 'CT')]
+		self.wfobrpe.increment_count('MM', self.obr_1, self.obr_2)
+		self.assertEqual(self.wfobrpe.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 0})
+		self.wfobrpe.increment_count('MU', self.obr_1, self.obr_2)
+		self.assertEqual(self.wfobrpe.counts, {'UU': 0, 'UM': 0, 'MM': 1, 'MU': 1})
+		self.wfobrpe.increment_count('UM', self.obr_1, self.obr_2)
+		self.assertEqual(self.wfobrpe.counts, {'UU': 0, 'UM': 1, 'MM': 1, 'MU': 1})
+		self.wfobrpe.increment_count('UU', self.obr_1, self.obr_2)
+		self.assertEqual(self.wfobrpe.counts, {'UU': 1, 'UM': 1, 'MM': 1, 'MU': 1})
+		self.wfobrpe.increment_count('MM', self.obr_1, self.obr_2)
+		self.assertEqual(self.wfobrpe.counts, {'UU': 1, 'UM': 1, 'MM': 2, 'MU': 1})		
+
+	def test_increment_count_multiple_methylation_types_pe(self):
 		self.wfotrpecgchg.increment_count('MMM', self.otr_1, self.otr_2)
 		self.assertEqual(self.wfotrpecgchg.counts, {'MUU': 0, 'UMU': 0, 'UUU': 0, 'MMU': 0, 'UUM': 0, 'MUM': 0, 'UMM': 0, 'MMM': 1})
 		self.wfotrpecgchg.increment_count('MMU', self.otr_1, self.otr_2)
@@ -1302,41 +1358,39 @@ class TestWithinFragmentComethylationMTuple(unittest.TestCase):
 			self.wfotr.increment_count('MMM', self.otr, None)
 			self.assertEqual(cm.exception.code, 1)
 
-	def test_se_ctot(self):
-		self.otr.tags = []
-		self.otr.tags = self.otr.tags + [("XG", "CT")] + [("XM", "...........h......hhhhh..Z....hhx...Z..hh.Z..hh.hh.x..hx.....x..x..Z.....Z..x.........")] + [("XR", "GA")]
-		with self.assertRaises(SystemExit) as cm:
-			self.wfotr.increment_count('MM', self.otr, None)
-			self.assertEqual(cm.exception.code, 1)
-
-	def test_se_ctob(self):
-		self.obr.tags = []
-		self.obr.tags = self.obr.tags + [("XG", "GA")] + [("XM", "......x...xh..x..x.......x...xh.Z..x.h..........h....x...z..xh.h..zx.h...h....hhh...")] + [("XR", "GA")]
-		with self.assertRaises(SystemExit) as cm:
-			self.wfobr.increment_count('MM', self.obr, None)
-			self.assertEqual(cm.exception.code, 1)
-
-	def test_pe_ctot(self):
-		self.otr_1.tags = []
-		self.otr_1.tags = self.otr_1.tags + [('XG', 'CT'), ('XM', '..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....'), ('XR', 'GA')]
-		self.otr_2.tags = []
-		self.otr_2.tags = self.otr_2.tags + [('XG', 'CT'), ('XM', '....x....h.xZ.hh..x......hh.xZ.....x....x......h..Z.x..H.xZ'), ('XR', 'CT')]
-		with self.assertRaises(SystemExit) as cm:
-			self.wfotr.increment_count('MM', self.otr_1, self.otr_2)
-			self.assertEqual(cm.exception.code, 1)
-
-	def test_pe_ctob(self):
-		self.obr_1.tags = []
-		self.obr_1.tags = self.obr_1.tags + [('XG', 'GA'), ('XM', '...Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx.'), ('XR', 'GA')]
-		self.obr_2.tags = []
-		self.obr_2.tags = self.obr_2.tags + [('XG', 'GA'), ('XM', '.z...Zxh...x....x.hh.h....x.h....Z......x.h.......Z......x.h..x.hh.'), ('XR', 'CT')]
-		with self.assertRaises(SystemExit) as cm:
-			self.wfobr.increment_count('MM', self.obr_1, self.obr_2)
-			self.assertEqual(cm.exception.code, 1)
-
 	def tearDown(self):
 		os.remove(self.BAM.filename)
 		os.remove(self.BAMPE.filename)
+
+class TestGetStrand(unittest.TestCase):
+
+	def test_ot_se(self):
+		self.assertTrue(False) # TODO
+
+	def test_ob_se(self):
+		self.assertTrue(False) # TODO
+
+	def test_ctot_se(self):
+		self.assertTrue(False) # TODO
+
+	def test_ctob_se(self):
+		self.assertTrue(False) # TODO
+
+	def test_ot_pe(self):
+		self.assertTrue(False) # TODO
+
+	def test_ob_pe(self):
+		self.assertTrue(False) # TODO
+
+	def test_ctot_pe(self):
+		self.assertTrue(False) # TODO
+
+	def test_ctob_pe(self):
+		self.assertTrue(False) # TODO
+
+	def test_remove_old_strand_check_tests_if_safe_to_do_so(self):
+		self.assertTrue(False) # TODO
+
 # FIXME: Remove?
 if __name__ == '__main__':
     unittest.main()
