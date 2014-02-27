@@ -27,7 +27,7 @@ class TestIgnoreFirstNBases(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_8"
 			read.seq = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
 			read.flag = 99
-			read.rname = 0
+			read.tid = 0
 			read.pos = 450
 			read.mapq = 255
 			read.cigar = [(0,61)]
@@ -46,7 +46,7 @@ class TestIgnoreFirstNBases(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_8"
 			read.seq = "AGAATTGTGTTTCGTTTTTAGAGTATTATCGAAATTTGTGTAGAGGATAACGTAGCTTC"
 			read.flag = 147
-			read.rname = 0
+			read.tid = 0
 			read.pos = 512
 			read.mapq = 255
 			read.cigar = [(0,59)]
@@ -65,7 +65,7 @@ class TestIgnoreFirstNBases(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_22929891"
 			read.seq = "AACGCAACTCCGCCCTCGCGATACTCTCCGAATCTATACTAAAAAAAACGCAACTCCGCCGAC"
 			read.flag = 83
-			read.rname = 0
+			read.tid = 0
 			read.pos = 560
 			read.mapq = 255
 			read.cigar = [(0,63)]
@@ -84,7 +84,7 @@ class TestIgnoreFirstNBases(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_22929891"
 			read.seq = "CACCCGAATCTAACCTAAAAAAAACTATACTCCGCCTTCAAAATACCACCGAAATCTATACAAAAAA"
 			read.flag = 163
-			read.rname = 0
+			read.tid = 0
 			read.pos = 492
 			read.mapq = 255
 			read.cigar = [(0,67)]
@@ -152,7 +152,7 @@ class TestIgnoreLastNBases(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_8"
 			read.seq = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
 			read.flag = 99
-			read.rname = 0
+			read.tid = 0
 			read.pos = 450
 			read.mapq = 255
 			read.cigar = [(0,61)]
@@ -171,7 +171,7 @@ class TestIgnoreLastNBases(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_8"
 			read.seq = "AGAATTGTGTTTCGTTTTTAGAGTATTATCGAAATTTGTGTAGAGGATAACGTAGCTTC"
 			read.flag = 147
-			read.rname = 0
+			read.tid = 0
 			read.pos = 512
 			read.mapq = 255
 			read.cigar = [(0,59)]
@@ -190,7 +190,7 @@ class TestIgnoreLastNBases(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_22929891"
 			read.seq = "AACGCAACTCCGCCCTCGCGATACTCTCCGAATCTATACTAAAAAAAACGCAACTCCGCCGAC"
 			read.flag = 83
-			read.rname = 0
+			read.tid = 0
 			read.pos = 560
 			read.mapq = 255
 			read.cigar = [(0,63)]
@@ -209,7 +209,7 @@ class TestIgnoreLastNBases(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_22929891"
 			read.seq = "CACCCGAATCTAACCTAAAAAAAACTATACTCCGCCTTCAAAATACCACCGAAATCTATACAAAAAA"
 			read.flag = 163
-			read.rname = 0
+			read.tid = 0
 			read.pos = 492
 			read.mapq = 255
 			read.cigar = [(0,67)]
@@ -277,7 +277,7 @@ class TestIgnoreLowQualityBases(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_8"
 			read.seq = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
 			read.flag = 99
-			read.rname = 0
+			read.tid = 0
 			read.pos = 450
 			read.mapq = 255
 			read.cigar = [(0,61)]
@@ -296,7 +296,7 @@ class TestIgnoreLowQualityBases(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_8"
 			read.seq = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
 			read.flag = 99
-			read.rname = 0
+			read.tid = 0
 			read.pos = 450
 			read.mapq = 255
 			read.cigar = [(0,61)]
@@ -355,7 +355,7 @@ class TestFixOldBismark(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_8"
 			read.seq = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
 			read.flag = 99
-			read.rname = 0
+			read.tid = 0
 			read.pos = 450
 			read.mapq = 255
 			read.cigar = [(0,61)]
@@ -396,7 +396,7 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 			read.qname = "tr"
 			read.seq = "TTTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTG"
 			read.flag = 99
-			read.rname = 0
+			read.tid = 0
 			read.pos = 853
 			read.mapq = 255
 			read.cigar = [(0,100)]
@@ -414,7 +414,7 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 			read.qname = "tr"
 			read.seq = "TTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTGA"
 			read.flag = 147
-			read.rname = 0
+			read.tid = 0
 			read.pos = 854
 			read.mapq = 255
 			read.cigar = [(0,100)]
@@ -441,7 +441,7 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 		self.mod_read_1.qname = self.read_1.qname
 		self.mod_read_1.seq = self.read_1.seq
 		self.mod_read_1.flag = self.read_1.flag
-		self.mod_read_1.rname = self.read_1.rname
+		self.mod_read_1.tid = self.read_1.tid
 		self.mod_read_1.pos = self.read_1.pos
 		self.mod_read_1.mapq = self.read_1.mapq
 		self.mod_read_1.cigar = self.read_1.cigar
@@ -464,14 +464,21 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 		self.assertEqual(n_overlap, self.read_2.tlen)
 
 	def test_bad_n_overlap(self):
-		# Should raise an exception
 		self.assertRaises(ValueError, is_overlapping_sequence_identical, self.read_1, self.read_2, -10, 'sequence')
 		self.assertRaises(ValueError, is_overlapping_sequence_identical, self.read_1, self.read_2, 3.4, 'sequence')
 
 	def test_bad_overlap_check(self):
-		# Should raise an exception
 		self.assertRaises(ValueError, is_overlapping_sequence_identical, self.read_1, self.read_2, 10, 'apples')
 		self.assertRaises(ValueError, is_overlapping_sequence_identical, self.read_1, self.read_2, 10, 'Bismark') # Should be 'bismark'
+
+	def test_invalid_strands(self):
+		self.mod_read_1 = self.read_1
+		self.mod_read_1.tags = []
+		self.mod_read_1.tags = 	self.mod_read_1.tags + [("XG", "GA")] + [("XM", "hh..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z.")] + [("XR", "CT")]
+		with self.assertRaises(SystemExit) as cm:
+			is_overlapping_sequence_identical(self.mod_read_1, self.read_2, 10, 'sequence')
+			self.assertEqual(cm.exception.code, 1)
+ 
 
 class TestDoesReadContainIndel(unittest.TestCase):
 	'''Test the function does_read_contain_indel
@@ -486,7 +493,7 @@ class TestDoesReadContainIndel(unittest.TestCase):
 			read.qname = "tr"
 			read.seq = "TTTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTG"
 			read.flag = 99
-			read.rname = 0
+			read.tid = 0
 			read.pos = 853
 			read.mapq = 255
 			read.cigar = [(0,100)]
@@ -524,7 +531,7 @@ class TestDoesReadContainComplicatedCigar(unittest.TestCase):
 			read.qname = "tr"
 			read.seq = "TTTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTG"
 			read.flag = 99
-			read.rname = 0
+			read.tid = 0
 			read.pos = 853
 			read.mapq = 255
 			read.cigar = [(0,100)]
@@ -586,7 +593,7 @@ class TestIgnoreOverlappingSequence(unittest.TestCase):
 			read.qname = "otr"
 			read.seq = "TTTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTG"
 			read.flag = 99
-			read.rname = 0
+			read.tid = 0
 			read.pos = 853
 			read.mapq = 255
 			read.cigar = [(0,100)]
@@ -604,7 +611,7 @@ class TestIgnoreOverlappingSequence(unittest.TestCase):
 			read.qname = "otr"
 			read.seq = "TTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTGA"
 			read.flag = 147
-			read.rname = 0
+			read.tid = 0
 			read.pos = 854
 			read.mapq = 255
 			read.cigar = [(0,100)]
@@ -622,7 +629,7 @@ class TestIgnoreOverlappingSequence(unittest.TestCase):
 			read.qname = "otb"
 			read.seq = "ACGCAACTCCGCCCTCGCGATACTCTCCGAATCTATACTAAAAAAAACGCAACTCCGCCGAC"
 			read.flag = 83
-			read.rname = 1
+			read.tid = 1
 			read.pos = 493
 			read.mapq = 255
 			read.cigar = [(0,62)]
@@ -640,7 +647,7 @@ class TestIgnoreOverlappingSequence(unittest.TestCase):
 			read.qname = "otb"
 			read.seq = "AACGCAACTCCGCCCTCGCGATACTCTCCGAATCTATACTAAAAAAAACGCAACTCCGCCGA"
 			read.flag = 163
-			read.rname = 0
+			read.tid = 0
 			read.pos = 492
 			read.mapq = 255
 			read.cigar = [(0,62)]
@@ -730,7 +737,7 @@ class TestExtractAndUpdateMethylationIndexFromSingleEndRead(unittest.TestCase):
 			read.qname = "@SALK_2077_FC6295TAAXX:2:107:9396:15019#0/1"
 			read.seq = "GGGGAAGGTGTTATGGAGTTTTTTACGATTTTTAGTCGTTTTCGTTTTTTTTTGTTTGTGGTTGTTGCGGTGGCGGTAGAGGAGGG"
 			read.flag = 0
-			read.rname = 0
+			read.tid = 0
 			read.pos = 4536
 			read.mapq = 255
 			read.cigar = [(0,86)]
@@ -748,7 +755,7 @@ class TestExtractAndUpdateMethylationIndexFromSingleEndRead(unittest.TestCase):
 			read.qname = "@ECKER_1116_FC623CNAAXX:2:21:18515:1127#0/1"
 			read.seq = "CTTCCTAACAAACAACTACACCACTACCTAACGCTATACCCTTCCTTTACTCTACCCACTAAAAACAATATTTATCATAAACCT"
 			read.flag = 16
-			read.rname = 0
+			read.tid = 0
 			read.pos = 3334
 			read.mapq = 255
 			read.cigar = [(0,84)]
@@ -833,7 +840,7 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_8"
 			read.seq = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
 			read.flag = 99
-			read.rname = 0
+			read.tid = 0
 			read.pos = 450
 			read.mapq = 255
 			read.cigar = [(0,61)]
@@ -852,7 +859,7 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_8"
 			read.seq = "AGAATTGTGTTTCGTTTTTAGAGTATTATCGAAATTTGTGTAGAGGATAACGTAGCTTC"
 			read.flag = 147
-			read.rname = 0
+			read.tid = 0
 			read.pos = 512
 			read.mapq = 255
 			read.cigar = [(0,59)]
@@ -871,7 +878,7 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_22929891"
 			read.seq = "AACGCAACTCCGCCCTCGCGATACTCTCCGAATCTATACTAAAAAAAACGCAACTCCGCCGAC"
 			read.flag = 83
-			read.rname = 0
+			read.tid = 0
 			read.pos = 560
 			read.mapq = 255
 			read.cigar = [(0,63)]
@@ -890,7 +897,7 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_22929891"
 			read.seq = "CACCCGAATCTAACCTAAAAAAAACTATACTCCGCCTTCAAAATACCACCGAAATCTATACAAAAAA"
 			read.flag = 163
-			read.rname = 0
+			read.tid = 0
 			read.pos = 492
 			read.mapq = 255
 			read.cigar = [(0,67)]
@@ -1024,7 +1031,7 @@ class TestWithinFragmentComethylationMTuple(unittest.TestCase):
 			read.qname = "@SALK_2077_FC6295TAAXX:2:107:9396:15019#0/1"
 			read.seq = "GGGGAAGGTGTTATGGAGTTTTTTACGATTTTTAGTCGTTTTCGTTTTTTTTTGTTTGTGGTTGTTGCGGTGGCGGTAGAGGAGGG"
 			read.flag = 0
-			read.rname = 0
+			read.tid = 0
 			read.pos = 4536
 			read.mapq = 255
 			read.cigar = [(0,86)]
@@ -1042,7 +1049,7 @@ class TestWithinFragmentComethylationMTuple(unittest.TestCase):
 			read.qname = "@ECKER_1116_FC623CNAAXX:2:21:18515:1127#0/1"
 			read.seq = "CTTCCTAACAAACAACTACACCACTACCTAACGCTATACCCTTCCTTTACTCTACCCACTAAAAACAATATTTATCATAAACCT"
 			read.flag = 16
-			read.rname = 0
+			read.tid = 0
 			read.pos = 3334
 			read.mapq = 255
 			read.cigar = [(0,84)]
@@ -1061,7 +1068,7 @@ class TestWithinFragmentComethylationMTuple(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_8"
 			read.seq = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
 			read.flag = 99
-			read.rname = 0
+			read.tid = 0
 			read.pos = 450
 			read.mapq = 255
 			read.cigar = [(0,61)]
@@ -1080,7 +1087,7 @@ class TestWithinFragmentComethylationMTuple(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_8"
 			read.seq = "AGAATTGTGTTTCGTTTTTAGAGTATTATCGAAATTTGTGTAGAGGATAACGTAGCTTC"
 			read.flag = 147
-			read.rname = 0
+			read.tid = 0
 			read.pos = 512
 			read.mapq = 255
 			read.cigar = [(0,59)]
@@ -1099,7 +1106,7 @@ class TestWithinFragmentComethylationMTuple(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_22929891"
 			read.seq = "AACGCAACTCCGCCCTCGCGATACTCTCCGAATCTATACTAAAAAAAACGCAACTCCGCCGAC"
 			read.flag = 83
-			read.rname = 0
+			read.tid = 0
 			read.pos = 560
 			read.mapq = 255
 			read.cigar = [(0,63)]
@@ -1118,7 +1125,7 @@ class TestWithinFragmentComethylationMTuple(unittest.TestCase):
 			read.qname = "ADS-adipose_chr1_22929891"
 			read.seq = "CACCCGAATCTAACCTAAAAAAAACTATACTCCGCCTTCAAAATACCACCGAAATCTATACAAAAAA"
 			read.flag = 163
-			read.rname = 0
+			read.tid = 0
 			read.pos = 492
 			read.mapq = 255
 			read.cigar = [(0,67)]
@@ -1364,32 +1371,224 @@ class TestWithinFragmentComethylationMTuple(unittest.TestCase):
 
 class TestGetStrand(unittest.TestCase):
 
+	def setUp(self):
+		def buildOTSE():
+			read = pysam.AlignedRead()
+			read.qname = "SRR020138.15030048_SALK_2029:7:100:1740:1801_length=86"
+			read.seq = "CGAATGTTTTTTATTATGAATGAGAGTTTGTTAAATTAGTTGGTTTTAGG"
+			read.flag = 0
+			read.tid = 0
+			read.pos = 245746845
+			read.mapq = 255
+			read.cigar = [(0, 50)]
+			read.rnext = 0
+			read.pnext = 0
+			read.isize = 0
+			read.qual = "BC?BBBBBCCCCAA@BCB?AB@AB>CABB@@BB@?BB497@@B:@@B5>@"
+			read.tags = read.tags + [("XM", "Z........h....h.............z.......x..x.....h....")] + [('XR', 'CT')] + [('XG', 'CT')]
+			return read
+
+		def buildOBSE():
+			read = pysam.AlignedRead()
+			read.qname = "SRR020138.15033460_SALK_2029:7:100:1783:2004_length=86"
+			read.seq = "GTATACGCTAATTTTATAACCTAAAAATTTACTAAATTCATTAATCAAAT"
+			read.flag = 16
+			read.tid = 0
+			read.pos = 96804459
+			read.mapq = 255
+			read.cigar = [(0, 50)]
+			read.rnext = 0
+			read.pnext = 0
+			read.isize = 0
+			read.qual = "CCBCACCBBCCCAACBBCAB@CCCCCCBBCCCCCCCCCBBBBCBCACBCB"
+			read.tags = read.tags + [('XM', "Z.h...Z..x.....h.......hh.h......x........h....x..")] + [('XR', 'CT')] + [('XG', 'GA')]
+			return read
+
+		def buildCTOTSE():
+			read = pysam.AlignedRead()
+			read.qname = "SRR020138.15026483_SALK_2029:7:100:1698:1069_length=86"
+			read.seq = "CCTCCATCATCATTCCTAATTTCTCCTTCCTCCCTTTCTACTTCCTCCTT"
+			read.flag = 0
+			read.tid = 0
+			read.pos = 69393512
+			read.mapq = 255
+			read.cigar = [(0, 50)]
+			read.rnext = 0
+			read.pnext = 0
+			read.isize = 0
+			read.qual = "1)9<)@96'3%6@5:0=3::;;:89*;:@AA@=;A=3)2)1@>*9;-4:A"
+			read.tags = read.tags + [('XM', 'H.h...h...H...HHh.................................')] + [('XR', 'GA')] + [('XG', 'CT')]
+			return read
+
+		def buildCTOBSE():
+			read = pysam.AlignedRead()
+			read.qname = "SRR020138.15034119_SALK_2029:7:100:1792:1889_length=86"
+			read.seq = "ATGGAATGGAAAGGAAGGGAATTTAATGGAATGGAATGGAATGGAATGGA"
+			read.flag = 16
+			read.tid = 0
+			read.pos = 10784296
+			read.mapq = 255
+			read.cigar = [(0, 50)]
+			read.rnext = 0
+			read.pnext = 0
+			read.isize = 0
+			read.qual = "BCBBBBCCBCAA=@?B?A?@@BCCBCCAAA=B9@B?A=9?BBB??AC@2="
+			read.tags = read.tags + [('XM', '..HH...HHhh.HH...HH........HH.h.H..h.H..h.HH.h.HH.')] + [('XR', 'GA')] + [('XG', 'GA')]
+			return read
+
+		def buildOTPE():
+			read_1 = pysam.AlignedRead()
+			read_1.qname = "SRR400564.1684335_HAL:1133:C010EABXX:8:1108:18844:132483_length=101"
+			read_1.seq = "CGAGTTCGTTTAAAGAGTAATTAGTTATTTTTGTAAGGTTTGGTTAGGGTTATAGAAGGTTTTTTTGGATGGTAATTTTGGTTGCGTTTTGTATTTGAATA"
+			read_1.flag = 99
+			read_1.tid = 0
+			read_1.pos = 19978967
+			read_1.mapq = 255
+			read_1.cigar = [(0, 101)]
+			read_1.rnext = 0
+			read_1.pnext = 19979235
+			read_1.isize = 369
+			read_1.qual = "BC@FDFFFHHHHHJIHICHHHIIJJIGGJJJJJHGIF11?CGHIJIIJJHHHIIJIHHG9BFHIJFFDAC@?6;;-;AC@?DD<98@BDBDD>CDD#####"
+			read_1.tags = read_1.tags + [('XM', 'Z...h.Z.h.h......h..hx..hh.hh.x..h.....x...hx....h..x......hhhhhx...........hx...x..Z...x..h.hx....h.')] + [('XR', 'CT')] + [('XG', 'CT')]
+			read_2 = pysam.AlignedRead()
+			read_2.qname = "SRR400564.1684335_HAL:1133:C010EABXX:8:1108:18844:132483_length=101"
+			read_2.seq = "TATTGAGTTGTGTGTATGTCAGGTAAAGTTAGGTTGGTTTAAAGAGTAATTAGTTATTTTTGTAAGGTTGGGTTAGGAGAAGGCGGATTAGTTATTAATTT"
+			read_2.flag = 147
+			read_2.tid = 0
+			read_2.pos = 19979235
+			read_2.mapq = 255
+			read_2.cigar = [(0, 101)]
+			read_2.rnext = 0
+			read_2.pnext = 19978967
+			read_2.isize = -369
+			read_2.qual = "EDDDDDDBBDDDDDDDCDEEEEEFFFFFHHGHIIFJJJIJJJJIJJJJJIHIJJIJJJJJIJJJJJJJJJJJJJJJJJJJJJJJJJJJHHHHHFFFFFCCC"
+			read_2.tags = read_2.tags + [('XM', 'h.x....x......h.z.hX...h....hx...x...h.h......h..hx..hh.hh.x..h....x....hx.........Z...hx..hh.hh..hh.')] + [('XR', 'GA')] + [('XG', 'CT')]
+			return read_1, read_2
+
+		def buildOBPE():
+			read_1 = pysam.AlignedRead()
+			read_1.qname = "SRR400564.241291_HAL:1133:C010EABXX:8:1102:8553:52618_length=101"
+			read_1.seq = "GATCACCTAAATCGAAAATTAAAAACCAACCTAACCAACACGATAAAACCCCATCTCTACTAAAATACAAAAACTAACCAAACGTAATAACAAACACCTAT"
+			read_1.flag = 83
+			read_1.tid = 0
+			read_1.pos = 19195980
+			read_1.mapq = 255
+			read_1.cigar = [(0, 101)]
+			read_1.rnext = 0
+			read_1.pnext = 19195917
+			read_1.isize = -164
+			read_1.qual = "#####@:4B@;(85DDD@:;DDBBAACD?FD@HHHFIIJIIIHFJIFDJJIIFBGFGIGIGJIHFFDEJJJGIIGJIJJJJIJJHJIHHHHHHFDDDF@@@"
+			read_1.tags = read_1.tags + [('XM', 'Z.......xhh..Zxh.h..h..h....x...xh.......Zx.h...............................h...xh.Z.hh.hh..x......x.')] + [('XR', 'CT')] + [('XG', 'GA')]
+			read_2 = pysam.AlignedRead()
+			read_2.qname = "SRR400564.241291_HAL:1133:C010EABXX:8:1102:8553:52618_length=101"
+			read_2.seq = "TATAAAACAAAACATAATAACTCATACCTATAATCCCAACACTTTAAAAATCTAAAACAAACCGATCACCTAAATCGAAAATTAAAAACCAACCTAACCAA"
+			read_2.flag = 163
+			read_2.tid = 0
+			read_2.pos = 19195917
+			read_2.mapq = 255
+			read_2.cigar = [(0, 101)]
+			read_2.rnext = 0
+			read_2.pnext = 19195980
+			read_2.isize = 164
+			read_2.qual = "CCCFFFFFHHHHHJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJEHHIJJJJJJIJJIIJHHHFFFFFEEDEEDDDDDDDDDDDDDDDDDDDDDD"
+			read_2.tags = read_2.tags + [("XM", ".x...hh..xh..z.hh.hh.....h...x........x......hhh.h...x.hh...h..Z.......xhh..Zxh.h..h..h....x...xh....")] + [('XR', 'GA')] + [('XG', 'GA')]
+			return read_1, read_2
+
+		def buildCTOTPE():
+			read_1 = pysam.AlignedRead()
+			read_1.qname = "SRR400564.6667900_HAL:1133:C010EABXX:8:2207:16412:102567_length=101"
+			read_1.seq = "CGACCCCCCATCTATTCATCCATCCACCCCCCCCCCCACCCATCCATTAATTTATTCATCCATCCACCCACCCATCCACCATCCATTCAACCATCCATCCA"
+			read_1.flag = 99
+			read_1.tid = 0
+			read_1.pos = 3287553
+			read_1.mapq = 255
+			read_1.cigar = [(0, 101)]
+			read_1.rnext = 0
+			read_1.pnext = 3287383
+			read_1.isize = -271
+			read_1.qual = "#########################################73GE@CEGECGDFAFAB@IGD?FB0HF?1JHGF@HFAJIHFJJIHGEA22222224B@:4"
+			read_1.tags = read_1.tags + [('XM', 'Z...HH.HH..H....H..HH..HH..HH.HHH.HHH..HH..HH...........H..HH..HH.HHH.HHH..HH.HH..HH...H..HH..HH..HH.')] + [('XR', 'GA')] + [('XG', 'CT')]
+			read_2 = pysam.AlignedRead()
+			read_2.qname = "SRR400564.6667900_HAL:1133:C010EABXX:8:2207:16412:102567_length=101"
+			read_2.seq = "ATCCACCATCTATTCATCCATCCGTCCACCCACCCATCCATCCATTAATTATCCATCCACCCACCCATCCACCATCCATTCATCCATCCATCCATCCATAC"
+			read_2.flag = 147
+			read_2.tid = 0
+			read_2.pos = 3287383
+			read_2.mapq = 255
+			read_2.cigar = [(0, 101)]
+			read_2.rnext = 0
+			read_2.pnext = 3287553
+			read_2.isize = 271
+			read_2.qual = "CCCFFFFFHHHHHJJJJJJJJJJIIJIGHIJIJJJJJJJJJJJJJJJJJJGGCBFHCHGGCHIIJHHHFFFFECEDEDDDDE@>@CD:ACCDDD>>?::@C"
+			read_2.tags = read_2.tags + [('XM', '..HH.HH..H....H..HH..XZ..HH.HHH.HHH..HH..HH.........HH..HH.HHH.HHH..HH.HH..HH...H..HH..HH..HH..HH...H')] + [('XR', 'CT')] + [('XG', 'CT')]
+			return read_1, read_2
+
+		def buildCTOBPE():
+			read_1 = pysam.AlignedRead()
+			read_1.qname = "SRR400564.4547217_HAL:1133:C010EABXX:8:2105:21225:192741_length=101"
+			read_1.seq = "AAGGAAGGAGGGAAGGAAGGAAATAAAGAAAGGAAAAAAGGAAAGAAAGAAAAATAAAGAAATAAAGGAAGGAGGGAAGGAAGGAAAGAATGAAAGAAAGA"
+			read_1.flag = 83
+			read_1.tid = 0
+			read_1.pos = 55291120
+			read_1.mapq = 255
+			read_1.cigar = [(0, 101)]
+			read_1.rnext = 0
+			read_1.pnext = 55291173
+			read_1.isize = 154
+			read_1.qual = "1:BD42222300<CGHIIIJIIJJIIJGIIIIIIIJJIIJIJIIIIIGHIIIIHHGGGFFFFFFDECCDCBBDB@BBA<?BC<0<AC?CB@:@CC@CBC:>"
+			read_1.tags = read_1.tags + [('XM', 'z..Hh.HHh..Hh..Hh...h...h...h...H.h..hh..h...h..Hh...h...h.....hh......Hh...h...h..........H..hH.hhH.')] + [('XR', 'GA')] + [('XG', 'GA')]
+			read_2 = pysam.AlignedRead()
+			read_2.qname = "SRR400564.4547217_HAL:1133:C010EABXX:8:2105:21225:192741_length=101"
+			read_2.seq = "AAAAGAAAAAGGAAAAAAGGAAAGAAAGAAAAATAAATGAAGGAGGGAAGGAAGGAAAGAAAGAAGGGAAGAAAGAAAAGTAAATGAAGGAGGGAAAGAAG"
+			read_2.flag = 163
+			read_2.tid = 0
+			read_2.pos = 55291173
+			read_2.mapq = 255
+			read_2.cigar = [(0, 101)]
+			read_2.rnext = 0
+			read_2.pnext = 55291120
+			read_2.isize = -154
+			read_2.qual = "5DDA;DDEC@66DHHHHC=GJJIGJJIGJJJJIIJIHGHIHHHGFFFFBIIJHHGJJIGJJJJJIIHHJIGJJJGJJJJJJJJJIJJJHHHHHFFFDDBBB"
+			read_2.tags = read_2.tags + [('XM', 'h...H.....HH......HH...H...H..........H..HH.HHH..HH..HH...H...H..HHH......H..........H..HH.HHH...H..H')] + [('XR', 'CT')] + [('XG', 'GA')]
+			return read_1, read_2
+
+		# Build reads
+		self.otrse = buildOTSE()
+		self.obrse = buildOBSE()
+		self.ctotrse = buildCTOTSE()
+		self.ctobrse = buildCTOBSE()
+		self.otrpe_1, self.otrpe_2 = buildOTPE()
+		self.obrpe_1, self.obrpe_2 = buildOBPE()
+		self.ctotpe_1, self.ctotpe_2 = buildCTOTPE()
+		self.ctobpe_1, self.ctobpe_2 = buildCTOBPE()
+
 	def test_ot_se(self):
-		self.assertTrue(False) # TODO
+		self.assertEqual(get_strand(self.otrse), 'OT')
 
 	def test_ob_se(self):
-		self.assertTrue(False) # TODO
+		self.assertEqual(get_strand(self.obrse), 'OB')
 
 	def test_ctot_se(self):
-		self.assertTrue(False) # TODO
+		self.assertEqual(get_strand(self.ctotrse), 'OT')
 
 	def test_ctob_se(self):
-		self.assertTrue(False) # TODO
+		self.assertEqual(get_strand(self.ctobrse), 'OB')
 
 	def test_ot_pe(self):
-		self.assertTrue(False) # TODO
+		self.assertEqual(get_strand(self.otrpe_1), 'OT')
+		self.assertEqual(get_strand(self.otrpe_2), 'OT')
 
 	def test_ob_pe(self):
-		self.assertTrue(False) # TODO
+		self.assertEqual(get_strand(self.obrpe_1), 'OB')
+		self.assertEqual(get_strand(self.obrpe_2), 'OB')
 
 	def test_ctot_pe(self):
-		self.assertTrue(False) # TODO
+		self.assertEqual(get_strand(self.ctotpe_1), 'OT')
+		self.assertEqual(get_strand(self.ctotpe_2), 'OT')
 
 	def test_ctob_pe(self):
-		self.assertTrue(False) # TODO
-
-	def test_remove_old_strand_check_tests_if_safe_to_do_so(self):
-		self.assertTrue(False) # TODO
+		self.assertEqual(get_strand(self.ctobpe_1), 'OB')
+		self.assertEqual(get_strand(self.ctobpe_2), 'OB')
 
 # FIXME: Remove?
 if __name__ == '__main__':

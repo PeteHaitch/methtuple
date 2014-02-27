@@ -58,7 +58,7 @@ class WithinFragmentComethylationMTuple:
 
         # Check whether there are any unexpected, and therefore invalid, characters in comethylation_state
         if not re.search('[^MU]', comethylation_state) is None:
-            exit_msg = ''.join([read_1.qname, ' has an invalid comethylation string = ', comethylation_state, '.\nThis should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.'])
+            exit_msg = ''.join([read_1.qname, ' has an invalid comethylation state = ', comethylation_state, '.\nThis should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.'])
             sys.exit(exit_msg)
         if (len(comethylation_state) != len(self.positions)):
             exit_msg = ''.join(['Length of comethylation string (', str(len(comethylation_state)), ') does not equal m (', str(len(self.positions)), '). \nThis should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.'])
