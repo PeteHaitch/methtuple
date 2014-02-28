@@ -479,7 +479,6 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 			is_overlapping_sequence_identical(self.mod_read_1, self.read_2, 10, 'sequence')
 			self.assertEqual(cm.exception.code, 1)
  
-
 class TestDoesReadContainIndel(unittest.TestCase):
 	'''Test the function does_read_contain_indel
 	'''
@@ -1591,4 +1590,4 @@ class TestGetStrand(unittest.TestCase):
 		self.assertEqual(get_strand(self.ctobpe_2), 'OB')
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(verbosity=2)
