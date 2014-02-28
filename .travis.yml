@@ -10,3 +10,4 @@ install:
     - python setup.py install
 script:
     - comethylation --version
+    - python setup.py test
