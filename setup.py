@@ -19,7 +19,7 @@ setup(
   author='Peter Hickey',
   author_email='peter.hickey@gmail.com',
   url='https://github.com/PeteHaitch/Comethylation',
-  keywords='bisulfite sequencing methylation bismark',
+  keywords='bisulfite sequencing methylation bismark bioinformatics',
   packages=find_packages(),
   include_package_data=True,
   zip_safe=False,
@@ -27,7 +27,6 @@ setup(
   test_suite="comethylation.tests",
   scripts = [
     'comethylation/scripts/comethylation',
-    'comethylation/scripts/bismarkify',
-    'comethylation/scripts/correct_Bismark_PE_SAM'
+    'comethylation/scripts/bismarkify'
   ]
 )
