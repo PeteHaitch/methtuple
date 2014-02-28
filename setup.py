@@ -7,8 +7,6 @@ here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.md')).read()
 CHANGES = '' # open(os.path.join(here, 'CHANGES.md')).read()
 
-requires = ['pysam']
-
 setup(
   name='comethylation',
   version='0.99.10',
@@ -25,8 +23,7 @@ setup(
   packages=find_packages(),
   include_package_data=True,
   zip_safe=False,
-  install_requires=requires,
-  tests_require=requires,
+  install_requires=['pysam'],
   test_suite="comethylation.tests",
   scripts = [
     'comethylation/scripts/comethylation',
