@@ -1589,3 +1589,6 @@ class TestGetStrand(unittest.TestCase):
 	def test_ctob_pe(self):
 		self.assertEqual(get_strand(self.ctobpe_1), 'OB')
 		self.assertEqual(get_strand(self.ctobpe_2), 'OB')
+
+if __name__ == '__main__':
+    unittest.main()
