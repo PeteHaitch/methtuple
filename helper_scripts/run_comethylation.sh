@@ -13,7 +13,7 @@
 # REQUIRES: comethylation, samtools and Rscript must be in your $PATH
 # REQUIRES: tabulate_hist.r to be in the same folder as run_comethylation.sh
 
-#### ALGORITHM ####
+#### Algorithm ####
 # The idea is as follows:
 # (1) Split the BAM by chromosome and create chromosome-level BAMs. The BAM must be sorted in coordinate order and indexed
 #		(a) if (Single-end data): Continue because there is no need to sort single-end data
@@ -23,8 +23,8 @@
 #		(b) Do not move onto the next m-tuple value until all chromosome jobs finish.
 #		(c) Concetanate all chromosome-level m-tuples files
 
-#### Parameters ####
-BAM= # The path of the BAM file, e.g. "ex.bam". The BAM must be sorted in coordinate order and indexed. 
+#### Variables ####
+BAM= # The path of the BAM file, e.g. "data/cs_pe_directional.bam". The BAM must be sorted in coordinate order and indexed. 
 OUTDIR= # The path to the directory used for output, e.g. "my_outdir". Multiple subdirectories and files will be created in this folder.
 SAMPLE_NAME= # The sample name, which will be the prefix of all output files, e.g. "exciting_sample". WARNING: Must not contain the "." (period) character
 M= # A bash array of the "m" in m-tuples, e.g. (1 2 3).
@@ -33,7 +33,7 @@ COMETH_PARAMS= # Additional parameters to be passed to comethylation e.g. '--met
 SEQ_TYPE= # "SE" (single-end data) or "PE" (paired-end data).
 
 #### Step 0 ####
-# Check parameters
+# Check variables
 if [[ -n "${BAM}" && -n "${OUTDIR}" && -n "${SAMPLE_NAME}" && -n "${M}" && -n "${CHROMS}" && -n "${COMETH_PARAMS}" && -n "${SEQ_TYPE}" ]]
 then
 	if [[ "$SAMPLE_NAME" != "${SAMPLE_NAME//./}" ]]
@@ -56,7 +56,7 @@ else
 fi
 
 #### Step 1 ####
-# Create QS BAM file for each chromosome
+# Create chromosome-level BAM files (queryname sorted if paired-end sequencing)
 if [ ${SEQ_TYPE} == 'PE' ]
 then
 	echo "Paired-end sequencing"
@@ -120,7 +120,8 @@ do
 	gzip ${OUTDIR}/${m}_tuples/${SAMPLE_NAME}.reads_that_failed_QC.txt
 done
 
-#### Tidy up by removing chromosome-level BAM files ####
+#### Step 3 ####
+# Tidy up by removing chromosome-level BAM files
 for CHROM in ${CHROMS[@]}
 	do
 		rm ${OUTDIR}/${SAMPLE_NAME}_${CHROM}.bam
