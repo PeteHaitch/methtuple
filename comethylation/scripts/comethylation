@@ -276,18 +276,18 @@ for read in BAM:
         continue
     # Check XR-tag
     if not 'XR' in [x[0] for x in read.tags]:
-        exit_msg = "ERROR: The first mapped read does not contain an XR-tag. The XR-tag stores the read conversion state for the alignment and is required by comethylation.\n SAM/BAM files created by Bismark should already have the XR-tag set.\n If your SAM/BAM was created with another program you will need to add the correct XR-tags before proceeding. The script bismarkify.py may be able to help you with this.\n"
+        exit_msg = "ERROR: The first mapped read does not contain an XR-tag. Currently, comethylation can only process BAM files created by Bismark, sorry."
         sys.exit(exit_msg)
     # Check XG-tag
     if not 'XG' in [x[0] for x in read.tags]:
-        exit_msg = "ERROR: The first mapped read does not contain an XG-tag. The XG-tag stores the read conversion state for the alignment and is required by comethylation.\n SAM/BAM files created by Bismark should already have the XG-tag set.\n If your SAM/BAM was created with another program you will need to add the correct XG-tags before proceeding. The script bismarkify.py may be able to help you with this.\n"
+        exit_msg = "ERROR: The first mapped read does not contain an XG-tag. Currently, comethylation can only process BAM files created by Bismark, sorry."
         sys.exit(exit_msg)
     # Check XM-tag
     if not 'XM' in [x[0] for x in read.tags]:
-        exit_msg = "ERROR: The first mapped read does not contain an XM-tag. The XM-tag stores the methylation call string for the alignment and is required by comethylation.\n SAM/BAM files created by Bismark should already have the XM-tag set.\n If your SAM/BAM was created with another program you will need to add the correct XM-tags before proceeding. The script bismarkify.py may be able to help you with this.\n"
+        exit_msg = "ERROR: The first mapped read does not contain an XM-tag. Currently, comethylation can only process BAM files created by Bismark, sorry."
         sys.exit(exit_msg)
     else:
-        print 'Verified that the XR-, XG- and XM-tags are set for the first mapped read\n'
+        print 'Verified that the XR-, XG- and XM-tags are set for the first mapped read.\n'
         # Reset BAM to start
         BAM.reset()
         break

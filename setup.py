@@ -26,7 +26,6 @@ setup(
   install_requires=['pysam'],
   test_suite="comethylation.tests",
   scripts = [
-    'comethylation/scripts/comethylation',
-    'comethylation/scripts/bismarkify'
+    'comethylation/scripts/comethylation'
   ]
 )
