@@ -8,13 +8,6 @@
 
 `comethylation` is a methylation caller for methylation events that co-occur on the same DNA fragment from high-throughput bisulfite sequencing data, such as `methylC-seq`. A typical read from such an experiment reports a binary methylated or unmethylated measurement at multiple loci, where each read originates from a single cell. `comethylation` allows us to investigate the co-occurence of methylation marks at the level of a single cell.
 
-## Method
-`comethylation` extracts _m-tuples_ of methylation loci that co-occur on the same read. The simplest _m-tuple_ is the 1-tuple (m = 1), which corresponds to counting the number of reads that are methylated (_M_) and unmethylated (_U_) for each cytosine in the genome; 1-tuples are the type of methylation calling performed by most methylation calling software such as Bismark's `bismark_methylation_extractor`. 
-
-A 2-tuple (m = 2) is a pair of methylation loci; `comethylation` tabulates the number of reads that methylated at each locus in the pair (_MM_), both unmethylated (_UU_) or methylated at one locus but not the other (_MU_ or _UM_). This idea extends to 3-tuples, 4-tuples, etc. 
-
-For a chosen value of _m_, all _m-tuples_ are extracted and tabulated across the genome. The key point is that _m-tuples_ are only constructed if all _m_ loci are within a single read, so we can investigate the co-occurence of methylation events at the level of a single cell.
-
 # Installation and dependencies
 Simply running 
 
@@ -28,6 +21,13 @@ in the `Comethylation` directory should work for most systems.
 `comethylation` has only been tested on Python 2.7 with pysam v0.7.7.
 
 # Usage
+## Method
+`comethylation` extracts _m-tuples_ of methylation loci that co-occur on the same read. The simplest _m-tuple_ is the 1-tuple (m = 1), which corresponds to counting the number of reads that are methylated (_M_) and unmethylated (_U_) for each cytosine in the genome; 1-tuples are the type of methylation calling performed by most methylation calling software such as Bismark's `bismark_methylation_extractor`. 
+
+A 2-tuple (m = 2) is a pair of methylation loci; `comethylation` tabulates the number of reads that methylated at each locus in the pair (_MM_), both unmethylated (_UU_) or methylated at one locus but not the other (_MU_ or _UM_). This idea extends to 3-tuples, 4-tuples, etc. 
+
+For a chosen value of _m_, all _m-tuples_ are extracted and tabulated across the genome. The key point is that _m-tuples_ are only constructed if all _m_ loci are within a single read, so we can investigate the co-occurence of methylation events at the level of a single cell.
+
 ## Basic usage
 `comethylation` processes a single `BAM` file and works for both single-end and paired-end sequencing data. Example `BAM` files from single-end directional and paired-end directional bisulfite-sequencing experiments are available in the `data/` directory. 
 
@@ -39,7 +39,7 @@ The main options to pass `comethylation` are the size of the m-tuple (`--mTuple`
 
 To simultaneously study multiple methylation types the `--methylationType` parameter must be specified multiple times, e.g. to study CG and CHH methylation `--methylationType CG --methylationType CHH`.
 
-### Output
+## Output
 Three output files are created and summary information is written to `STDOUT`.
 
 The main output file is a tab-delimited file of all m-tuples (`<sampleName>.<--methylationType>.<--mTuple>.tsv`). 
