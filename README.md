@@ -268,6 +268,12 @@ For instance, 5-20Gb per chromosome for a typical 20-30x coverage whole-genome m
 * Bismark always sets the mapping quality (`mapQ`) as the value 255, which means unavailable in the SAM format specification. Thus the `--minMapQ` option will not have any effect for Bismark data.
 * `comethylation` skip paired-end reads where either mate is unmapped.
 
+# Acknowledgements
+A big thank you to [Felix Krueger](http://www.bioinformatics.babraham.ac.uk/people.html) (the author of Bismark) for his help in understanding mapping of bisulfite-sequencing data and for answering my many questions along the way.
+
+Thanks also to Tobias Sargeant ([@folded](https://github.com/folded)) for his help in turning the original `comethylation.py` script into the current Python module `comethylation` and for help in setting up a testing framework.
+
+
 
 # Questions and comments
 Please use the GitHub Issue Tracker (available at [www.github.com/PeteHaitch/comethylation](www.github.com/PeteHaitch/comethylation)) to file bug reports or request new functionality. I welcome questions and comments; you can email me at peter.hickey@gmail.com. 
