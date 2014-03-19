@@ -4,19 +4,19 @@
 #### LICENSE ####
 ## Copyright (C) 2012 - 2014 Peter Hickey (peter.hickey@gmail.com)
 
-## This file is part of Comethylation.
+## This file is part of comethylation.
 
-## Comethylation is free software: you can redistribute it and/or modify it
+## comethylation is free software: you can redistribute it and/or modify it
 ## under the terms of the GNU General Public License as published by
 ## the Free Software Foundation, either version 2 of the License, or
 ## (at your option) any later version.
-## Comethylation is distributed in the hope that it will be useful, but
+## comethylation is distributed in the hope that it will be useful, but
 ## WITHOUT ANY WARRANTY; without even the implied warranty of
 ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ## GNU General Public License for more details.
 
 ## You should have received a copy of the GNU General Public License
-## along with Comethylation.  If not, see <http://www.gnu.org/licenses/>.
+## along with comethylation.  If not, see <http://www.gnu.org/licenses/>.
 
 #### Program description ####
 # Extract within-fragment co-methylation measurements at methylation loci for the aligned reads from a BS-Seq experiment.
@@ -439,7 +439,7 @@ for read in BAM:
         n_methylation_loci_per_read[n_methylation_loci_in_fragment] += 1
     # Read is neither single-end nor a mate from a read-pair. This shouldn't happen.
     else:
-        exit_msg = ''.join(['ERROR: Read ', read.qname, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.'])
+        exit_msg = ''.join(['ERROR: Read ', read.qname, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com.'])
         sys.exit(exit_msg)
 
 # Write results to disk

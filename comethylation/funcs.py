@@ -162,7 +162,7 @@ def fix_old_bismark(read):
 	elif read.flag == 179:
 		read.flag = 163
 	else:
-		exit_msg = ''.join(['ERROR: Unexpected FLAG (', str(read.flag), ') for read ', read.qname, 'Sorry, --oldBismark is unable to deal with this FLAG. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com.'])
+		exit_msg = ''.join(['ERROR: Unexpected FLAG (', str(read.flag), ') for read ', read.qname, 'Sorry, --oldBismark is unable to deal with this FLAG. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com.'])
 		sys.exit(exit_msg)
 	return read    
 
@@ -213,7 +213,7 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
             overlap_1 = True
             overlap_2 = True
     else:
-        exit_msg = ''.join(['ERROR: The informative strands for readpair ', read_1.qname, ',  do not agree between mates. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+        exit_msg = ''.join(['ERROR: The informative strands for readpair ', read_1.qname, ',  do not agree between mates. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
         sys.exit(exit_msg)
     return overlap_1 == overlap_2
 
@@ -296,7 +296,7 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
                     ignore_these_bases.append(i)
                     methylation_index_1 = [x for x in methylation_index_1 if x not in ignore_these_bases]
     else:
-        exit_msg = ''.join(['ERROR: The informative strands for readpair ', read_1.qname, ',  do not agree between mates. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+        exit_msg = ''.join(['ERROR: The informative strands for readpair ', read_1.qname, ',  do not agree between mates. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
         sys.exit(exit_msg)
     return methylation_index_1, methylation_index_2
 
@@ -338,7 +338,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
             positions = [x - ob_strand_offset for x in positions]
         # Exit if methylation loci are incorrectly ordered
         if not positions == sorted(positions):
-            exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for single-end read", read.qname, "\n'positions' =", str(positions), '.\nPlease log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+            exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for single-end read", read.qname, "\n'positions' =", str(positions), '.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
             sys.exit(exit_msg)
         # Else, construct each bookended methylation-loci m-tuple and add it to the methylation_m_tuple instance.
         else:
@@ -417,7 +417,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         positions_1 = [read_1.pos + x + 1 for x in methylation_index_1] # +1 to transform from 0-based to 1-based co-ordinates.
         positions_2 = [read_2.pos + x + 1 for x in methylation_index_2] # +1 to transform from 0-based to 1-based co-ordinates.
         if any(x in positions_1 for x in positions_2):
-            exit_msg = ''.join(['ERROR: For readpair ', read_1.qname, ', position_1 and position_2 contain a common position. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+            exit_msg = ''.join(['ERROR: For readpair ', read_1.qname, ', position_1 and position_2 contain a common position. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
             print positions_1
             print positions_2
             sys.exit(exit_msg)
@@ -425,7 +425,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         if strand_1 == 'OT' and strand_2 == 'OT':
             # Exit if methylation loci are incorrectly ordered
             if not positions_1 + positions_2 == sorted(positions_1 + positions_2):
-                exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for paired-end read", read_1.qname, ", which is informative for the OT-strand.\n'positions_1 + positions_2' =", str(positions_1 + positions_2), '\nPlease log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+                exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for paired-end read", read_1.qname, ", which is informative for the OT-strand.\n'positions_1 + positions_2' =", str(positions_1 + positions_2), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
                 sys.exit(exit_msg)
             else:
                 # First, create all m-tuples of methylation loci where each locus is from read_1.
@@ -448,7 +448,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                     this_m_tuple_positions_2 = positions_2[:(m - len(this_m_tuple_positions_1))]
                     # Exit if methylation loci are incorrectly ordered. While a similar check is performed a few lines above, this is a sanity check to make sure than nothing has gone wrong in constructing the shared m-tuples
                     if not this_m_tuple_positions_1 + this_m_tuple_positions_2 == sorted(this_m_tuple_positions_1 + this_m_tuple_positions_2):
-                        exit_msg = ' '.join(["ERROR: The positions of the shared methylation loci are not properly ordered for paired-end read", read_1.qname, ", which is informative for the OT-strand.\n'this_m_tuple_positions_1 + this_m_tuple_positions_2' =", str(this_m_tuple_positions_1 + this_m_tuple_positions_2), '\nPlease log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+                        exit_msg = ' '.join(["ERROR: The positions of the shared methylation loci are not properly ordered for paired-end read", read_1.qname, ", which is informative for the OT-strand.\n'this_m_tuple_positions_1 + this_m_tuple_positions_2' =", str(this_m_tuple_positions_1 + this_m_tuple_positions_2), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
                         sys.exit(exit_msg)
                     else:
                         # Create a unique ID for each m-tuple of methylation loci (of form "chromosome:position_1-position_2-...-position_m")
@@ -478,7 +478,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
             positions_2 = [x - ob_strand_offset for x in positions_2]
             # Exit if methylation loci are incorrectly ordered.
             if not positions_2 + positions_1 == sorted(positions_2 + positions_1): 
-                exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for paired-end read", read_1.qname, "which is informative for the OB-strand.\n'positions_2 + positions_1' =", str(positions_2 + positions_1), '\nPlease log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+                exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for paired-end read", read_1.qname, "which is informative for the OB-strand.\n'positions_2 + positions_1' =", str(positions_2 + positions_1), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
                 sys.exit(exit_msg)
             else:
                 # First, create all m-tuples of methylation loci where each locus is from read_1.
@@ -501,7 +501,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                     this_m_tuple_positions_1 = positions_1[:(m - len(this_m_tuple_positions_2))]
                     # Exit if methylation loci are incorrectly ordered. While a similar check is performed a few lines above, this is a sanity check to make sure than nothing has gone wrong in constructing the shared m-tuples
                     if not this_m_tuple_positions_2 + this_m_tuple_positions_1 == sorted(this_m_tuple_positions_2 + this_m_tuple_positions_1):
-                        exit_msg = ' '.join(["ERROR: The positions of the shared methylation loci are not properly ordered for paired-end read", read_1.qname, "which is aligned to the OB-strand.\n'this_m_tuple_positions_2 + this_m_tuple_positions_1' =", str(this_m_tuple_positions_2 + this_m_tuple_positions_1), '\nPlease log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+                        exit_msg = ' '.join(["ERROR: The positions of the shared methylation loci are not properly ordered for paired-end read", read_1.qname, "which is aligned to the OB-strand.\n'this_m_tuple_positions_2 + this_m_tuple_positions_1' =", str(this_m_tuple_positions_2 + this_m_tuple_positions_1), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
                         sys.exit(exit_msg)
                     else:
                         # Create a unique ID for each m-tuple of methylation loci (of form "chromosome:position_1-position_2-...-position_m")
@@ -525,7 +525,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                         else:
                             methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), read_1, read_2)
         else:
-            exit_msg = ''.join(['ERROR: The informative strands for readpair ', read_1.qname, ',  do not agree between mates. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+            exit_msg = ''.join(['ERROR: The informative strands for readpair ', read_1.qname, ',  do not agree between mates. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
             sys.exit(exit_msg)
     return methylation_m_tuples, n_methylation_loci, n_fragment_skipped_due_to_bad_overlap
                                     
@@ -581,7 +581,7 @@ def get_strand(read):
             strand = 'OB'
         ## Else, something odd about this read
         else:
-            exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+            exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
             sys.exit(exit_msg)
     ## Paired-end
     elif read.is_paired:
@@ -596,7 +596,7 @@ def get_strand(read):
                 strand = 'OB'
             ## Else, something odd about this read
             else:
-                exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+                exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
                 sys.exit(exit_msg)
         elif read.is_read2:
             ## Check if aligned CT or CTOT-strand
@@ -607,10 +607,10 @@ def get_strand(read):
                 strand = 'OB'
             ## Else, something odd about this read
             else:
-                exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+                exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
                 sys.exit(exit_msg)
     else:
-        exit_msg = ''.join(['ERROR: Read ', read.qname, ' is neither a single-end read nor part of a paired-end read. Please log an issue at www.github.com/PeteHaitch/Comethylation describing the error or email me at peter.hickey@gmail.com'])
+        exit_msg = ''.join(['ERROR: Read ', read.qname, ' is neither a single-end read nor part of a paired-end read. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
     return strand
 
 __all__ = [

@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/PeteHaitch/Comethylation.png?branch=master)](https://travis-ci.org/PeteHaitch/Comethylation)
+[![Build Status](https://travis-ci.org/PeteHaitch/comethylation.png?branch=master)](https://travis-ci.org/PeteHaitch/comethylation)
 
 # TODO
 * Check memory usage
@@ -14,7 +14,7 @@ Simply running
 ```
 python setup.py install
 ```
-in the `Comethylation` directory should work for most systems.
+in the root `comethylation` directory should work for most systems.
 
 `comethylation` is written in Python and relies upon the pysam module. Running `python setup.py install` will attempt to install pysam if it isn't found on your system. Alternatively, pysam is available from [https://code.google.com/p/pysam/](https://code.google.com/p/pysam/).
 
@@ -247,7 +247,7 @@ These are current limitations and their statuses:
 ## Only works with data aligned with the __Bismark__ mapping software 
 `comethylation` makes use of Bismark's custom SAM tags `XM`, `XR` and `XG`. The `XM` tag is used to infer the methylation state of each sequenced cytosine while the `XR` and `XG` tags are used to infer the orientation and strand of the alignment. If the data were aligned with Bismark version < 0.8.3 please use the `--oldBismark` flag.
 
-A future version of this software will support the use of `BAM` files created with other popular bisulfite aligners such as [BSMAP](https://code.google.com/p/bsmap/), [BSmooth](https://github.com/BenLangmead/bsmooth-align), [bwa-meth](https://github.com/brentp/bwa-meth/), [gsnap](http://research-pub.gene.com/gmap/), [last](http://last.cbrc.jp/) and [Novoalign](http://www.novocraft.com/). Support will either be provided natively in `comethylation` or via an pre-processing script `bismarkify`. See [Issue #30](https://github.com/PeteHaitch/Comethylation/issues/30)
+A future version of this software will support the use of `BAM` files created with other popular bisulfite aligners such as [BSMAP](https://code.google.com/p/bsmap/), [BSmooth](https://github.com/BenLangmead/bsmooth-align), [bwa-meth](https://github.com/brentp/bwa-meth/), [gsnap](http://research-pub.gene.com/gmap/), [last](http://last.cbrc.jp/) and [Novoalign](http://www.novocraft.com/). Support will either be provided natively in `comethylation` or via an pre-processing script `bismarkify`. See [Issue #30](https://github.com/PeteHaitch/comethylation/issues/30)
 
 ## Paired-end data must be sorted by queryname
 This is required in order to avoid lookups when finding the mate of a paired-end read.
@@ -261,7 +261,7 @@ It is difficult, although not impossible, to assign coordinates to a cytosine wi
 Specifically, it assumes that there are no '/' characters in the read names (`QNAME`) and that the BAM has not been processed with any other programs, e.g. Picard's MarkDuplicates, that might change the `FLAG` field. I am happy to improve this functionality if requested.
 
 ## Memory usage can be large 
-For instance, 5-20Gb per chromosome for a typical 20-30x coverage whole-genome methylC-seq experiment of human data. I think this is largely due to inefficiencies in how I store the m-tuples internally in `comethylation` (which is basically as a dictionary of dictionaries). See [Issue #64](https://github.com/PeteHaitch/Comethylation/issues/64)
+For instance, 5-20Gb per chromosome for a typical 20-30x coverage whole-genome methylC-seq experiment of human data. I think this is largely due to inefficiencies in how I store the m-tuples internally in `comethylation` (which is basically as a dictionary of dictionaries). See [Issue #64](https://github.com/PeteHaitch/comethylation/issues/64)
 
 ## Other notes
 
@@ -270,4 +270,4 @@ For instance, 5-20Gb per chromosome for a typical 20-30x coverage whole-genome m
 
 
 # Questions and comments
-Please use the GitHub Issue Tracker (available at [www.github.com/PeteHaitch/Comethylation](www.github.com/PeteHaitch/Comethylation)) to file bug reports or request new functionality. I welcome questions and comments; you can email me at peter.hickey@gmail.com. 
+Please use the GitHub Issue Tracker (available at [www.github.com/PeteHaitch/comethylation](www.github.com/PeteHaitch/comethylation)) to file bug reports or request new functionality. I welcome questions and comments; you can email me at peter.hickey@gmail.com. 

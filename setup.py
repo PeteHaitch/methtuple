@@ -18,7 +18,7 @@ setup(
     ],
   author='Peter Hickey',
   author_email='peter.hickey@gmail.com',
-  url='https://github.com/PeteHaitch/Comethylation',
+  url='https://github.com/PeteHaitch/comethylation',
   keywords='bisulfite sequencing methylation bismark bioinformatics',
   packages=find_packages(),
   include_package_data=True,
