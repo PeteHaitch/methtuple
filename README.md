@@ -1,9 +1,5 @@
 [![Build Status](https://travis-ci.org/PeteHaitch/comethylation.png?branch=master)](https://travis-ci.org/PeteHaitch/comethylation)
 
-# TODO
-* Check memory usage
-
-
 # comethylation
 
 `comethylation` is a methylation caller for methylation events that co-occur on the same DNA fragment from high-throughput bisulfite sequencing data, such as `methylC-seq`. A typical read from such an experiment reports a binary methylated or unmethylated measurement at multiple loci, where each read originates from a single cell. `comethylation` allows us to investigate the co-occurence of methylation marks at the level of a single cell.
@@ -137,15 +133,24 @@ samtools sort -n data/cs_pe_directional_1.fq.gz_bismark_bt2_pe.bam data/qs_pe_di
 comethylation --mTuple 3 --strandSpecific --methylationType CG --methylationType CHH data/qs_pe_directional_1.fq.gz_bismark_bt2_pe.bam data/qs_pe_directional
 ```
 
+## Memory usage and running time
+Memory usage is dependent upon the number of methylation loci on the chromosome (more methylation loci means increased memory usage) and the value of `--mTuple` (roughly, larger values means increased memory usage), but largely independent of the number of reads in the `BAM` file. In contrast, running time is dependent on the number of reads in the `BAM` file and largely independent of the choice of `--mTuple`.
+
+I will include more detailed performance benchmarks in future releases. For a rough indication of performance, here are the results for processing approximately 41,000,000 100bp paired-end reads from chr1 of a 20-30x coverage whole-genome methylC-seq experiment of human data. This analysis used a single AMD Opteron 6276 CPU (2.3GHz) on a shared memory system.
+
+### `--mTuple 2`
+Memory usage peaked at 2.9GB and the running time was approximately 1.5 hours. 
+
+### `--mTuple 5`
+Memory usage peaked at 8.8GB and the running time was approximately 1.5 hours.
+
 ## Helper script
 I frequently work with large, coordinate-sorted `BAM` files. To speed up the extraction of m-tuples I use a simple (naive) parallelisation strategy. The idea is to split the `BAM` file into chromosome-level `BAM` files, process each chromosome-level `BAM` separately and then recombine these chromosome-level files into a genome-level file. The script `helper_scripts/run_comethylation.sh` implements this strategy; simply edit the key variables in this script.
 
 ### Warnings
 
-* __WARNING__: This simple strategy uses as many cores as there are chromosomes. 
-* __WARNING__: The script `tabulate_hist.R` must be in the same directory as `run_comethylation.sh`.
-* __WARNING__: (__TODO__ _Check RAM usage_) Each chromosome-level analysis uses 5-20Gb of memory for a typical 20-30x coverage whole-genome methylC-seq experiment of human data.
-
+* __WARNING__: This simple strategy uses as many cores as there are chromosomes. This can result in __very__ large memory usage, depending on the value of `--mTuple`, and may cause problems if you have more chromosomes than available cores.
+* __WARNING__: The script `tabulate_hist.R` must be in the same directory as `run_comethylation.sh`
 
 ## Advanced usage
 
@@ -272,7 +277,6 @@ For instance, 5-20Gb per chromosome for a typical 20-30x coverage whole-genome m
 A big thank you to [Felix Krueger](http://www.bioinformatics.babraham.ac.uk/people.html) (the author of Bismark) for his help in understanding mapping of bisulfite-sequencing data and for answering my many questions along the way.
 
 Thanks also to Tobias Sargeant ([@folded](https://github.com/folded)) for his help in turning the original `comethylation.py` script into the current Python module `comethylation` and for help in setting up a testing framework.
-
 
 
 # Questions and comments
