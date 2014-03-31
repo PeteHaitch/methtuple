@@ -204,6 +204,16 @@ ignore_end_r2 = args.ignoreEnd_r2
 min_qual = args.minQual
 min_mapq = args.minMapQ
 
+#### The main program. Loops over the BAM file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or readpair. ####
+# Open SAM/BAM file and output files
+BAM = pysam.Samfile(args.BAM)
+OUT = open(".".join([args.sampleName, '_'.join(methylation_type.split('/')), str(args.mTuple), "tsv"]), "w")
+HIST = open("".join([args.sampleName, '.', '_'.join(methylation_type.split('/')), "_per_read.hist"]), "w")
+if not args.noFailedQCFile:
+    FAILED_QC = open("".join([args.sampleName, ".reads_that_failed_QC.txt"]), "w")
+else:
+    FAILED_QC = open(os.devnull, "w")
+
 n_fragment = 0 # The number of DNA fragments. One single-end read contributes one to the count and each half of a readpair contributes half a count.
 n_fragment_skipped_due_to_bad_overlap = 0 # The number of DNA fragments skipped due to the overlapping sequencing not passing the appropriate filter
 n_fragment_skipped_due_to_low_mapq = 0 # The number of DNA fragments skipped due to low mapQ
@@ -216,15 +226,6 @@ n_methylation_loci_per_read = {} # Dictionary of the number of methylation loci 
 chr_map = dict(zip(BAM.references, range(len(BAM.references)))) # A dictionary mapping the reference names to their order in the BAM header
 methylation_m_tuples = MTuple(args.sampleName, m, methylation_type, chr_map) # Initiate the MTuple object
 
-#### The main program. Loops over the BAM file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or readpair. ####
-# Open SAM/BAM file and output files
-BAM = pysam.Samfile(args.BAM)
-OUT = open(".".join([args.sampleName, '_'.join(methylation_type.split('/')), str(args.mTuple), "tsv"]), "w")
-HIST = open("".join([args.sampleName, '.', '_'.join(methylation_type.split('/')), "_per_read.hist"]), "w")
-if not args.noFailedQCFile:
-    FAILED_QC = open("".join([args.sampleName, ".reads_that_failed_QC.txt"]), "w")
-else:
-    FAILED_QC = open(os.devnull, "w")
 
 # Print key variable names and command line parameter options to STDOUT
 print "comethylation (v"+__version__+")\n"
@@ -446,7 +447,7 @@ for read in BAM:
 # Write results to disk
 print ''.join(['Extracted all ',  methylation_type, ' ', str(m), '-tuples.'])
 print 'Now writing output to', OUT.name, '...\n'
-write_methylation_m_tuples_to_file(methylation_m_tuples, m, OUT)
+write_methylation_m_tuples_to_file(methylation_m_tuples, OUT)
 
 # Print some summary information to STDOUT
 print 'Summary of the number of DNA fragments processed by comethylation'

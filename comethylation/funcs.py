@@ -440,13 +440,13 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                     sys.exit(exit_msg)
                 # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
                 this_comethylation_pattern = ''.join([read_1.opt('XM')[j] for j in methylation_index_1[(leftmost_shared_locus_index + i):]] + [read_2.opt('XM')[j] for j in methylation_index_2[:(m - len(this_m_tuple_positions_1))]])
-                this_m_tuple_positions = (BAM.getrname(read.tid),) + tuple(this_m_tuple_positions_1) + tuple(this_m_tuple_positions_2)
+                this_m_tuple_positions = (BAM.getrname(read_1.tid),) + tuple(this_m_tuple_positions_1) + tuple(this_m_tuple_positions_2)
                 methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern,  read_1, read_2)
             # Finally, create all m-tuples of methylation loci where each locus is from read_2.        
             if len(methylation_index_2) >= m:
                 for i in range(0, len(methylation_index_2) - m + 1): # For a read containing k methylation loci there are (k - m + 1) m-tuples.:
                     this_comethylation_pattern = ''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]])
-                    this_m_tuple_positions = (BAM.getrname(read.tid),) + tuple(positions_2[i:(i + m)])
+                    this_m_tuple_positions = (BAM.getrname(read_2.tid),) + tuple(positions_2[i:(i + m)])
                     methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
 
         # Case 2: Readpair is informative for OB-strand
@@ -477,13 +477,13 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                     sys.exit(exit_msg)
                 # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
                 this_comethylation_pattern = ''.join([read_2.opt('XM')[j] for j in methylation_index_2[(leftmost_shared_locus_index + i):]] + [read_1.opt('XM')[j] for j in methylation_index_1[:(m - len(this_m_tuple_positions_2))]])
-                this_m_tuple_positions = (BAM.getrname(read.tid),) + tuple(this_m_tuple_positions_2) + tuple(this_m_tuple_positions_1)
+                this_m_tuple_positions = (BAM.getrname(read_1.tid),) + tuple(this_m_tuple_positions_2) + tuple(this_m_tuple_positions_1)
                 methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
             # Finally, create all m-tuples of methylation loci where each locus is from read_2.        
             if len(methylation_index_2) >= m:
                 for i in range(0, len(methylation_index_2) - m + 1): # For a read containing m methylation loci there are (m - m-tuple + 1) m-tuples.:
                     this_comethylation_pattern = ''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]])
-                    this_m_tuple_positions = (BAM.getrname(read.tid),) + tuple(positions_2[i:(i + m)])
+                    this_m_tuple_positions = (BAM.getrname(read_2.tid),) + tuple(positions_2[i:(i + m)])
                     methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
         else:
             exit_msg = ''.join(['ERROR: The informative strands for readpair ', read_1.qname, ',  do not agree between mates. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
@@ -501,7 +501,7 @@ def write_methylation_m_tuples_to_file(methylation_m_tuples, OUT):
     tab_writer = csv.writer(OUT, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
 
     # Get m
-    m = methylation_m_tuples.methylation_m_tuples
+    m = methylation_m_tuples.m
     # Create the header row and write to file
     header = ['chr'] + ['pos' + str(i) for i in range(1, m + 1)] + methylation_m_tuples.comethylation_patterns
     tab_writer.writerow(header)

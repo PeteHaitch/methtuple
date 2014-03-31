@@ -10,9 +10,9 @@ class MTuple:
         sample_name: The name of the sample
         m: The "m" in m-tuples, i.e. size of the methylation-loci m-tuples.
         methylation_type: The type of methylation event: CG, CHG, CHH, CNN, CG/CHG, CG/CHH, CG/CNN, CHG/CHH, CHG/CNN, CHH/CNN, CG/CHG/CHH, CG/CHG/CNN, CG/CHH/CNN, CHG/CHH/CNN OR CG/CHG/CHH/CNN
-        chr_map: A map/dictionary converting chromosome names to order, e.g. {'chr1': 1, 'chr10': 10, ..., 'chrX': 23}
+        chr_map: A dictionary converting chromosome names to order, e.g. {'chr1': 1, 'chr10': 10, ..., 'chrX': 23}
         comethylation_patterns: A list of co-methylation patterns in alphabetic order, e.g. [MM, MU, UM, UU] for m = 2. Used as column names in output.
-        counts: A dictionary storing positions and counts for each m-tuple. Keys are positions (stored as tuple) and values are their associated counts (stored as an integer array).
+        counts: A dictionary storing positions and counts for each m-tuple. Keys are positions (stored as tuples) and values are their associated counts (stored as signed int arrays).
     """
     def __init__(self, sample_name, m, methylation_type, chr_map):
         """
@@ -20,7 +20,9 @@ class MTuple:
         """
         # Argument checks
         if not all([x in ['CG', 'CHG', 'CHH', 'CNN'] for x in methylation_type.split('/')]):
-            raise ValueError("__initi__ MTuple: 'methylation_type' must be one or more of 'CG', 'CHG', 'CHH' or 'CNN'. Multiple values must be separated by the '/' character.")
+            raise ValueError("__init__ MTuple: 'methylation_type' must be one or more of 'CG', 'CHG', 'CHH' or 'CNN'. Multiple values must be separated by the '/' character.")
+        if m < 0 or not isinstance(m, int):
+            raise ValueError("__init__ MTuple: 'm' must be a positive integer.")
         # Initialise object of class MTuple
         self.sample_name = sample_name
         self.m = m
