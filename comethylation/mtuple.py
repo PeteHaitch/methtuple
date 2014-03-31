@@ -1,44 +1,42 @@
 import re
 import itertools
 import sys
+import array
 
-class WithinFragmentComethylationMTuple:
-    """A WithinFragmentComethylationMTuple instance stores the within-fragment comethylation counts for a single m-tuple of methylation loci, e.g. a methylation-loci m-tuple.
+class MTuple:
+    """ An MTuple instance stores methylation loci m-tuples and their associated counts for a single sample and a single "m" value.
     
     Attributes:
-        chromosome: The chromosome containing the methylation-loci m-tuple.
-        chromosome_index: An index to be used when sorting a set of WithinFragmentComethylationMTuple instances by chromosome name.
+        sample_name: The name of the sample
         m: The "m" in m-tuples, i.e. size of the methylation-loci m-tuples.
-        positions: A sorted list of 1-based positions (position_1, position_2, ..., position_m) of length = m-tuple, where position_i is the position of the i-th methylation locus in the methylation-loci m-tuple (with reference to the OT-strand). NB: position_1 < position_2 < ... < position_m by definition.
         methylation_type: The type of methylation event: CG, CHG, CHH, CNN, CG/CHG, CG/CHH, CG/CNN, CHG/CHH, CHG/CNN, CHH/CNN, CG/CHG/CHH, CG/CHG/CNN, CG/CHH/CNN, CHG/CHH/CNN OR CG/CHG/CHH/CNN
-        counts: A dictionary storing the counts for each of the 2^m comethylation states combined across strands giving a total of 2^m keys and associated values (counts).
+        chr_map: A map/dictionary converting chromosome names to order, e.g. {'chr1': 1, 'chr10': 10, ..., 'chrX': 23}
+        comethylation_patterns: A list of co-methylation patterns in alphabetic order, e.g. [MM, MU, UM, UU] for m = 2. Used as column names in output.
+        counts: A dictionary storing positions and counts for each m-tuple. Keys are positions (stored as tuple) and values are their associated counts (stored as an integer array).
     """
-    def __init__(self, chromosome, chromosome_index, m, positions, methylation_type):
+    def __init__(self, sample_name, m, methylation_type, chr_map):
         """
-        Initiates WithinFragmentComethylationMTuple for a single m-tuple of methylation events with co-ordinates given by arguments (chromosome, positions) and sets all counts to zero.
+        Initiates an MTuple instance with sample_name, m, methylation_type and chr_map given by arguments. The 'counts' field is set as an empty dictionary.
         """
         # Argument checks
-        if len(positions) != m:
-            raise ValueError("__init__ WithinFragmentComethylationMTuple: 'm' must be equal to len(positions)")
         if not all([x in ['CG', 'CHG', 'CHH', 'CNN'] for x in methylation_type.split('/')]):
-            raise ValueError("__initi__ WithinFragmentComethylationMTuple: 'methylation_type' must be one or more of 'CG', 'CHG', 'CHH' or 'CNN'. Multiple values must be separated by the '/' character.")
-        # Initialise object of class WithinFragmentComethylationMTuple
+            raise ValueError("__initi__ MTuple: 'methylation_type' must be one or more of 'CG', 'CHG', 'CHH' or 'CNN'. Multiple values must be separated by the '/' character.")
+        # Initialise object of class MTuple
+        self.sample_name = sample_name
+        self.m = m
         self.methylation_type = methylation_type
-        self.chromosome = chromosome
-        self.chromosome_index = chromosome_index
-        self.positions = positions
-        tmp_k = list((itertools.product(('U', 'M'), repeat = m))) # Step 1 of creating the keys: create all combinations of 'U', 'M' of length m by Cartesian product
-        k = [''.join(a) for a in tmp_k] # No need to sort because these are just dictionary keys
-        self.counts = dict(zip(k, [0] * (2 ** m))) # Create the dictionary with all counts set to 0
+        self.chr_map = chr_map
+        tmp_k = list((itertools.product(('U', 'M'), repeat = m))) # Create all combinations of 'U', 'M' of length m by Cartesian product
+        self.comethylation_patterns = sorted([''.join(a) for a in tmp_k])
+        self.mtuples = {}
     def display(self): 
-        """Display a WithinFragmentComethylationMTuple instance."""
+        """Display an MTuple instance."""
+        print 'Sample name =', self.sample_name
         print 'Methylation type =', self.methylation_type
-        print 'm = ', len(self.positions)
-        print 'Positions =', self.chromosome, ':', self.positions
-        print 'Counts =', self.counts
-    def m_tuple_id(self):
-        print ''.join([self.chromosome, ':', '-'.join([str(a) for a in self.positions])])
-    def increment_count(self, comethylation_state, read_1, read_2):
+        print 'm = ', self.m
+        print 'First 10 positions =', self.mtuples.keys()[:10]
+        print 'First 10 counts =', self.mtuples.values()[:10]
+    def increment_count(self, pos, comethylation_state, read_1, read_2):
         """Increment the counts attribute based on the comethylation_state that has been extracted from read_1 and read_2.
         NB: read_2 should be set to None if data is single-end.
         NB: No check is made of the informative strand for read_1 and read_2."""
@@ -60,13 +58,15 @@ class WithinFragmentComethylationMTuple:
         if not re.search('[^MU]', comethylation_state) is None:
             exit_msg = ''.join([read_1.qname, ' has an invalid comethylation state = ', comethylation_state, '.\nThis should never happen. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com.'])
             sys.exit(exit_msg)
-        if (len(comethylation_state) != len(self.positions)):
-            exit_msg = ''.join(['Length of comethylation string (', str(len(comethylation_state)), ') does not equal m (', str(len(self.positions)), '). \nThis should never happen. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com.'])
+        if (len(comethylation_state) != self.m):
+            exit_msg = ''.join(['Length of comethylation string (', str(len(comethylation_state)), ') does not equal m (', str(self.m), '). \nThis should never happen. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com.'])
             sys.exit(exit_msg)
-
-        # Increment count
-        self.counts[comethylation_state] += 1
+        
+        # Check whether this m-tuple is already in MTuple. If it is just update the corresponding count, otherwise add that m-tuple and then update the corresponding count
+        if not pos in self.mtuples:
+            self.mtuples[pos] = array.array('i',[0] * 2**self.m)
+        self.mtuples[pos][self.comethylation_patterns.index(comethylation_state)] += 1
 
 __all__ = [
-    'WithinFragmentComethylationMTuple'
+    'MTuple'
 ]

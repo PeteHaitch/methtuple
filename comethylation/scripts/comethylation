@@ -213,7 +213,8 @@ n_fragment_skipped_due_to_unmapped_read_or_mate = 0 # The number of DNA fragment
 n_fragment_skipped_due_to_improper_pair = 0 # The number of DNA fragments skipped due to the readpair being improperly paired
 n_fragment_skipped_due_to_indel = 0 # The number of DNA fragments skipped due to the read or readpair containing an indel
 n_methylation_loci_per_read = {} # Dictionary of the number of methylation loci that passed QC per read
-methylation_m_tuples = {} # Dictionary of m-tuples of methylation loci with keys of form chromosome:position_1:position_2 and values corresponding to a WithinFragmentComethylationMTuple instance
+chr_map = dict(zip(BAM.references, range(len(BAM.references)))) # A dictionary mapping the reference names to their order in the BAM header
+methylation_m_tuples = MTuple(args.sampleName, m, methylation_type, chr_map) # Initiate the MTuple object
 
 #### The main program. Loops over the BAM file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or readpair. ####
 # Open SAM/BAM file and output files

@@ -306,8 +306,8 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
     Args:
         read: An AlignedRead instance corresponding to a single-end read.
         BAM: The Samfile instance corresponding to the sample. Required in order to extract chromosome names from read.
-        methylation_m_tuples: A dictionary storing all observed m-tuples of methylation events and their WithinFragmentComethylationMTuple instance.
-        methylation_type: A string of the methylation type, e.g. CG for CpG methylation. Must be a valid option for the WithinFragmentComethylationMTuple class.
+        methylation_m_tuples: An MTuple instance.
+        methylation_type: A string of the methylation type, e.g. CG for CpG methylation. Must be a valid option for the MTuple class.
         methylation_pattern: A regular expression of the methylation loci, e.g. '[Zz]' for CpG-methylation
         m: Is the "m" in "m-tuple", i.e. the size of the m-tuple. m must be an integer greater than or equal to 1. WARNING: No error or warning produced if this condition is violated.
         ignore_start_r1: How many bases to ignore from start (5' end) of read.
@@ -316,7 +316,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
         phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
         ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
     Returns:
-        methylation_m_tuples: An updated version of methylation_m_tuples
+        methylation_m_tuples: An updated version of methylation_m_tuples.
         n_methylation_loci: The number of methylation loci extracted from the read.
     """
     # Identify methylation events in read, e.g. CpGs or CHHs. The methylation_pattern is specified by a command line argument (e.g. Z/z corresponds to CpG)
@@ -340,18 +340,12 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
         if not positions == sorted(positions):
             exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for single-end read", read.qname, "\n'positions' =", str(positions), '.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
             sys.exit(exit_msg)
-        # Else, construct each bookended methylation-loci m-tuple and add it to the methylation_m_tuple instance.
-        else:
-            for i in range(0, len(methylation_index) - m + 1): # For a read containing k methylation loci there are (k - m + 1) m-tuples.
-                this_m_tuple_positions = positions[i:(i + m)]
-                # Create a unique ID for each m-tuple of methylation loci (of form "chromosome:position_1-position_2-...-position_M")
-                m_tuple_id = ''.join([BAM.getrname(read.tid), ':', '-'.join([str(j) for j in this_m_tuple_positions])])
-                # Check whether m-tuple has already been observed. If not, create a WithinFragmentMethylationMTuple instance for it and increment its count. Otherwise, just increment its count.
-                if not m_tuple_id in methylation_m_tuples:
-                    methylation_m_tuples[m_tuple_id] = WithinFragmentComethylationMTuple(BAM.getrname(read.tid), read.tid, m, this_m_tuple_positions, methylation_type) # read.tid acts as the chromosome_index required by WithinFragmentComethylationMTuple class
-                    methylation_m_tuples[m_tuple_id].increment_count(''.join([read.opt('XM')[j] for j in methylation_index[i:(i + m)]]), read, None)
-                else:
-                    methylation_m_tuples[m_tuple_id].increment_count(''.join([read.opt('XM')[j] for j in methylation_index[i:(i + m)]]), read, None)
+        # Construct each bookended methylation-loci m-tuple and add it to the methylation_m_tuple object.
+        for i in range(0, len(methylation_index) - m + 1): # For a read containing k methylation loci there are (k - m + 1) m-tuples.
+            # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
+            this_comethylation_pattern = ''.join([read.opt('XM')[j] for j in methylation_index[i:(i + m)]])
+            this_m_tuple_positions = (BAM.getrname(read.tid),) + tuple(positions[i:(i + m)])
+            methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read, None)
     return methylation_m_tuples, n_methylation_loci
 
 def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_start_r2, ignore_end_r1, ignore_end_r2, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC):
@@ -361,9 +355,9 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         read_1: An AlignedRead instance corresponding to read_1 of the readpair.
         read_2: An AlignedRead instance corresponding to read_2 of the readpair.
         BAM: The Samfile instance corresponding to the sample. Required in order to extract chromosome names from read.
-        methylation_m_tuples: A dictionary storing all observed m-tuples of methylation events and their WithinFragmentComethylationMTuple instance.
+        methylation_m_tuples: An MTuple instance.
         m: Is the "m" in "m-tuple", i.e. the size of the m-tuple. m must be an integer greater than or equal to 1. WARNING: No error or warning produced if this condition is violated.
-        methylation_type: A string of the methylation type, e.g. CG for CpG methylation. Must be a valid option for the WithinFragmentComethylationMTuple class.
+        methylation_type: A string of the methylation type, e.g. CG for CpG methylation. Must be a valid option for the MTuple class.
         methylation_pattern: A regular expression of the methylation loci, e.g. '[Zz]' for CpG-methylation
         ignore_start_r1: How many bases to ignore from start (5' end) of read_1.
         ignore_start_r2: How many bases to ignore from start (5' end) of read_2.
@@ -376,7 +370,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         n_fragment_skipped_due_to_bad_overlap: The total number of fragments (readpairs) skipped due to the overlapping sequencing not passing the filter.
         FAILED_QC: The file object where the QNAME of readpairs that fail the overlap check are written, along with the reason the readpairs failed
     Returns:
-        methylation_m_tuples: An updated version of methylation_m_tuples
+        methylation_m_tuples: An updated version of methylation_m_tuples.
         n_methylation_loci: The number of methylation loci extracted from the read.
     """
     # Identify methylation events in read, e.g. CpGs or CHHs. The methylation_pattern is specified by a command line argument (e.g. Z/z corresponds to CpG)
@@ -424,137 +418,96 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         # Case 1: Readpair is informative for OT-strand
         if strand_1 == 'OT' and strand_2 == 'OT':
             # Exit if methylation loci are incorrectly ordered
-            if not positions_1 + positions_2 == sorted(positions_1 + positions_2):
+            if positions_1 + positions_2 != sorted(positions_1 + positions_2):
                 exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for paired-end read", read_1.qname, ", which is informative for the OT-strand.\n'positions_1 + positions_2' =", str(positions_1 + positions_2), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
                 sys.exit(exit_msg)
-            else:
-                # First, create all m-tuples of methylation loci where each locus is from read_1.
-                if len(methylation_index_1) >= m:
-                    for i in range(0, len(methylation_index_1) - m + 1): # For a read containing k methylation loci there are (k - m + 1) m-tuples.:
-                        this_m_tuple_positions_1 = positions_1[i:(i + m)]
-                        # Create a unique ID for each m-tuple of methylation loci (of form "chromosome:position_1-position_2-...-position_m")
-                        m_tuple_id = ''.join([BAM.getrname(read_1.tid), ':', '-'.join([str(j) for j in this_m_tuple_positions_1])])
-                        # Check whether m-tuple has already been observed. If not, create a WithinFragmentMethylationMTuple instance for it and increment its count. Otherwise, just increment its count.
-                        if not m_tuple_id in methylation_m_tuples:
-                            methylation_m_tuples[m_tuple_id] = WithinFragmentComethylationMTuple(BAM.getrname(read_1.tid), read_1.tid, m, this_m_tuple_positions_1, methylation_type) # read_1.tid acts as the chromosome_index required by WithinFragmentComethylationMTuple class
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]]), read_1, read_2)
-                        else:
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]]), read_1, read_2)
-                # Second, create all m-tuples of methylation loci where the leftmost locus is on read_1 and the rightmost locus is on read_2
-                num_shared_m_tuples = max(len(methylation_index_1) + len(methylation_index_2) - m + 1, 0) - max(len(methylation_index_1) - m + 1, 0) - max(len(methylation_index_2) - m + 1, 0) # the number of m-tuples that span read_1 and read_2
-                leftmost_shared_locus_index = max(0, len(methylation_index_1) - m + 1) # The index of the leftmost locus to be part of a "shared" m-tuple. The rightmost_shared_locus_index = min(m - 2, len(methylation_index_2) - 1), however this is not required
-                for i in range(0, num_shared_m_tuples):
-                    this_m_tuple_positions_1 = positions_1[(leftmost_shared_locus_index + i):]
-                    this_m_tuple_positions_2 = positions_2[:(m - len(this_m_tuple_positions_1))]
-                    # Exit if methylation loci are incorrectly ordered. While a similar check is performed a few lines above, this is a sanity check to make sure than nothing has gone wrong in constructing the shared m-tuples
-                    if not this_m_tuple_positions_1 + this_m_tuple_positions_2 == sorted(this_m_tuple_positions_1 + this_m_tuple_positions_2):
-                        exit_msg = ' '.join(["ERROR: The positions of the shared methylation loci are not properly ordered for paired-end read", read_1.qname, ", which is informative for the OT-strand.\n'this_m_tuple_positions_1 + this_m_tuple_positions_2' =", str(this_m_tuple_positions_1 + this_m_tuple_positions_2), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
-                        sys.exit(exit_msg)
-                    else:
-                        # Create a unique ID for each m-tuple of methylation loci (of form "chromosome:position_1-position_2-...-position_m")
-                        m_tuple_id = ''.join([BAM.getrname(read_1.tid), ':', '-'.join([str(j) for j in this_m_tuple_positions_1] + [str(k) for k in this_m_tuple_positions_2])])
-                    # Check whether m-tuple has already been observed. If not, create a WithinFragmentMethylationMTuple instance for it and increment its count. Otherwise, just increment its count.
-                        if not m_tuple_id in methylation_m_tuples:
-                            methylation_m_tuples[m_tuple_id] = WithinFragmentComethylationMTuple(BAM.getrname(read_1.tid), read_1.tid, m, this_m_tuple_positions_1 + this_m_tuple_positions_2, methylation_type) # read_1.tid acts as the chromosome_index required by WithinFragmentComethylationMTuple class
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[(leftmost_shared_locus_index + i):]] + [read_2.opt('XM')[j] for j in methylation_index_2[:(m - len(this_m_tuple_positions_1))]]), read_1, read_2)
-                        else:
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[(leftmost_shared_locus_index + i):]] + [read_2.opt('XM')[j] for j in methylation_index_2[:(m - len(this_m_tuple_positions_1))]]), read_1, read_2)
-                # Finally, create all m-tuples of methylation loci where each locus is from read_2.        
-                if len(methylation_index_2) >= m:
-                    for i in range(0, len(methylation_index_2) - m + 1): # For a read containing k methylation loci there are (k - m + 1) m-tuples.:
-                        this_m_tuple_positions_2 = positions_2[i:(i + m)]
-                        # Create a unique ID for each m-tuple of methylation loci (of form "chromosome:position_1-position_2-...-position_m")
-                        m_tuple_id = ''.join([BAM.getrname(read_2.tid), ':', '-'.join([str(j) for j in this_m_tuple_positions_2])])
-                        # Check whether m-tuple has already been observed. If not, create a WithinFragmentMethylationMTuple instance for it and increment its count.
-                        if not m_tuple_id in methylation_m_tuples:
-                            methylation_m_tuples[m_tuple_id] = WithinFragmentComethylationMTuple(BAM.getrname(read_2.tid), read_2.tid, m, this_m_tuple_positions_2, methylation_type) # read_2.tid acts as the chromosome_index required by WithinFragmentComethylationMTuple class
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), read_1, read_2)
-                        else:
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), read_1, read_2)
+            # Firstly, create all m-tuples of methylation loci where each locus is from read_1.
+            if len(methylation_index_1) >= m:
+                for i in range(0, len(methylation_index_1) - m + 1): # For a read containing k methylation loci there are (k - m + 1) m-tuples.
+                    # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
+                    this_comethylation_pattern = ''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]])
+                    this_m_tuple_positions = (BAM.getrname(read_1.tid),) + tuple(positions_1[i:(i + m)])
+                    methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
+            # Secondly, create all m-tuples of methylation loci where the leftmost locus is on read_1 and the rightmost locus is on read_2
+            num_shared_m_tuples = max(len(methylation_index_1) + len(methylation_index_2) - m + 1, 0) - max(len(methylation_index_1) - m + 1, 0) - max(len(methylation_index_2) - m + 1, 0) # the number of m-tuples that span read_1 and read_2
+            leftmost_shared_locus_index = max(0, len(methylation_index_1) - m + 1) # The index of the leftmost locus to be part of a "shared" m-tuple. The rightmost_shared_locus_index = min(m - 2, len(methylation_index_2) - 1), however this is not required
+            for i in range(0, num_shared_m_tuples):
+                this_m_tuple_positions_1 = positions_1[(leftmost_shared_locus_index + i):]
+                this_m_tuple_positions_2 = positions_2[:(m - len(this_m_tuple_positions_1))]
+                # Exit if methylation loci are incorrectly ordered. While a similar check is performed a few lines above, this is a sanity check to make sure than nothing has gone wrong in constructing the shared m-tuples
+                if this_m_tuple_positions_1 + this_m_tuple_positions_2 != sorted(this_m_tuple_positions_1 + this_m_tuple_positions_2):
+                    exit_msg = ' '.join(["ERROR: The positions of the shared methylation loci are not properly ordered for paired-end read", read_1.qname, ", which is informative for the OT-strand.\n'this_m_tuple_positions_1 + this_m_tuple_positions_2' =", str(this_m_tuple_positions_1 + this_m_tuple_positions_2), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
+                    sys.exit(exit_msg)
+                # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
+                this_comethylation_pattern = ''.join([read_1.opt('XM')[j] for j in methylation_index_1[(leftmost_shared_locus_index + i):]] + [read_2.opt('XM')[j] for j in methylation_index_2[:(m - len(this_m_tuple_positions_1))]])
+                this_m_tuple_positions = (BAM.getrname(read.tid),) + tuple(this_m_tuple_positions_1) + tuple(this_m_tuple_positions_2)
+                methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern,  read_1, read_2)
+            # Finally, create all m-tuples of methylation loci where each locus is from read_2.        
+            if len(methylation_index_2) >= m:
+                for i in range(0, len(methylation_index_2) - m + 1): # For a read containing k methylation loci there are (k - m + 1) m-tuples.:
+                    this_comethylation_pattern = ''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]])
+                    this_m_tuple_positions = (BAM.getrname(read.tid),) + tuple(positions_2[i:(i + m)])
+                    methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
+
         # Case 2: Readpair is informative for OB-strand
         elif strand_1 == 'OB' and strand_2 == 'OB':
             # Translate co-ordinates "ob_strand_offset" bases to the left so that it points to the C on the OT-strand of the methylation locus
             positions_1 = [x - ob_strand_offset for x in positions_1]
             positions_2 = [x - ob_strand_offset for x in positions_2]
             # Exit if methylation loci are incorrectly ordered.
-            if not positions_2 + positions_1 == sorted(positions_2 + positions_1): 
+            if positions_2 + positions_1 != sorted(positions_2 + positions_1): 
                 exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for paired-end read", read_1.qname, "which is informative for the OB-strand.\n'positions_2 + positions_1' =", str(positions_2 + positions_1), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
                 sys.exit(exit_msg)
-            else:
-                # First, create all m-tuples of methylation loci where each locus is from read_1.
-                if len(methylation_index_1) >= m:
-                    for i in range(0, len(methylation_index_1) - m + 1): # For a read containing m methylation loci there are (m - m-tuple + 1) m-tuples.:
-                        this_m_tuple_positions_1 = positions_1[i:(i + m)]
-                        # Create a unique ID for each m-tuple of methylation loci (of form "chromosome:position_1-position_2-...-position_m")
-                        m_tuple_id = ''.join([BAM.getrname(read_1.tid), ':', '-'.join([str(j) for j in this_m_tuple_positions_1])])
-                        # Check whether m-tuple has already been observed. If not, create a WithinFragmentMethylationMTuple instance for it and increment its count.
-                        if not m_tuple_id in methylation_m_tuples:
-                            methylation_m_tuples[m_tuple_id] = WithinFragmentComethylationMTuple(BAM.getrname(read_1.tid), read_1.tid, m, this_m_tuple_positions_1, methylation_type) # read_1.tid acts as the chromosome_index required by WithinFragmentComethylationMTuple class
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]]), read_1, read_2)
-                        else:
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]]), read_1, read_2)
-                # Second, create all m-tuples of methylation loci where the leftmost locus is on read_1 and the rightmost locus is on read_2
-                num_shared_m_tuples = max(len(methylation_index_1) + len(methylation_index_2) - m + 1, 0) - max(len(methylation_index_1) - m + 1, 0) - max(len(methylation_index_2) - m + 1, 0) # the number of m-tuples that span read_1 and read_2
-                leftmost_shared_locus_index = max(0, len(methylation_index_2) - m + 1) # The index of the leftmost locus to be part of a "shared" m-tuple. The rightmost_shared_locus_index = min(m - 2, len(methylation_index_1) - 1), however this is not required (m - 2 = m - 1 - 1, because Python lists are 0-indexed)
-                for i in range(0, num_shared_m_tuples):
-                    this_m_tuple_positions_2 = positions_2[(leftmost_shared_locus_index + i):]
-                    this_m_tuple_positions_1 = positions_1[:(m - len(this_m_tuple_positions_2))]
-                    # Exit if methylation loci are incorrectly ordered. While a similar check is performed a few lines above, this is a sanity check to make sure than nothing has gone wrong in constructing the shared m-tuples
-                    if not this_m_tuple_positions_2 + this_m_tuple_positions_1 == sorted(this_m_tuple_positions_2 + this_m_tuple_positions_1):
-                        exit_msg = ' '.join(["ERROR: The positions of the shared methylation loci are not properly ordered for paired-end read", read_1.qname, "which is aligned to the OB-strand.\n'this_m_tuple_positions_2 + this_m_tuple_positions_1' =", str(this_m_tuple_positions_2 + this_m_tuple_positions_1), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
-                        sys.exit(exit_msg)
-                    else:
-                        # Create a unique ID for each m-tuple of methylation loci (of form "chromosome:position_1-position_2-...-position_m")
-                        m_tuple_id = ''.join([BAM.getrname(read_1.tid), ':', '-'.join([str(j) for j in this_m_tuple_positions_2] + [str(k) for k in this_m_tuple_positions_1])])
-                    # Check whether m-tuple has already been observed. If not, create a WithinFragmentMethylationMTuple instance for it and increment its count.
-                        if not m_tuple_id in methylation_m_tuples:
-                            methylation_m_tuples[m_tuple_id] = WithinFragmentComethylationMTuple(BAM.getrname(read_1.tid), read_1.tid, m, this_m_tuple_positions_2 + this_m_tuple_positions_1, methylation_type) # read_1.tid acts as the chromosome_index required by WithinFragmentComethylationMTuple class
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[(leftmost_shared_locus_index + i):]] + [read_1.opt('XM')[j] for j in methylation_index_1[:(m - len(this_m_tuple_positions_2))]]), read_1, read_2)
-                        else:
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[(leftmost_shared_locus_index + i):]] + [read_1.opt('XM')[j] for j in methylation_index_1[:(m - len(this_m_tuple_positions_2))]]), read_1, read_2)
-                # Finally, create all m-tuples of methylation loci where each locus is from read_2.        
-                if len(methylation_index_2) >= m:
-                    for i in range(0, len(methylation_index_2) - m + 1): # For a read containing m methylation loci there are (m - m-tuple + 1) m-tuples.:
-                        this_m_tuple_positions_2 = positions_2[i:(i + m)]
-                        # Create a unique ID for each m-tuple of methylation loci (of form "chromosome:position_1-position_2-...-position_m")
-                        m_tuple_id = ''.join([BAM.getrname(read_2.tid), ':', '-'.join([str(j) for j in this_m_tuple_positions_2])])
-                        # Check whether m-tuple has already been observed. If not, create a WithinFragmentMethylationMTuple instance for it and increment its count.
-                        if not m_tuple_id in methylation_m_tuples:
-                            methylation_m_tuples[m_tuple_id] = WithinFragmentComethylationMTuple(BAM.getrname(read_2.tid), read_2.tid, m, this_m_tuple_positions_2, methylation_type) # read_2.tid acts as the chromosome_index required by WithinFragmentComethylationMTuple class
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), read_1, read_2)
-                        else:
-                            methylation_m_tuples[m_tuple_id].increment_count(''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]]), read_1, read_2)
+            # Firstly, create all m-tuples of methylation loci where each locus is from read_1.
+            if len(methylation_index_1) >= m:
+                for i in range(0, len(methylation_index_1) - m + 1): # For a read containing m methylation loci there are (m - m-tuple + 1) m-tuples.:
+                    # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
+                    this_comethylation_pattern = ''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]])
+                    this_m_tuple_positions = (BAM.getrname(read_1.tid),) + tuple(positions_1[i:(i + m)])
+                    methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern,  read_1, read_2)
+            # Secondly, create all m-tuples of methylation loci where the leftmost locus is on read_1 and the rightmost locus is on read_2
+            num_shared_m_tuples = max(len(methylation_index_1) + len(methylation_index_2) - m + 1, 0) - max(len(methylation_index_1) - m + 1, 0) - max(len(methylation_index_2) - m + 1, 0) # the number of m-tuples that span read_1 and read_2
+            leftmost_shared_locus_index = max(0, len(methylation_index_2) - m + 1) # The index of the leftmost locus to be part of a "shared" m-tuple. The rightmost_shared_locus_index = min(m - 2, len(methylation_index_1) - 1), however this is not required (m - 2 = m - 1 - 1, because Python lists are 0-indexed)
+            for i in range(0, num_shared_m_tuples):
+                this_m_tuple_positions_2 = positions_2[(leftmost_shared_locus_index + i):]
+                this_m_tuple_positions_1 = positions_1[:(m - len(this_m_tuple_positions_2))]
+                # Exit if methylation loci are incorrectly ordered. While a similar check is performed a few lines above, this is a sanity check to make sure than nothing has gone wrong in constructing the shared m-tuples
+                if this_m_tuple_positions_2 + this_m_tuple_positions_1 != sorted(this_m_tuple_positions_2 + this_m_tuple_positions_1):
+                    exit_msg = ' '.join(["ERROR: The positions of the shared methylation loci are not properly ordered for paired-end read", read_1.qname, "which is aligned to the OB-strand.\n'this_m_tuple_positions_2 + this_m_tuple_positions_1' =", str(this_m_tuple_positions_2 + this_m_tuple_positions_1), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
+                    sys.exit(exit_msg)
+                # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
+                this_comethylation_pattern = ''.join([read_2.opt('XM')[j] for j in methylation_index_2[(leftmost_shared_locus_index + i):]] + [read_1.opt('XM')[j] for j in methylation_index_1[:(m - len(this_m_tuple_positions_2))]])
+                this_m_tuple_positions = (BAM.getrname(read.tid),) + tuple(this_m_tuple_positions_2) + tuple(this_m_tuple_positions_1)
+                methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
+            # Finally, create all m-tuples of methylation loci where each locus is from read_2.        
+            if len(methylation_index_2) >= m:
+                for i in range(0, len(methylation_index_2) - m + 1): # For a read containing m methylation loci there are (m - m-tuple + 1) m-tuples.:
+                    this_comethylation_pattern = ''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]])
+                    this_m_tuple_positions = (BAM.getrname(read.tid),) + tuple(positions_2[i:(i + m)])
+                    methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
         else:
             exit_msg = ''.join(['ERROR: The informative strands for readpair ', read_1.qname, ',  do not agree between mates. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
             sys.exit(exit_msg)
     return methylation_m_tuples, n_methylation_loci, n_fragment_skipped_due_to_bad_overlap
-                                    
-def write_methylation_m_tuples_to_file(methylation_m_tuples, m, OUT):
+                                  
+def write_methylation_m_tuples_to_file(methylation_m_tuples, OUT):
     """Write the methylation_m_tuples instance to a tab-separated file. The m-tuples are ordered by chromosome and genomic co-ordinates.
     
     Args:
-        methylation_m_tuples: A dictionary storing all observed m-tuples of methylation events and their WithinFragmentComethylationMTuple instance.
-        m:
+        methylation_m_tuples: An MTuple instance.
         OUT: The file to write output to.
     """
     # tab_writer writes a tab-separated output file to the filehandle OUT
     tab_writer = csv.writer(OUT, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
 
-    # Create the header row
-    header = ['chr'] + ['pos' + str(i) for i in range(1, m + 1)]
-    example_row = WithinFragmentComethylationMTuple('chr1', 1, m, [0] * m, 'CG').counts
-    for key in sorted(example_row.iterkeys()):
-        header.append(key)
-    # Write the header to file
+    # Get m
+    m = methylation_m_tuples.methylation_m_tuples
+    # Create the header row and write to file
+    header = ['chr'] + ['pos' + str(i) for i in range(1, m + 1)] + methylation_m_tuples.comethylation_patterns
     tab_writer.writerow(header)
-    # Write each m-tuple of methylation loci to file using a nested for-loop
-    # (1) Loop over chromosomes by increasing chromosome_index order
-    # (2) Loop over positions by increasing order
-    for this_m_tuple in sorted(methylation_m_tuples.values(), key = operator.attrgetter('chromosome_index', 'positions')):
-        this_m_tuple_ordered_counts = []
-        for i in sorted(this_m_tuple.counts.iterkeys()):
-            this_m_tuple_ordered_counts.append(this_m_tuple.counts[i])
-        row = [this_m_tuple.chromosome] + this_m_tuple.positions + this_m_tuple_ordered_counts
+    # Sort methylation_m_tuples.mtuples.keys() by chromosome (using methylation_m_tuples.chr_map for sort order) and then positions (pos1, pos2, ... to posm)
+    for this_m_tuple in sorted(methylation_m_tuples.mtuples.keys(), key = lambda x: (methylation_m_tuples.chr_map[x[0]], ) + tuple(x[1:])):
+        row = this_m_tuple + tuple(methylation_m_tuples.mtuples[this_m_tuple])
         tab_writer.writerow(row)
 
 def get_strand(read):
