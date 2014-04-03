@@ -1189,7 +1189,6 @@ class TestMTuple(unittest.TestCase):
 		self.assertEqual(self.wfotrpe.methylation_type, 'CG')
 		self.assertEqual(self.wfobrpe.methylation_type, 'CG')
 		self.assertEqual(self.wfotrpecgchg.methylation_type, 'CG/CHG')
-		self.assertEqual(True, False)
 
 	def test_increment_count_ot_se(self):
 		self.assertEqual(self.wfotr.mtuples[('chr1', 4562, 4573)], array.array('i', [1, 0, 0, 0]))
