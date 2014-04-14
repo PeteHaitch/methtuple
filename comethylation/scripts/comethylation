@@ -55,6 +55,8 @@ import warnings
 import operator
 import itertools
 import os
+import gzip
+import bz2
 try:
     import pysam # The only required module that is not a part of the Python Standard Library
 except ImportError:
@@ -81,6 +83,12 @@ parser.add_argument('--methylationType', metavar = '<string>', action = 'append'
 parser.add_argument('--oldBismark',
                     action = 'store_true',
                     help ='SAM/BAM created with Bismark version < 0.8.3. The FLAG and QNAME field in SAM/BAM files created by these older versions of Bismark differed from the SAM specifications and need to be adjusted on the fly by comethylation')
+parser.add_argument('--gzip',
+                    action = 'store_true',
+                    help ='gzip all output. --gzip and --bzip2 are mutually exclusive.')
+parser.add_argument('--bzip2',
+                    action = 'store_true',
+                    help ='bzip2 all output. --gzip and --bzip2 are mutually exclusive.')
 parser.add_argument('--ignoreDuplicates',
                     action = 'store_true',
                     help ='Ignore reads that have been flagged as PCR duplicates by Picard\'s MarkDuplicates function')
@@ -129,6 +137,10 @@ parser.add_argument('--version',
 args = parser.parse_args()
     
 #### Variable initialisations ####
+# Check whether gzip and bzip2 compression are both requested
+if args.gzip and args.bzip2:
+    exit_msg = "ERROR: Only one of --gzip or --bzip2 can be selected."
+    sys.exit(exit_msg)
 # Set the Phred quality score offset
 if args.phred64:
     phred_offset = 64
@@ -207,10 +219,22 @@ min_mapq = args.minMapQ
 #### The main program. Loops over the BAM file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or readpair. ####
 # Open SAM/BAM file and output files
 BAM = pysam.Samfile(args.BAM)
-OUT = open(".".join([args.sampleName, '_'.join(methylation_type.split('/')), str(args.mTuple), "tsv"]), "w")
-HIST = open("".join([args.sampleName, '.', '_'.join(methylation_type.split('/')), "_per_read.hist"]), "w")
+if args.gzip:
+    OUT = gzip.open(".".join([args.sampleName, '_'.join(methylation_type.split('/')), str(args.mTuple), "tsv.gz"]), "wb")
+    HIST = gzip.open("".join([args.sampleName, '.', '_'.join(methylation_type.split('/')), "_per_read.hist.gz"]), "wb")
+elif args.bzip2:
+    OUT = bz2.BZ2File(".".join([args.sampleName, '_'.join(methylation_type.split('/')), str(args.mTuple), "tsv.bz2"]), "w")
+    HIST = bz2.BZ2File("".join([args.sampleName, '.', '_'.join(methylation_type.split('/')), "_per_read.hist.bz2"]), "w")
+else:
+    OUT = open(".".join([args.sampleName, '_'.join(methylation_type.split('/')), str(args.mTuple), "tsv"]), "w")
+    HIST = open("".join([args.sampleName, '.', '_'.join(methylation_type.split('/')), "_per_read.hist"]), "w")
 if not args.noFailedQCFile:
-    FAILED_QC = open("".join([args.sampleName, ".reads_that_failed_QC.txt"]), "w")
+    if args.gzip:
+        FAILED_QC = gzip.open("".join([args.sampleName, ".reads_that_failed_QC.txt.gz"]), "wb")
+    elif args.bzip2:
+        FAILED_QC = bz2.BZ2File("".join([args.sampleName, ".reads_that_failed_QC.txt.bz2"]), "w")
+    else:
+        FAILED_QC = open("".join([args.sampleName, ".reads_that_failed_QC.txt"]), "w")
 else:
     FAILED_QC = open(os.devnull, "w")
 
