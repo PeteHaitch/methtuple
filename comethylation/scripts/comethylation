@@ -161,16 +161,17 @@ if sorted(methylation_type) == ['CG']:
 elif sorted(methylation_type) == ['CHG']:
     methylation_pattern = re.compile(r'[Xx]')
     if not args.strandSpecific:
-        ob_strand_offset = 2
+        exit_msg = 'ERROR: CHG-methylation is not strand-symmetric and therefore the --strandSpecific option must be specified.'
+        sys.exit(exit_msg)
 elif sorted(methylation_type) == ['CHH']:
     methylation_pattern = re.compile(r'[Hh]')
     if not args.strandSpecific:
-        exit_msg = 'ERROR: CHH-methylation is not strand-symmetric and thus the --strandSpecific option must be specified.'
+        exit_msg = 'ERROR: CHH-methylation is not strand-symmetric and therefore the --strandSpecific option must be specified.'
         sys.exit(exit_msg)
 elif sorted(methylation_type) == ['CNN']:
     methylation_pattern = re.compile(r'[Uu]')
     if not args.strandSpecific:
-        exit_msg = 'ERROR: CNN-methylation is not strand-symmetric and thus the --strandSpecific option must be specified.'
+        exit_msg = 'ERROR: CNN-methylation is not strand-symmetric and therefore the --strandSpecific option must be specified.'
         sys.exit(exit_msg)
 # Secondly, deal with the cases where multiple methylation types are specified or where an incompatible methylation type has been specified
 else:
