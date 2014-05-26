@@ -14,8 +14,8 @@ from comethylation import *
 from comethylation.mtuple import *
 from comethylation.funcs import *
 
-class TestIgnoreFirstNBases(unittest.TestCase):
-	'''Test the function ignore_first_n_bases
+class TestIgnoreCycles(unittest.TestCase):
+	'''Test the function ignore_cycles
 	'''
 
 	def setUp(self):
@@ -108,161 +108,41 @@ class TestIgnoreFirstNBases(unittest.TestCase):
 
 	def test_n_0(self):
 		# Shouldn't change methylation indexes
-		self.assertEqual(ignore_first_n_bases(self.otr_1, self.otm_1, 0), [18, 20, 33, 38, 42, 46])
-		self.assertEqual(ignore_first_n_bases(self.otr_2, self.otm_2, 0), [12, 29, 50, 58])
-		self.assertEqual(ignore_first_n_bases(self.obr_1, self.obm_1, 0), [3, 11, 17, 19, 29, 49, 57, 60])
-		self.assertEqual(ignore_first_n_bases(self.obr_2, self.obm_2, 0), [1, 5, 33, 50])
+		self.assertEqual(ignore_cycles(self.otr_1, self.otm_1, []), [18, 20, 33, 38, 42, 46])
+		self.assertEqual(ignore_cycles(self.otr_2, self.otm_2, []), [12, 29, 50, 58])
+		self.assertEqual(ignore_cycles(self.obr_1, self.obm_1, []), [3, 11, 17, 19, 29, 49, 57, 60])
+		self.assertEqual(ignore_cycles(self.obr_2, self.obm_2, []), [1, 5, 33, 50])
 
 	def test_n_off_by_one(self):
-		# Shouldn't change methylation indexes
-		self.assertEqual(ignore_first_n_bases(self.otr_1, self.otm_1, 18), [18, 20, 33, 38, 42, 46])
-		self.assertEqual(ignore_first_n_bases(self.otr_2, self.otm_2, 0), [12, 29, 50, 58])
-		self.assertEqual(ignore_first_n_bases(self.obr_1, self.obm_1, 2), [3, 11, 17, 19, 29, 49, 57, 60])
-		self.assertEqual(ignore_first_n_bases(self.obr_2, self.obm_2, 1), [1, 5, 33, 50])
-
-	def test__ignore_one(self):
-		# Should remove one element from methylation indexes in accordance with the strand/orientation of the read
-		self.assertEqual(ignore_first_n_bases(self.otr_1, self.otm_1, 19), [20, 33, 38, 42, 46])
-		self.assertEqual(ignore_first_n_bases(self.otr_2, self.otm_2, 1), [12, 29, 50])
-		self.assertEqual(ignore_first_n_bases(self.obr_1, self.obm_1, 3), [3, 11, 17, 19, 29, 49, 57])
-		self.assertEqual(ignore_first_n_bases(self.obr_2, self.obm_2, 2), [5, 33, 50])
-
-	def test_bad_n(self):
-		# Should raise an exception
-		self.assertRaises(ValueError, ignore_first_n_bases, self.otr_1, self.otm_1, -10)
-		self.assertRaises(ValueError, ignore_first_n_bases, self.otr_1, self.otm_1, 3.4)
-
-	def test_ignore_all(self):
-		# Should remove all elements from methylation indexes (assuming read-lengths are < 100,000,000)
-		self.assertEqual(ignore_first_n_bases(self.otr_1, self.otm_1, 100000000), [])
-		self.assertEqual(ignore_first_n_bases(self.otr_2, self.otm_2, 100000000), [])
-		self.assertEqual(ignore_first_n_bases(self.obr_1, self.obm_1, 100000000), [])
-		self.assertEqual(ignore_first_n_bases(self.obr_2, self.obm_2, 100000000), [])
-
-class TestIgnoreLastNBases(unittest.TestCase):
-	'''Test the function ignore_last_n_bases
-	'''
-
-	def setUp(self):
-
-		def buildOTRead1():
-			'''build an example read_1 aligned to OT-strand.
-			'''
-
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_8"
-			read.seq = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
-			read.flag = 99
-			read.tid = 0
-			read.pos = 450
-			read.mapq = 255
-			read.cigar = [(0,61)]
-			read.rnext = 1
-			read.pnext = 512
-			read.isize = 121
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
-			read.tags = read.tags + [("XG", "CT")] + [("XM", "..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....")] + [("XR", "CT")]
-			return read
-
-		def buildOTRead2():
-			'''build an example read_2 aligned to OT-strand.
-			'''
-
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_8"
-			read.seq = "AGAATTGTGTTTCGTTTTTAGAGTATTATCGAAATTTGTGTAGAGGATAACGTAGCTTC"
-			read.flag = 147
-			read.tid = 0
-			read.pos = 512
-			read.mapq = 255
-			read.cigar = [(0,59)]
-			read.rnext = 1
-			read.pnext = 450
-			read.isize = -121
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
-			read.tags = read.tags + [("XG", "CT")] + [("XM", "....x....h.xZ.hh..x......hh.xZ.....x....x......h..Z.x..H.xZ")] + [("XR", "GA")]
-			return read
-
-		def buildOBRead1():
-			'''build an example read_1 aligned to OB-strand
-			'''
-
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_22929891"
-			read.seq = "AACGCAACTCCGCCCTCGCGATACTCTCCGAATCTATACTAAAAAAAACGCAACTCCGCCGAC"
-			read.flag = 83
-			read.tid = 0
-			read.pos = 560
-			read.mapq = 255
-			read.cigar = [(0,63)]
-			read.rnext = 1
-			read.pnext = 492
-			read.isize = -131
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
-			read.tags = read.tags + [("XG", "GA")] + [("XM", "...Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx.")] + [("XR", "CT")]
-			return read
-
-		def buildOBRead2():
-			'''build an example read_2 aligned to OB-strand.
-			'''
-
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_22929891"
-			read.seq = "CACCCGAATCTAACCTAAAAAAAACTATACTCCGCCTTCAAAATACCACCGAAATCTATACAAAAAA"
-			read.flag = 163
-			read.tid = 0
-			read.pos = 492
-			read.mapq = 255
-			read.cigar = [(0,67)]
-			read.rnext = 1
-			read.pnext = 560
-			read.isize = 131
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
-			read.tags = read.tags + [("XG", "GA")] + [("XM", ".z...Zxh...x....x.hh.h....x.h....Z......x.h.......Z......x.h..x.hh.")] + [("XR", "GA")]
-			return read
-
-		# Create the reads and methylation indexes (using CpGs)
-		self.otr_1 = buildOTRead1()
-		self.otr_2 = buildOTRead2()
-		self.obr_1 = buildOBRead1()
-		self.obr_2 = buildOBRead2()
-		self.otm_1 = [18, 20, 33, 38, 42, 46]
-		self.otm_2 = [12, 29, 50, 58]
-		self.obm_1 = [3, 11, 17, 19, 29, 49, 57, 60]
-		self.obm_2 = [1, 5, 33, 50]
-
-	def test_n_0(self):
-		# Shouldn't change methylation indexes
-		self.assertEqual(ignore_last_n_bases(self.otr_1, self.otm_1, 0), [18, 20, 33, 38, 42, 46])
-		self.assertEqual(ignore_last_n_bases(self.otr_2, self.otm_2, 0), [12, 29, 50, 58])
-		self.assertEqual(ignore_last_n_bases(self.obr_1, self.obm_1, 0), [3, 11, 17, 19, 29, 49, 57, 60])
-		self.assertEqual(ignore_last_n_bases(self.obr_2, self.obm_2, 0), [1, 5, 33, 50])
-
-	def test_n_off_by_one(self):
-		# Shouldn't change methylation indexes
-		self.assertEqual(ignore_last_n_bases(self.otr_1, self.otm_1, 14), [18, 20, 33, 38, 42, 46])
-		self.assertEqual(ignore_last_n_bases(self.otr_2, self.otm_2, 12), [12, 29, 50, 58])
-		self.assertEqual(ignore_last_n_bases(self.obr_1, self.obm_1, 3), [3, 11, 17, 19, 29, 49, 57, 60])
-		self.assertEqual(ignore_last_n_bases(self.obr_2, self.obm_2, 16), [1, 5, 33, 50])
+		# Shouldn't change methylation indexes: Ignore from "start" of read
+		self.assertEqual(ignore_cycles(self.otr_1, self.otm_1, [17]), [18, 20, 33, 38, 42, 46])
+		self.assertEqual(ignore_cycles(self.otr_2, self.otm_2, [self.otr_2.qlen - 59 - 1]), [12, 29, 50, 58])
+		self.assertEqual(ignore_cycles(self.obr_1, self.obm_1, [self.obr_1.qlen - 61 - 1]), [3, 11, 17, 19, 29, 49, 57, 60])
+		self.assertEqual(ignore_cycles(self.obr_2, self.obm_2, [0]), [1, 5, 33, 50])
+		# Shouldn't change methylation indexes: Ignore from "end" of read
+		self.assertEqual(ignore_cycles(self.otr_1, self.otm_1, [47]), [18, 20, 33, 38, 42, 46])
+		self.assertEqual(ignore_cycles(self.otr_2, self.otm_2, [self.otr_2.qlen - 11 - 1]), [12, 29, 50, 58])
+		self.assertEqual(ignore_cycles(self.obr_1, self.obm_1, [self.obr_1.qlen - 2 - 1]), [3, 11, 17, 19, 29, 49, 57, 60])
+		self.assertEqual(ignore_cycles(self.obr_2, self.obm_2, [51]), [1, 5, 33, 50])
 
 	def test_ignore_one(self):
 		# Should remove one element from methylation indexes in accordance with the strand/orientation of the read
-		self.assertEqual(ignore_last_n_bases(self.otr_1, self.otm_1, 15), [18, 20, 33, 38, 42])
-		self.assertEqual(ignore_last_n_bases(self.otr_2, self.otm_2, 13), [29, 50, 58])
-		self.assertEqual(ignore_last_n_bases(self.obr_1, self.obm_1, 4), [11, 17, 19, 29, 49, 57, 60])
-		self.assertEqual(ignore_last_n_bases(self.obr_2, self.obm_2, 17), [1, 5, 33])
-
-	def test_bad_n(self):
-		# Should raise an exception
-		self.assertRaises(ValueError, ignore_last_n_bases, self.otr_1, self.otm_1, -10)
-		self.assertRaises(ValueError, ignore_last_n_bases, self.otr_1, self.otm_1, 3.4)
+		self.assertEqual(ignore_cycles(self.otr_1, self.otm_1, [18]), [20, 33, 38, 42, 46])
+		self.assertEqual(ignore_cycles(self.otr_2, self.otm_2, [self.otr_2.qlen - 58 - 1]), [12, 29, 50])
+		self.assertEqual(ignore_cycles(self.obr_1, self.obm_1, [self.obr_1.qlen - 60 - 1]), [3, 11, 17, 19, 29, 49, 57])
+		self.assertEqual(ignore_cycles(self.obr_2, self.obm_2, [1]), [5, 33, 50])
+		# Should remove one element from methylation indexes in accordance with the strand/orientation of the read
+		self.assertEqual(ignore_cycles(self.otr_1, self.otm_1, [46]), [18, 20, 33, 38, 42])
+		self.assertEqual(ignore_cycles(self.otr_2, self.otm_2, [self.otr_2.qlen - 12 - 1]), [29, 50, 58])
+		self.assertEqual(ignore_cycles(self.obr_1, self.obm_1, [self.obr_1.qlen - 3 - 1]), [11, 17, 19, 29, 49, 57, 60])
+		self.assertEqual(ignore_cycles(self.obr_2, self.obm_2, [50]), [1, 5, 33])
 
 	def test_ignore_all(self):
-		# Should remove all elements from methylation indexes (assuming read-lengths are < 100,000,000)
-		self.assertEqual(ignore_last_n_bases(self.otr_1, self.otm_1, 100000000), [])
-		self.assertEqual(ignore_last_n_bases(self.otr_2, self.otm_2, 100000000), [])
-		self.assertEqual(ignore_last_n_bases(self.obr_1, self.obm_1, 100000000), [])
-		self.assertEqual(ignore_last_n_bases(self.obr_2, self.obm_2, 100000000), [])
+		# Should remove all elements from methylation indexes (assuming read-lengths are < 10,000)
+		self.assertEqual(ignore_cycles(self.otr_1, self.otm_1, range(0, 10000)), [])
+		self.assertEqual(ignore_cycles(self.otr_2, self.otm_2, range(0, 10000)), [])
+		self.assertEqual(ignore_cycles(self.obr_1, self.obm_1, range(0, 10000)), [])
+		self.assertEqual(ignore_cycles(self.obr_2, self.obm_2, range(0, 10000)), [])
 
 class TestIgnoreLowQualityBases(unittest.TestCase):
 	'''Test the function ignore_low_quality_bases
@@ -782,15 +662,15 @@ class TestExtractAndUpdateMethylationIndexFromSingleEndRead(unittest.TestCase):
 		self.BAM.write(self.obr)
 		self.BAM.close()
 		self.BAM = pysam.Samfile(self.BAM.filename, 'rb')
-		self.m1ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
-		self.m2ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
-		self.m3ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
-		self.m4ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
-		self.m5ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
-		self.m1ob, self.nmlifob = extract_and_update_methylation_index_from_single_end_read(read = self.obr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
-		self.m2ob, self.nmlifob = extract_and_update_methylation_index_from_single_end_read(read = self.obr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
-		self.m3ob, self.nmlifob = extract_and_update_methylation_index_from_single_end_read(read = self.obr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
-		self.m2cgchg, self.nmlifotcgchg = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG/CHG', {'chr1': 0}), m = 2, methylation_type = 'CG/CHG', methylation_pattern = re.compile(r'[ZzXx]'), ignore_start_r1 = 0, ignore_end_r1 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m1ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m2ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m3ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m4ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m5ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m1ob, self.nmlifob = extract_and_update_methylation_index_from_single_end_read(read = self.obr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m2ob, self.nmlifob = extract_and_update_methylation_index_from_single_end_read(read = self.obr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m3ob, self.nmlifob = extract_and_update_methylation_index_from_single_end_read(read = self.obr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m2cgchg, self.nmlifotcgchg = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG/CHG', {'chr1': 0}), m = 2, methylation_type = 'CG/CHG', methylation_pattern = re.compile(r'[ZzXx]'), ignore_cycles_r1 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
 
 	def test_correct_number_of_m_tuples(self):
 		self.assertEqual(len(self.m1ot.mtuples), 5)
@@ -930,29 +810,29 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 		self.BAM.close()
 		self.BAM = pysam.Samfile(self.BAM.filename, 'rb')
 		self.FAILED_QC = open(tempfile.mkstemp()[1], 'w')
-		self.m1ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m2ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m3ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m4ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m5ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m6ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 6, 'CG', {'chr1': 0}), m = 6, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m7ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 7, 'CG', {'chr1': 0}), m = 7, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m8ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 8, 'CG', {'chr1': 0}), m = 8, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m9ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 9, 'CG', {'chr1': 0}), m = 9, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m10ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 10, 'CG', {'chr1': 0}), m = 10, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m1ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m2ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m3ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m4ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m5ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m6ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 6, 'CG', {'chr1': 0}), m = 6, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m7ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 7, 'CG', {'chr1': 0}), m = 7, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m8ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 8, 'CG', {'chr1': 0}), m = 8, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m9ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 9, 'CG', {'chr1': 0}), m = 9, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m10ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 10, 'CG', {'chr1': 0}), m = 10, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m11ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 11, 'CG', {'chr1': 0}), m = 11, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m12ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 12, 'CG', {'chr1': 0}), m = 12, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m2cgchg, self.nmlifotcgchg , self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG/CHG', {'chr1': 0}), m = 2, methylation_type = 'CG/CHG', methylation_pattern = re.compile(r'[Zz]'), ignore_start_r1 = 0, ignore_end_r1 = 0, ignore_start_r2 = 0, ignore_end_r2 = 0, min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m1ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m2ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m3ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m4ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m5ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m6ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 6, 'CG', {'chr1': 0}), m = 6, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m7ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 7, 'CG', {'chr1': 0}), m = 7, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m8ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 8, 'CG', {'chr1': 0}), m = 8, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m9ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 9, 'CG', {'chr1': 0}), m = 9, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m10ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 10, 'CG', {'chr1': 0}), m = 10, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m1ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m2ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m3ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m4ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m5ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m6ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 6, 'CG', {'chr1': 0}), m = 6, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m7ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 7, 'CG', {'chr1': 0}), m = 7, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m8ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 8, 'CG', {'chr1': 0}), m = 8, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m9ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 9, 'CG', {'chr1': 0}), m = 9, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m10ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 10, 'CG', {'chr1': 0}), m = 10, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m11ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 11, 'CG', {'chr1': 0}), m = 11, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m12ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 12, 'CG', {'chr1': 0}), m = 12, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m2cgchg, self.nmlifotcgchg , self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG/CHG', {'chr1': 0}), m = 2, methylation_type = 'CG/CHG', methylation_pattern = re.compile(r'[Zz]'), ignore_cycles_r1 = [], ignore_cycles_r2 = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
 
 	def test_correct_number_of_m_tuples(self):
 		self.assertEqual(len(self.m1ot.mtuples), 10)

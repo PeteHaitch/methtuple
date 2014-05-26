@@ -91,22 +91,12 @@ parser.add_argument('--bzip2',
 parser.add_argument('--ignoreDuplicates',
                     action = 'store_true',
                     help ='Ignore reads that have been flagged as PCR duplicates by Picard\'s MarkDuplicates function')
-parser.add_argument('--ignoreStart_r1', metavar = '<int>',
-                    type = int,
-                    default=0,
-                    help="Ignore first <int> bases from start (5' end) of read (respectively, read_1) for single-end data (respectively, paired-end data) (default: 0). WARNING: Parameter value not sanity checked by program.")
-parser.add_argument('--ignoreStart_r2', metavar = '<int>',
-                    type = int,
-                    default=0,
-                    help="Only used if data are paired-end. Ignore first <int> bases from start (5' end) of read_2 (default: 0). WARNING: Parameter value not sanity checked by program.")
-parser.add_argument('--ignoreEnd_r1', metavar = '<int>',
-                    type = int,
-                    default=0,
-                    help="Ignore last <int> bases from end (3' end) of read (respectively, read_1) for single-end data (respectively, paired-end data) (default: 0). WARNING: Parameter value not sanity checked by program.")
-parser.add_argument('--ignoreEnd_r2', metavar = '<int>',
-                    type = int,
-                    default=0,
-                    help="Only used if data are paired-end. Ignore last <int> bases from end (5' end) of read_2 (default: 0). WARNING: Parameter value not sanity checked by program.")
+parser.add_argument('--ignoreCycles_r1', metavar = '<string>',
+                    default = None,
+                    help = 'Ignore these sequencing cycles of read_1 (default: None). Multiple values should be comma-delimited and ranges can be specified by use of the hyphen, e.g. 1-5, 80, 95-100. WARNING: The sequencing cycle is inferred from the CIGAR string and will be incorrect if the read was 5\'-trimmed prior to alignment.')
+parser.add_argument('--ignoreCycles_r2', metavar = '<string>',
+                    default = None,
+                    help = 'Ignore these sequencing cycles of read_2 (default: None). Multiple values should be comma-delimited and ranges can be specified by use of the hyphen, e.g. 1-5, 80, 95-100. WARNING: The sequencing cycle is inferred from the CIGAR string and will be incorrect if the read was 5\'-trimmed prior to alignment.')
 parser.add_argument('--minQual', metavar = '<int>',
                     type = int,
                     default=0,
@@ -207,12 +197,9 @@ else:
 
 # Reformat the variable methylation_type to be a single string
 methylation_type = '/'.join(sorted(methylation_type))
-    
+ignore_cycles_r1 = make_ignores_list(args.ignoreCycles_r1)
+ignore_cycles_r2 = make_ignores_list(args.ignoreCycles_r2)
 overlap_check = args.overlappingPairedEndFilter
-ignore_start_r1 = args.ignoreStart_r1
-ignore_start_r2 = args.ignoreStart_r2
-ignore_end_r1 = args.ignoreEnd_r1
-ignore_end_r2 = args.ignoreEnd_r2
 min_qual = args.minQual
 min_mapq = args.minMapQ
 
@@ -273,10 +260,14 @@ if not args.useImproperPairs:
     print 'Ignoring improper readpairs'
 else:
     print 'Not filtering out readpairs that are marked as improperly paired. The definition of a proper readpair is aligner-specific and the value is set with the 0x2 bit in the SAM flag'
-print "Ignoring", ignore_start_r1, "bp from 5' end of each read if data are single-end or of each read_1 if data are paired end"
-print "Ignoring", ignore_start_r2, "bp from 5' end of each read_2 if data are paired end"
-print "Ignoring", ignore_end_r1, "bp from 3' end of each read if data are single-end or of each read_1 if data are paired end"
-print "Ignoring", ignore_end_r2 , "bp from 3' end of each read_2 if data are paired end"
+if not ignore_cycles_r1:
+    print "Ignoring cycles", ignore_cycles_r1, "of each read (if data are single-end) or of each read_1 (if data are paired-end)." 
+else:
+    print "Using all cycles of each read (if data are single-end) or of each read_1 (if data are paired-end)."
+if not ignore_cycles_r2:
+    print "Ignoring cycles", ignore_cycles_r2, "of  of each read_2 (if data are paired-end)."
+else:
+    print "Using all cycles of each read_2 (if data are paired-end)."    
 print 'Ignoring methylation calls with base-quality less than', min_qual
 print 'Ignoring reads with mapQ less than', min_mapq
 
@@ -399,7 +390,7 @@ for read in BAM:
             continue
         # Check that read_1 and read_2 have identical read-names. If not, skip the readpair.
         if read_1.qname == read_2.qname:
-            methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_start_r2, ignore_end_r1, ignore_end_r2, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC)
+            methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_cycles_r1, ignore_cycles_r2, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC)
             # Update the n_methylation_loci_per_read dictionary
             if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
                 n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
@@ -458,7 +449,7 @@ for read in BAM:
             read_1 = None
             read_2 = None
             continue
-        methylation_m_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_start_r1, ignore_end_r1, min_qual, phred_offset, ob_strand_offset)
+        methylation_m_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_cycles_r1, min_qual, phred_offset, ob_strand_offset)
         if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
             n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
 
