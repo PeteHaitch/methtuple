@@ -92,11 +92,11 @@ Output.add_argument('-o', '--output-prefix',
     metavar = '<text>',
     default = argparse.SUPPRESS,
     help = 'By default, all output files have the same prefix as that of the input file. This will override the prefix of output file names')
-Output.add_argument('-ss', '--strand-specific', 
+Output.add_argument('--ss', '--strand-specific', 
     action = 'store_true', 
     default = False, 
     help = 'Produce strand-specific counts, i.e., don\'t collapse methylation calls across Watson and Crick strands. Required for non-CG methylation type')
-Output.add_argument('-nfff', '--no-failed-filter-file', 
+Output.add_argument('--nfff', '--no-failed-filter-file', 
     action = 'store_true', 
     default = False, 
     help = 'Do not create the file listing the reads that failed to pass to pass the filters and which filter it failed')
@@ -110,53 +110,54 @@ Output.add_argument('--bzip2',
     help = 'bzip2 all output files. --gzip and --bzip2 are mutually exclusive')
 # Construction of methylation loci m-tuples
 Options = parser.add_argument_group('Construction of methylation loci m-tuples')
+# TODO: Better handling of multiple methylation types, e.g. this will break 'comethylation --mt CG CHG in.bam' because in.bam is read as --mt.
+Options.add_argument('--mt', '--methylation-type',
+    choices = ['CG', 'CHG', 'CHH', 'CNN'], 
+    default = ['CG'],
+    action = 'append',
+    help = 'The methylation type. Multiple methylation types may be analysed jointly by repeated use of this argument, e.g., --methylation-type CG --methylation-type CHG')
 Options.add_argument('-m',
     type = int,
     metavar = '<int>',
     default = 1,
-    help = 'The size of the m-tuples.')
-Options.add_argument('-mt', '--methylation-type',
-    choices = ['CG', 'CHG', 'CHH', 'CNN'], 
-    default = 'CG',
-    nargs = '+',
-    help = 'The methylation type. Multiple methylation types may be specified simultaneously, e.g., -mt CG CHG')
+    help = 'The size of the m-tuples, i.e., the \'m\' in m-tuples')
 # Read-level filtering arguments
 read_filtering = parser.add_argument_group('Filtering of reads', 'Applied before filtering of bases')
-read_filtering.add_argument('-id', '--ignore-duplicates',
+read_filtering.add_argument('--id', '--ignore-duplicates',
     action = 'store_true',
     default = False,
     help ='Ignore reads that have been flagged as PCR duplicates by, for example, Picard\'s MarkDuplicates function. More specifically, ignore reads with the 0x400 bit in the FLAG')
-read_filtering.add_argument('-mmq', '--min-mapq',
+read_filtering.add_argument('--mmq', '--min-mapq',
     metavar = '<int>',
     type = int,
     default = 0,
     help = 'Ignore reads with a mapping quality score (mapQ) less than <int>')
-read_filtering.add_argument('-of', '--overlap-filter',
+read_filtering.add_argument('--of', '--overlap-filter',
     choices = ['sequence', 'XM', 'quality', 'Bismark'],
     default = 'XM',
     help = "Ignore overlapping reads from paired-end sequencing if they do not pass this filter. Currently, this option means that the entirety of both reads are ignored, not just the overlapping region. The options listed by most-to-least stringent: check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (quality), do no check of the overlapping bases and just use the overlapping bases from read_1 a la bismark_methylation_extractor (Bismark).")
-read_filtering.add_argument('-uip', '--use-improper-pairs', 
+read_filtering.add_argument('--uip', '--use-improper-pairs', 
     action = 'store_true',
     default = False,
     help ='Use the improper read-pairs, i.e. don\'t filter them. More specifically, check the 0x2 FLAG bit of each read; the exact definition of an improper read-pair depends on the aligner and alignment parameters')
 # Base-level filtering arguments
 base_filtering = parser.add_argument_group('Filtering of bases', 'Applied after filtering of reads')
-base_filtering.add_argument('-ir1p', '--ignore-read1-positions',
+base_filtering.add_argument('--ir1p', '--ignore-read1-positions',
     default = None,
     metavar = 'VALUES',
     help = 'If single-end data, ignore these read positions from all reads. If paired-end data, ignore these read positions from just read_1 of each pair. Multiple values should be comma-delimited and ranges may be specified by use of the hyphen, e.g. 1-5,80,95-100')
-base_filtering.add_argument('-ir2p', '--ignore-read2-positions',
+base_filtering.add_argument('--ir2p', '--ignore-read2-positions',
     default = None,
     metavar = 'VALUES',
     help = 'Ignore these read positions from just read_2 of each pair if paired-end sequencing. Multiple values should be comma-delimited and ranges may be specified by use of the hyphen, e.g. 1-5,80,95-100')
-base_filtering.add_argument('-mbq', '--min-base-qual',
+base_filtering.add_argument('--mbq', '--min-base-qual',
     metavar = '<int>',
     type = int,
     default = 0,
     help = 'Ignore read positions with a base quality score less than <int>')
 # Other
 Other = parser.add_argument_group('Other') 
-Other.add_argument('--version',
+Other.add_argument('-v', '--version',
     action = 'version',
     version = '%(prog)s (v'+__version__+')')
 Other.add_argument('-h', '--help', 
@@ -180,37 +181,37 @@ else:
     phred_offset = 33
 # Set the "m" in "m-tuple", i.e. the size of the methylation-loci m-tuples
 m = args.m
-# Iterate over the list of methylation types stored in args.methylation_type and create the proper REGEXP for searching for that methylation pattern in the XM-tag. 
+# Iterate over the list of methylation types stored in args.mt and create the proper REGEXP for searching for that methylation pattern in the XM-tag. 
 # There are 4 methylation types and therefore 2^4 = 16 possible subsets (including the empty set). Each subset must be dealt with separately.
 # Also, set the ob_strand_offset variable.
-# If the -ss flag is set then we do not collapse across strands (i.e. ob_strand_offset = 0). If the flag is not set then what happens depends on the value(s) of -mt
-methylation_type = args.methylation_type
-if args.strand_specific:
+# If the --strand-specific flag is set then we do not collapse across strands (i.e. ob_strand_offset = 0). If the flag is not set then what happens depends on the value(s) of --methylation-type
+methylation_type = list(set(args.mt)) # list(set(x)) takes a list, x, and returns the unique elements as a list.
+if args.ss:
     ob_strand_offset = 0
 # Firstly, deal with the cases where only a single methylation type is specified
 if sorted(methylation_type) == ['CG']:
     methylation_pattern = re.compile(r'[Zz]')
-    if not args.strand_specific:
+    if not args.ss:
         ob_strand_offset = 1
 elif sorted(methylation_type) == ['CHG']:
     methylation_pattern = re.compile(r'[Xx]')
-    if not args.strand_specific:
+    if not args.ss:
         exit_msg = 'ERROR: CHG-methylation is not strand-symmetric and therefore the --strand-specific option must be specified.'
         sys.exit(exit_msg)
 elif sorted(methylation_type) == ['CHH']:
     methylation_pattern = re.compile(r'[Hh]')
-    if not args.strand_specific:
+    if not args.ss:
         exit_msg = 'ERROR: CHH-methylation is not strand-symmetric and therefore the --strand-specific option must be specified.'
         sys.exit(exit_msg)
 elif sorted(methylation_type) == ['CNN']:
     methylation_pattern = re.compile(r'[Uu]')
-    if not args.strand_specific:
+    if not args.ss:
         exit_msg = 'ERROR: CNN-methylation is not strand-symmetric and therefore the --strand-specific option must be specified.'
         sys.exit(exit_msg)
 # Secondly, deal with the cases where multiple methylation types are specified or where an incompatible methylation type has been specified
 else:
-    # If multiple methylation types are specified then the --strand_specific option must be set
-    if not args.strand_specific:
+    # If multiple methylation types are specified then the --strand-specific option must be set
+    if not args.ss:
         exit_msg = 'ERROR: The --strand-specific option must be specified if multiple methylation types are passed via the --methylation-type flag.'
         sys.exit(exit_msg)
     if sorted(methylation_type) == ['CG', 'CHG']:
@@ -241,11 +242,11 @@ else:
 
 # Reformat the variable methylation_type to be a single string
 methylation_type = '/'.join(sorted(methylation_type))
-ignore_read1_pos = make_ignores_list(args.ignore_read1_positions)
-ignore_read2_pos = make_ignores_list(args.ignore_read2_positions)
-overlap_check = args.overlap_filter
-min_qual = args.min_base_qual
-min_mapq = args.min_mapq
+ignore_read1_pos = make_ignores_list(args.ir1p)
+ignore_read2_pos = make_ignores_list(args.ir2p)
+overlap_check = args.of
+min_qual = args.mbq
+min_mapq = args.mmq
 
 #### The main program. Loops over the BAM file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or readpair. ####
 # Open SAM/BAM file and output files
@@ -259,7 +260,7 @@ elif args.bzip2:
 else:
     OUT = open(".".join([args.output_prefix, '_'.join(methylation_type.split('/')), str(args.m), "tsv"]), "w")
     HIST = open("".join([args.output_prefix, '.', '_'.join(methylation_type.split('/')), "_per_read.hist"]), "w")
-if not args.no_failed_filter_file:
+if not args.nfff:
     if args.gzip:
         FAILED_QC = gzip.open("".join([args.output_prefix, ".reads_that_failed_QC.txt.gz"]), "wb")
     elif args.bzip2:
@@ -285,9 +286,9 @@ methylation_m_tuples = MTuple(args.output_prefix, m, methylation_type, chr_map) 
 print "comethylation (v"+__version__+")\n"
 print 'Input BAM file =', BAM.filename
 print ''.join(['Output file of ', methylation_type, ' ', str(m), '-tuples = ', OUT.name])
-if args.strand_specific:
+if args.ss:
     print 'The output will be strand-specific'
-if not args.no_failed_filter_file:
+if not args.nfff:
     print 'Reads that fail to pass QC filters will be written to =', FAILED_QC.name, '\n'
 else:
     print 'There will be no file of reads that fail to pass QC filters\n'
@@ -299,17 +300,17 @@ if args.aligner == 'Bismark':
 elif args.aligner == 'Bismark_old':
     print 'Assuming BAM file was created with Bismark version < 0.8.3.\n'
 
-if args.ignore_duplicates:
+if args.id:
     print 'Ignoring reads marked as PCR duplicates'
-if not args.use_improper_pairs:
+if not args.uip:
     print 'Ignoring improper readpairs'
 else:
     print 'Not filtering out readpairs that are marked as improperly paired. The definition of a proper readpair is aligner-specific and the value is set with the 0x2 bit in the SAM flag'
-if not ignore_read1_pos:
+if ignore_read1_pos:
     print "Ignoring positions ", ignore_read1_pos, "of each read (if data are single-end) or of each read_1 (if data are paired-end)." 
 else:
     print "Using all positions of each read (if data are single-end) or of each read_1 (if data are paired-end)."
-if not ignore_read2_pos:
+if ignore_read2_pos:
     print "Ignoring positions ", ignore_read2_pos, "of each read_2 (if data are paired-end)."
 else:
     print "Using all positions of each read_2 (if data are paired-end)."    
@@ -371,7 +372,7 @@ for read in BAM:
         read_2 = read
         n_fragment += 1
         # Skip duplicate reads if command line parameter --ignore-duplicates is set and read is marked as a duplicate
-        if args.ignore_duplicates and read.is_duplicate:
+        if args.id and read.is_duplicate:
             failed_read_msg = '\t'.join([read_1.qname, 'marked as duplicate\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_duplicate += 1
@@ -398,7 +399,7 @@ for read in BAM:
             read_2 = None
             continue
         # Skip improperly paired-reads unless --use-improper-pairs flag is set
-        if not args.use_improper_pairs and not read.is_proper_pair:
+        if not args.uip and not read.is_proper_pair:
             failed_read_msg = '\t'.join([read_1.qname, 'read is not mapped in proper pair\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_improper_pair += 1
@@ -450,7 +451,7 @@ for read in BAM:
     elif not read.is_paired:
         n_fragment += 1
         # Skip duplicates reads if command line parameter --ignore-duplicates is set and read is marked as a duplicate
-        if args.ignore_duplicates and read.is_duplicate:
+        if args.id and read.is_duplicate:
             failed_read_msg = '\t'.join([read.qname, 'marked as duplicate\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_duplicate += 1

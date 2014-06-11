@@ -524,6 +524,7 @@ def get_strand(read):
     return strand
 
 __all__ = [
+    'make_ignores_list',
     'ignore_read_pos',
     'ignore_low_quality_bases',
     'fix_old_bismark',
