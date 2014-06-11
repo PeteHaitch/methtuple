@@ -279,59 +279,59 @@ n_fragment_skipped_due_to_unmapped_read_or_mate = 0 # The number of DNA fragment
 n_fragment_skipped_due_to_improper_pair = 0 # The number of DNA fragments skipped due to the readpair being improperly paired
 n_fragment_skipped_due_to_indel = 0 # The number of DNA fragments skipped due to the read or readpair containing an indel
 n_methylation_loci_per_read = {} # Dictionary of the number of methylation loci that passed QC per read
-chr_map = dict(zip(BAM.references, range(len(BAM.references)))) # A dictionary mapping the reference names to their order in the BAM header
+chr_map = dict(list(zip(BAM.references, list(range(len(BAM.references)))))) # A dictionary mapping the reference names to their order in the BAM header
 methylation_m_tuples = MTuple(args.output_prefix, m, methylation_type, chr_map) # Initiate the MTuple object
 
 # Print key variable names and command line parameter options to STDOUT
-print "comethylation (v"+__version__+")\n"
-print 'Input BAM file =', BAM.filename
-print ''.join(['Output file of ', methylation_type, ' ', str(m), '-tuples = ', OUT.name])
+print("comethylation (v"+__version__+")\n")
+print('Input BAM file =', BAM.filename)
+print(''.join(['Output file of ', methylation_type, ' ', str(m), '-tuples = ', OUT.name]))
 if args.ss:
-    print 'The output will be strand-specific'
+    print('The output will be strand-specific')
 if not args.nfff:
-    print 'Reads that fail to pass QC filters will be written to =', FAILED_QC.name, '\n'
+    print('Reads that fail to pass QC filters will be written to =', FAILED_QC.name, '\n')
 else:
-    print 'There will be no file of reads that fail to pass QC filters\n'
+    print('There will be no file of reads that fail to pass QC filters\n')
 
-print ''.join(['Assuming quality scores are Phred', str(phred_offset), '\n'])
+print(''.join(['Assuming quality scores are Phred', str(phred_offset), '\n']))
 
 if args.aligner == 'Bismark':
-    print 'Assuming BAM file was created with Bismark version >= 0.8.3.\n'
+    print('Assuming BAM file was created with Bismark version >= 0.8.3.\n')
 elif args.aligner == 'Bismark_old':
-    print 'Assuming BAM file was created with Bismark version < 0.8.3.\n'
+    print('Assuming BAM file was created with Bismark version < 0.8.3.\n')
 
 if args.id:
-    print 'Ignoring reads marked as PCR duplicates'
+    print('Ignoring reads marked as PCR duplicates')
 if not args.uip:
-    print 'Ignoring improper readpairs'
+    print('Ignoring improper readpairs')
 else:
-    print 'Not filtering out readpairs that are marked as improperly paired. The definition of a proper readpair is aligner-specific and the value is set with the 0x2 bit in the SAM flag'
+    print('Not filtering out readpairs that are marked as improperly paired. The definition of a proper readpair is aligner-specific and the value is set with the 0x2 bit in the SAM flag')
 if ignore_read1_pos:
-    print "Ignoring positions ", ignore_read1_pos, "of each read (if data are single-end) or of each read_1 (if data are paired-end)." 
+    print("Ignoring positions ", ignore_read1_pos, "of each read (if data are single-end) or of each read_1 (if data are paired-end).") 
 else:
-    print "Using all positions of each read (if data are single-end) or of each read_1 (if data are paired-end)."
+    print("Using all positions of each read (if data are single-end) or of each read_1 (if data are paired-end).")
 if ignore_read2_pos:
-    print "Ignoring positions ", ignore_read2_pos, "of each read_2 (if data are paired-end)."
+    print("Ignoring positions ", ignore_read2_pos, "of each read_2 (if data are paired-end).")
 else:
-    print "Using all positions of each read_2 (if data are paired-end)."    
-print 'Ignoring methylation calls with base-quality less than', min_qual
-print 'Ignoring reads with mapQ less than', min_mapq
+    print("Using all positions of each read_2 (if data are paired-end).")    
+print('Ignoring methylation calls with base-quality less than', min_qual)
+print('Ignoring reads with mapQ less than', min_mapq)
 
 if overlap_check == 'sequence':
-    print 'Ignoring paired-end reads that have overlapping mates if the overlapping sequences are not identical\n'
+    print('Ignoring paired-end reads that have overlapping mates if the overlapping sequences are not identical\n')
 elif overlap_check == 'XM':
-    print 'Ignoring paired-end reads that have overlapping mates if the XM-tags for the overlapping sequences are not identical\n'
+    print('Ignoring paired-end reads that have overlapping mates if the XM-tags for the overlapping sequences are not identical\n')
 elif overlap_check == 'quality':
-    print 'Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only the mate with the higher quality scores in the overlapping region shall be used\n'
+    print('Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only the mate with the higher quality scores in the overlapping region shall be used\n')
 elif overlap_check == 'bismark':
-    print "Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only read_1 shall be used (a la bismark_methylation_extractor)\n"
+    print("Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only read_1 shall be used (a la bismark_methylation_extractor)\n")
 else:
     exit_msg = "ERROR: --overlap-filter must be one of 'sequence', 'XM', 'quality' or 'bismark'"
     sys.exit(exit_msg)
 
-print ''.join(['Creating ', methylation_type, ' ', str(m), '-tuples'])
+print(''.join(['Creating ', methylation_type, ' ', str(m), '-tuples']))
 if m > 1:
-    print ''.join([str(m), '-tuples may have intervening methylation loci (i.e. NIC > 0). Such ', str(m), '-tuples generally occur in paired-end reads with non-overlapping mates but can also be caused by filtering methylation calls by base quality, read-position, etc. It is generally recommended that ', str(m), '-tuples with NIC > 0 be post-hoc filtered.\n'])
+    print(''.join([str(m), '-tuples may have intervening methylation loci (i.e. NIC > 0). Such ', str(m), '-tuples generally occur in paired-end reads with non-overlapping mates but can also be caused by filtering methylation calls by base quality, read-position, etc. It is generally recommended that ', str(m), '-tuples with NIC > 0 be post-hoc filtered.\n']))
 
 # Check that mapped reads have the XR-, XG- and XM-tags set. Will only check first mapped read, so assumes that the first mapped read in the BAM is representative of all mapped reads in the BAM.
 for read in BAM:
@@ -350,7 +350,7 @@ for read in BAM:
         exit_msg = "ERROR: The first mapped read does not contain an XM-tag. Currently, comethylation can only process BAM files created by Bismark, sorry."
         sys.exit(exit_msg)
     else:
-        print 'Verified that the XR-, XG- and XM-tags are set for the first mapped read.\n'
+        print('Verified that the XR-, XG- and XM-tags are set for the first mapped read.\n')
         # Reset BAM to start
         BAM.reset()
         break
@@ -506,30 +506,30 @@ for read in BAM:
         sys.exit(exit_msg)
 
 # Write results to disk
-print ''.join(['Extracted all ',  methylation_type, ' ', str(m), '-tuples.'])
-print 'Now writing output to', OUT.name, '...\n'
+print(''.join(['Extracted all ',  methylation_type, ' ', str(m), '-tuples.']))
+print('Now writing output to', OUT.name, '...\n')
 write_methylation_m_tuples_to_file(methylation_m_tuples, OUT)
 
 # Print some summary information to STDOUT
-print 'Summary of the number of DNA fragments processed by comethylation'
-print ''.join(['Number of DNA fragments in file = ', str(n_fragment)])
-print ''.join(['Number of DNA fragments skipped due to failing the --overlap-filter ', overlap_check, ' filter = ', str(n_fragment_skipped_due_to_bad_overlap)])
-print ''.join(['Number of DNA fragments skipped due to failing the --min-mapq filter = ', str(n_fragment_skipped_due_to_low_mapq)])
-print ''.join(['Number of DNA fragments skipped due to being marked as PCR duplicates = ', str(n_fragment_skipped_due_to_duplicate)])
-print ''.join(['Number of DNA fragments skipped due to mates mapping to different chromosomes = ', str(n_fragment_skipped_due_to_diff_chr)])
-print ''.join(['Number of DNA fragments skipped due to the read or its mate being unmapped = ' , str(n_fragment_skipped_due_to_unmapped_read_or_mate)])
-print ''.join(['Number of DNA fragments skipped due to the readpair being improperly paired = ', str(n_fragment_skipped_due_to_improper_pair)])
-print ''.join(['Number of DNA fragments skipped due to an indel in the read or its mate = ', str(n_fragment_skipped_due_to_indel)])
+print('Summary of the number of DNA fragments processed by comethylation')
+print(''.join(['Number of DNA fragments in file = ', str(n_fragment)]))
+print(''.join(['Number of DNA fragments skipped due to failing the --overlap-filter ', overlap_check, ' filter = ', str(n_fragment_skipped_due_to_bad_overlap)]))
+print(''.join(['Number of DNA fragments skipped due to failing the --min-mapq filter = ', str(n_fragment_skipped_due_to_low_mapq)]))
+print(''.join(['Number of DNA fragments skipped due to being marked as PCR duplicates = ', str(n_fragment_skipped_due_to_duplicate)]))
+print(''.join(['Number of DNA fragments skipped due to mates mapping to different chromosomes = ', str(n_fragment_skipped_due_to_diff_chr)]))
+print(''.join(['Number of DNA fragments skipped due to the read or its mate being unmapped = ' , str(n_fragment_skipped_due_to_unmapped_read_or_mate)]))
+print(''.join(['Number of DNA fragments skipped due to the readpair being improperly paired = ', str(n_fragment_skipped_due_to_improper_pair)]))
+print(''.join(['Number of DNA fragments skipped due to an indel in the read or its mate = ', str(n_fragment_skipped_due_to_indel)]))
 n_informative_fragments = 0
-for k, v in n_methylation_loci_per_read.iteritems():
+for k, v in n_methylation_loci_per_read.items():
     if k >= m:
         n_informative_fragments += v
-print ''.join(['Number of DNA fragments informative for ', methylation_type, ' ', str(m), '-tuples = ', str(n_informative_fragments), ' (', str(round(n_informative_fragments / float(n_fragment) * 100, 1)), '% of total fragments)\n'])
+print(''.join(['Number of DNA fragments informative for ', methylation_type, ' ', str(m), '-tuples = ', str(n_informative_fragments), ' (', str(round(n_informative_fragments / float(n_fragment) * 100, 1)), '% of total fragments)\n']))
 
 # Write histogram to HIST with the number of methylation loci per DNA fragment that passed QC filters
-print 'Writing histogram with the number of', methylation_type, 'methylation loci per DNA fragment that passed QC filters to', HIST.name, '...'
+print('Writing histogram with the number of', methylation_type, 'methylation loci per DNA fragment that passed QC filters to', HIST.name, '...')
 HIST.write('n\tcount\n')
-for k, v in iter(sorted(n_methylation_loci_per_read.iteritems())):
+for k, v in iter(sorted(n_methylation_loci_per_read.items())):
     HIST.write(''.join([str(k), '\t', str(v), '\n']))
 
 # Close all files

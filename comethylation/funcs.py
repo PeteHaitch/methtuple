@@ -1,4 +1,4 @@
-from mtuple import *
+from .mtuple import *
 
 import re
 import csv
@@ -27,7 +27,7 @@ def make_ignores_list(ic):
         for i in y:
             z = [x.strip() for x in i.split('-')]
             if len(z) == 2:
-                val = val + range(int(z[0]), int(z[1]) + 1)
+                val = val + list(range(int(z[0]), int(z[1]) + 1))
             elif len(z) == 1:
                 val = val + [int(z[0])]
             else:
@@ -369,8 +369,8 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         positions_2 = [read_2.pos + x + 1 for x in methylation_index_2] # +1 to transform from 0-based to 1-based co-ordinates.
         if any(x in positions_1 for x in positions_2):
             exit_msg = ''.join(['ERROR: For readpair ', read_1.qname, ', position_1 and position_2 contain a common position. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
-            print positions_1
-            print positions_2
+            print(positions_1)
+            print(positions_2)
             sys.exit(exit_msg)
         # Case 1: Readpair is informative for OT-strand
         if strand_1 == 'OT' and strand_2 == 'OT':
@@ -463,7 +463,7 @@ def write_methylation_m_tuples_to_file(methylation_m_tuples, OUT):
     header = ['chr'] + ['pos' + str(i) for i in range(1, m + 1)] + methylation_m_tuples.comethylation_patterns
     tab_writer.writerow(header)
     # Sort methylation_m_tuples.mtuples.keys() by chromosome (using methylation_m_tuples.chr_map for sort order) and then positions (pos1, pos2, ... to posm)
-    for this_m_tuple in sorted(methylation_m_tuples.mtuples.keys(), key = lambda x: (methylation_m_tuples.chr_map[x[0]], ) + tuple(x[1:])):
+    for this_m_tuple in sorted(list(methylation_m_tuples.mtuples.keys()), key = lambda x: (methylation_m_tuples.chr_map[x[0]], ) + tuple(x[1:])):
         row = this_m_tuple + tuple(methylation_m_tuples.mtuples[this_m_tuple])
         tab_writer.writerow(row)
 
