@@ -7,14 +7,14 @@ import sys
 
 #### Function definitions ####
 def make_ignores_list(ic):
-    """Make a list from a string of sequencing cycles that are to be ignored.
+    """Make a list from a string of read positions that are to be ignored.
 
     Args:
-        ic: A string of cycles to ignore. Multiple values should be comma-delimited and ranges can be specified by use of the hyphen, For example:
+        ic: A string of read positions to ignore. Multiple values should be comma-delimited and ranges can be specified by use of the hyphen, For example:
 
         '1-5, 80, 98-100'
 
-        corresponds to ignoring cycles 1, 2, 3, 4, 5, 80, 98, 99, 100.
+        corresponds to ignoring read positions 1, 2, 3, 4, 5, 80, 98, 99, 100.
 
     Returns:
         A Python list of the positions to be ignored.
@@ -31,15 +31,15 @@ def make_ignores_list(ic):
             elif len(z) == 1:
                 val = val + [int(z[0])]
             else:
-                exit_msg = ''.join(['ERROR: --ignoreCycles_r1 and --ignoreCycles_r2 must be comma-delimited. Ranges can be specified by use of the hyphen, e.g. \'1-5, 80, 98-100\''])
+                exit_msg = ''.join(['ERROR: -ir1p and -ir2p must be comma-delimited. Ranges can be specified by use of the hyphen, e.g. \'1-5, 80, 98-100\''])
                 sys.exit(exit_msg)
         if not all(isinstance(i, int) for i in val):
-                exit_msg = ''.join(['ERROR: --ignoreCycles_r1 and --ignoreCycles_r2 must be comma-delimited. Ranges can be specified by use of the hyphen, e.g. \'1-5, 80, 98-100\''])
+                exit_msg = ''.join(['ERROR: -ir1p and -ir2p must be comma-delimited. Ranges can be specified by use of the hyphen, e.g. \'1-5, 80, 98-100\''])
                 sys.exit(exit_msg)
     return val
 
-def ignore_cycles(read, methylation_index, ignore_cycles_list):
-    """Ignore methylation loci in a read that appear in the ignore_cycles_list. A methylation locus may be one of CpG, CHH, CHG or CNN.
+def ignore_read_pos(read, methylation_index, ignore_read_pos_list):
+    """Ignore methylation loci in a read that appear in the ignore_read_pos_list. A methylation locus may be one of CpG, CHH, CHG or CNN.
 
     Args:
         read: A pysam.AlignedRead instance.
@@ -48,7 +48,7 @@ def ignore_cycles(read, methylation_index, ignore_cycles_list):
         [0, 5]
 
         corresponds to a read with a methylation locus at the first and sixth positions of the read.
-        ignore_cycles_list: The list of sequencing cycles to be ignored.
+        ignore_read_pos_list: The list of read positions to be ignored.
 
     Returns:
         An updated version of methylation_index. Will report a warning if the FLAG does not encode whether the read is part of a paired-end or which mate of the paired-end read it is. Will report an error and call sys.exit() if the XR-tag or XG-tag is incompatible or missing.
@@ -58,25 +58,25 @@ def ignore_cycles(read, methylation_index, ignore_cycles_list):
     # Single-end reads
     if not read.is_paired:
         if strand == 'OT':
-            mi_updated = [mi for mi in methylation_index if mi not in ignore_cycles_list]
+            mi_updated = [mi for mi in methylation_index if mi not in ignore_read_pos_list]
         elif strand == 'OB':
-            ignore_cycles_list = [read.rlen - ic - 1 for ic in ignore_cycles_list]
-            mi_updated = [mi for mi in methylation_index if mi not in ignore_cycles_list]
+            ignore_read_pos_list = [read.rlen - ic - 1 for ic in ignore_read_pos_list]
+            mi_updated = [mi for mi in methylation_index if mi not in ignore_read_pos_list]
 
     # Paired-end reads: read_1
     elif read.is_paired and read.is_read1:
         if strand == 'OT':
-            mi_updated = [mi for mi in methylation_index if mi not in ignore_cycles_list]
+            mi_updated = [mi for mi in methylation_index if mi not in ignore_read_pos_list]
         elif strand == 'OB':
-            ignore_cycles_list = [read.rlen - ic - 1 for ic in ignore_cycles_list]
-            mi_updated = [mi for mi in methylation_index if mi not in ignore_cycles_list]
+            ignore_read_pos_list = [read.rlen - ic - 1 for ic in ignore_read_pos_list]
+            mi_updated = [mi for mi in methylation_index if mi not in ignore_read_pos_list]
     # Paired-end reads: read_2
     elif read.is_paired and read.is_read2:
         if strand == 'OT':
-            ignore_cycles_list = [read.rlen - ic - 1 for ic in ignore_cycles_list]
-            mi_updated = [mi for mi in methylation_index if mi not in ignore_cycles_list]
+            ignore_read_pos_list = [read.rlen - ic - 1 for ic in ignore_read_pos_list]
+            mi_updated = [mi for mi in methylation_index if mi not in ignore_read_pos_list]
         if strand == 'OB':
-            mi_updated = [mi for mi in methylation_index if mi not in ignore_cycles_list]
+            mi_updated = [mi for mi in methylation_index if mi not in ignore_read_pos_list]
 
     # Return updated methylation_index
     return mi_updated
@@ -131,7 +131,7 @@ def fix_old_bismark(read):
 	elif read.flag == 179:
 		read.flag = 163
 	else:
-		exit_msg = ''.join(['ERROR: Unexpected FLAG (', str(read.flag), ') for read ', read.qname, 'Sorry, --oldBismark is unable to deal with this FLAG. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com.'])
+		exit_msg = ''.join(['ERROR: Unexpected FLAG (', str(read.flag), ') for read ', read.qname, 'Sorry, --aligner Bismark_old is unable to deal with this FLAG. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com.'])
 		sys.exit(exit_msg)
 	return read    
 
@@ -269,7 +269,7 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
         sys.exit(exit_msg)
     return methylation_index_1, methylation_index_2
 
-def extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_cycles_r1, min_qual, phred_offset, ob_strand_offset):
+def extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_read1_pos, min_qual, phred_offset, ob_strand_offset):
     """Extracts m-tuples of methylation loci from a single-end read and adds the comethylation m-tuple to the methylation_m_tuples object.
     
     Args:
@@ -279,7 +279,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
         methylation_type: A string of the methylation type, e.g. CG for CpG methylation. Must be a valid option for the MTuple class.
         methylation_pattern: A regular expression of the methylation loci, e.g. '[Zz]' for CpG-methylation
         m: Is the "m" in "m-tuple", i.e. the size of the m-tuple. m must be an integer greater than or equal to 1. WARNING: No error or warning produced if this condition is violated.
-        ignore_cycles_r1: Ignore this list of sequencing cycles from each read.
+        ignore_read1_pos: Ignore this list of read positions from each read.
         min_qual: Ignore bases with quality-score less than this value.
         phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
         ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
@@ -288,10 +288,9 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
         n_methylation_loci: The number of methylation loci extracted from the read.
     """
     # Identify methylation events in read, e.g. CpGs or CHHs. The methylation_pattern is specified by a command line argument (e.g. Z/z corresponds to CpG)
-    # TODO: Translate read-positions to sequencing cycles - should be able to do from CIGAR string
     methylation_index = [midx.start() for midx in re.finditer(methylation_pattern, read.opt('XM'))]
-    # Ignore any sequencing cycles specified in ignore_cycles_r1
-    methylation_index = ignore_cycles(read, methylation_index, ignore_cycles_r1)
+    # Ignore any read positions specified in ignore_read1_pos
+    methylation_index = ignore_read_pos(read, methylation_index, ignore_read1_pos)
     # Ignore any positions with a base quality less than min_qual
     methylation_index = ignore_low_quality_bases(read, methylation_index, min_qual, phred_offset)
     n_methylation_loci = len(methylation_index)
@@ -314,7 +313,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
             methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read, None)
     return methylation_m_tuples, n_methylation_loci
 
-def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_cycles_r1, ignore_cycles_r2, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC):
+def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_read1_pos, ignore_read2_pos, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC):
     """Extracts m-tuples of methylation loci from a readpair and adds the comethylation m-tuple to the methylation_m_tuples object.
     
     Args:
@@ -325,8 +324,8 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         m: Is the "m" in "m-tuple", i.e. the size of the m-tuple. m must be an integer greater than or equal to 1. WARNING: No error or warning produced if this condition is violated.
         methylation_type: A string of the methylation type, e.g. CG for CpG methylation. Must be a valid option for the MTuple class.
         methylation_pattern: A regular expression of the methylation loci, e.g. '[Zz]' for CpG-methylation
-        ignore_cycles_r1: Ignore this list of sequencing cycles from each read_1.
-        ignore_cycles_r2: Ignore this list of sequencing cycles from each read_2.
+        ignore_read1_pos: Ignore this list of positions from each read_1.
+        ignore_read2_pos: Ignore this list of positions from each read_2.
         min_qual: Ignore bases with quality-score less than this value.
         phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
         ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
@@ -338,12 +337,11 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         n_methylation_loci: The number of methylation loci extracted from the read.
     """
     # Identify methylation events in read, e.g. CpGs or CHHs. The methylation_pattern is specified by a command line argument (e.g. Z/z corresponds to CpG)
-    # TODO: Translate read-positions to sequencing cycles - should be able to do from CIGAR string
     methylation_index_1 = [midx.start() for midx in re.finditer(methylation_pattern, read_1.opt('XM'))]
     methylation_index_2 = [midx.start() for midx in re.finditer(methylation_pattern, read_2.opt('XM'))]
-    # Ignore any sequencing cycles specified in ignore_cycles_r1 or ignore_cycles_r1
-    methylation_index_1 = ignore_cycles(read_1, methylation_index_1, ignore_cycles_r1)
-    methylation_index_2 = ignore_cycles(read_2, methylation_index_2, ignore_cycles_r2)
+    # Ignore any read positions specified in ignore_read1_pos or ignore_read1_pos
+    methylation_index_1 = ignore_read_pos(read_1, methylation_index_1, ignore_read1_pos)
+    methylation_index_2 = ignore_read_pos(read_2, methylation_index_2, ignore_read2_pos)
     # Ignore any positions with a base quality less than  min_qual
     methylation_index_1 = ignore_low_quality_bases(read_1, methylation_index_1, min_qual, phred_offset)
     methylation_index_2 = ignore_low_quality_bases(read_2, methylation_index_2, min_qual, phred_offset)
@@ -359,7 +357,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         if is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
             methylation_index_1, methylation_index_2 = ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap, overlap_check)
         else:
-            failed_read_msg = '\t'.join([read_1.qname, ''.join(['failed the --overlappingPairedEndFilter ', overlap_check, '\n'])])
+            failed_read_msg = '\t'.join([read_1.qname, ''.join(['failed the --overlap-filter ', overlap_check, '\n'])])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_bad_overlap += 1
             methylation_index_1 = []
@@ -483,11 +481,11 @@ def get_strand(read):
     """
     ## Single-end
     if not read.is_paired:
-        ## Check if aligned to CT- or CTOT-strand
+        ## Check if aligned to OT- or CTOT-strand, i.e., informative for OT-strand.
         if (read.opt('XR') == 'CT' and read.opt('XG') == 'CT') or (read.opt('XR') == 'GA' and read.opt('XG') == 'CT'): 
         # if read_1.opt('XG') == 'CT'
             strand = 'OT'
-        ## Else, check if aligned to OB- or CTOB-strand
+        ## Else, check if aligned to OB- or CTOB-strand, i.e., informative for OB-strand.
         elif (read.opt('XR') == 'CT' and read.opt('XG') == 'GA') or (read.opt('XR') == 'GA' and read.opt('XG') == 'GA'):
         # elif read_1.opt('XG') == 'GA'
             strand = 'OB'
@@ -498,11 +496,11 @@ def get_strand(read):
     ## Paired-end
     elif read.is_paired:
         if read.is_read1:
-            ## Check if aligned to CT- or CTOT-strand
+            ## Check if aligned to CT- or CTOT-strand, i.e., informative for OT-strand.
             if (read.opt('XR') == 'CT' and read.opt('XG') == 'CT') or (read.opt('XR') == 'GA' and read.opt('XG') == 'CT'):
             #if read.opt('XG') == 'CT':
                 strand = 'OT'
-            ## Else, check if aligned to OB- or CTOB-strand
+            ## Else, check if aligned to OB- or CTOB-strand, i.e., informative for OB-strand.
             elif (read.opt('XR') == 'CT' and read.opt('XG') == 'GA') or (read.opt('XR') == 'GA' and read.opt('XG') == 'GA'):
             #elif read.opt('XG') == 'GA':
                 strand = 'OB'
@@ -511,10 +509,10 @@ def get_strand(read):
                 exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
                 sys.exit(exit_msg)
         elif read.is_read2:
-            ## Check if aligned CT or CTOT-strand
+            ## Check if aligned CT or CTOT-strand, i.e., informative for OT-strand.
             if (read.opt('XR') == 'GA' and read.opt('XG') == 'CT') or (read.opt('XR') == 'CT' and read.opt('XG') == 'CT'):
                 strand = 'OT'
-            ## Else, check if aligned OB- or CTOB-strand
+            ## Else, check if aligned OB- or CTOB-strand, i.e., informative for OB-strand.
             elif (read.opt('XR') == 'GA' and read.opt('XG') == 'GA') or (read.opt('XR') == 'CT' and read.opt('XG') == 'GA'):
                 strand = 'OB'
             ## Else, something odd about this read
@@ -526,7 +524,7 @@ def get_strand(read):
     return strand
 
 __all__ = [
-    'ignore_cycles',
+    'ignore_read_pos',
     'ignore_low_quality_bases',
     'fix_old_bismark',
     'is_overlapping_sequence_identical',
