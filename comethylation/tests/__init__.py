@@ -313,7 +313,7 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 	def test_sequence(self):
 		self.assertTrue(is_overlapping_sequence_identical(self.read_1, self.read_2, 99, 'sequence'))
 		self.mod_read_1 = self.read_1
-		self.mod_read_1.seq = ''.join([self.read_1.seq[:59], 'T', self.read_1.seq[60:]]) # Change a 'C' to a 'T'
+		self.mod_read_1.seq = str(''.join([self.read_1.seq[:59].decode("utf-8"), 'T', self.read_1.seq[60:].decode("utf-8")])) # Change a 'C' to a 'T'
 		self.assertFalse(is_overlapping_sequence_identical(self.mod_read_1, self.read_2, 99, 'sequence'))
 
 	def test_XM(self):
@@ -684,14 +684,16 @@ class TestExtractAndUpdateMethylationIndexFromSingleEndRead(unittest.TestCase):
 		self.assertEqual(len(self.m3ob.mtuples), 1)
 
 	def test_correct_m_tuple_ids(self):
-		self.assertItemsEqual(list(self.m1ot.mtuples.keys()), [('chr1', 4562), ('chr1', 4604), ('chr1', 4579), ('chr1', 4573), ('chr1', 4610)])
-		self.assertItemsEqual(list(self.m2ot.mtuples.keys()), [('chr1', 4579, 4604), ('chr1', 4562, 4573), ('chr1', 4604, 4610), ('chr1', 4573, 4579)])
-		self.assertItemsEqual(list(self.m3ot.mtuples.keys()), [('chr1', 4562, 4573, 4579), ('chr1', 4573, 4579, 4604), ('chr1', 4579, 4604, 4610)])
-		self.assertItemsEqual(list(self.m4ot.mtuples.keys()), [('chr1', 4562, 4573, 4579, 4604), ('chr1', 4573, 4579, 4604, 4610)])
-		self.assertItemsEqual(list(self.m5ot.mtuples.keys()), [('chr1', 4562, 4573, 4579, 4604, 4610)])
-		self.assertItemsEqual(list(self.m1ob.mtuples.keys()), [('chr1', 3400), ('chr1', 3366), ('chr1', 3391)])
-		self.assertItemsEqual(list(self.m2ob.mtuples.keys()), [('chr1', 3391, 3400), ('chr1', 3366, 3391)])
-		self.assertItemsEqual(list(self.m3ob.mtuples.keys()), [('chr1', 3366, 3391, 3400)])
+		# Can't use assertItemsEqual because it is renamed assertCountEqual in Python 3.
+		# Instead use assertEqual(sorted(expected), sorted(actual))
+		self.assertEqual(sorted(list(self.m1ot.mtuples.keys())), sorted([('chr1', 4562), ('chr1', 4604), ('chr1', 4579), ('chr1', 4573), ('chr1', 4610)]))
+		self.assertEqual(sorted(list(self.m2ot.mtuples.keys())), sorted([('chr1', 4579, 4604), ('chr1', 4562, 4573), ('chr1', 4604, 4610), ('chr1', 4573, 4579)]))
+		self.assertEqual(sorted(list(self.m3ot.mtuples.keys())), sorted([('chr1', 4562, 4573, 4579), ('chr1', 4573, 4579, 4604), ('chr1', 4579, 4604, 4610)]))
+		self.assertEqual(sorted(list(self.m4ot.mtuples.keys())), sorted([('chr1', 4562, 4573, 4579, 4604), ('chr1', 4573, 4579, 4604, 4610)]))
+		self.assertEqual(sorted(list(self.m5ot.mtuples.keys())), sorted([('chr1', 4562, 4573, 4579, 4604, 4610)]))
+		self.assertEqual(sorted(list(self.m1ob.mtuples.keys())), sorted([('chr1', 3400), ('chr1', 3366), ('chr1', 3391)]))
+		self.assertEqual(sorted(list(self.m2ob.mtuples.keys())), sorted([('chr1', 3391, 3400), ('chr1', 3366, 3391)]))
+		self.assertEqual(sorted(list(self.m3ob.mtuples.keys())), sorted([('chr1', 3366, 3391, 3400)]))
 
 	def test_correct_number_of_methylation_loci_in_fragment(self):
 		self.assertEqual(self.nmlifot, 5)
@@ -861,28 +863,30 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 		self.assertEqual(len(self.m12ob.mtuples), 1)
 
 	def test_correct_m_tuple_ids(self):
-		self.assertItemsEqual(list(self.m1ot.mtuples.keys()), [('chr1', 563), ('chr1', 571), ('chr1', 525), ('chr1', 493), ('chr1', 469), ('chr1', 484), ('chr1', 489), ('chr1', 497), ('chr1', 471), ('chr1', 542)])
-		self.assertItemsEqual(list(self.m2ot.mtuples.keys()), [('chr1', 497, 525), ('chr1', 563, 571), ('chr1', 484, 489), ('chr1', 469, 471), ('chr1', 542, 563), ('chr1', 493, 497), ('chr1', 471, 484), ('chr1', 489, 493), ('chr1', 525, 542)])
-		self.assertItemsEqual(list(self.m3ot.mtuples.keys()), [('chr1', 493, 497, 525), ('chr1', 497, 525, 542), ('chr1', 489, 493, 497), ('chr1', 525, 542, 563), ('chr1', 471, 484, 489), ('chr1', 484, 489, 493), ('chr1', 542, 563, 571), ('chr1', 469, 471, 484)])
-		self.assertItemsEqual(list(self.m4ot.mtuples.keys()), [('chr1', 484, 489, 493, 497), ('chr1', 525, 542, 563, 571), ('chr1', 471, 484, 489, 493), ('chr1', 493, 497, 525, 542), ('chr1', 469, 471, 484, 489), ('chr1', 497, 525, 542, 563), ('chr1', 489, 493, 497, 525)])
-		self.assertItemsEqual(list(self.m5ot.mtuples.keys()), [('chr1', 469, 471, 484, 489, 493), ('chr1', 497, 525, 542, 563, 571), ('chr1', 493, 497, 525, 542, 563), ('chr1', 489, 493, 497, 525, 542), ('chr1', 484, 489, 493, 497, 525), ('chr1', 471, 484, 489, 493, 497)])
-		self.assertItemsEqual(list(self.m6ot.mtuples.keys()), [('chr1', 469, 471, 484, 489, 493, 497), ('chr1', 471, 484, 489, 493, 497, 525), ('chr1', 489, 493, 497, 525, 542, 563), ('chr1', 484, 489, 493, 497, 525, 542), ('chr1', 493, 497, 525, 542, 563, 571)])
-		self.assertItemsEqual(list(self.m7ot.mtuples.keys()), [('chr1', 469, 471, 484, 489, 493, 497, 525), ('chr1', 471, 484, 489, 493, 497, 525, 542), ('chr1', 484, 489, 493, 497, 525, 542, 563), ('chr1', 489, 493, 497, 525, 542, 563, 571)])
-		self.assertItemsEqual(list(self.m8ot.mtuples.keys()), [('chr1', 469, 471, 484, 489, 493, 497, 525, 542), ('chr1', 484, 489, 493, 497, 525, 542, 563, 571), ('chr1', 471, 484, 489, 493, 497, 525, 542, 563)])
-		self.assertItemsEqual(list(self.m9ot.mtuples.keys()), [('chr1', 471, 484, 489, 493, 497, 525, 542, 563, 571), ('chr1', 469, 471, 484, 489, 493, 497, 525, 542, 563)])
-		self.assertItemsEqual(list(self.m10ot.mtuples.keys()), [('chr1', 469, 471, 484, 489, 493, 497, 525, 542, 563, 571)])
-		self.assertItemsEqual(list(self.m1ob.mtuples.keys()), [('chr1', 563), ('chr1', 617), ('chr1', 493), ('chr1', 577), ('chr1', 525), ('chr1', 542), ('chr1', 579), ('chr1', 589), ('chr1', 571), ('chr1', 620), ('chr1', 497), ('chr1', 609)])
-		self.assertItemsEqual(list(self.m2ob.mtuples.keys()), [('chr1', 589, 609), ('chr1', 609, 617), ('chr1', 571, 577), ('chr1', 563, 571), ('chr1', 577, 579), ('chr1', 542, 563), ('chr1', 493, 497), ('chr1', 617, 620), ('chr1', 579, 589), ('chr1', 525, 542), ('chr1', 497, 525)])
-		self.assertItemsEqual(list(self.m3ob.mtuples.keys()), [('chr1', 571, 577, 579), ('chr1', 493, 497, 525), ('chr1', 609, 617, 620), ('chr1', 497, 525, 542), ('chr1', 589, 609, 617), ('chr1', 579, 589, 609), ('chr1', 525, 542, 563), ('chr1', 563, 571, 577), ('chr1', 542, 563, 571), ('chr1', 577, 579, 589)])
-		self.assertItemsEqual(list(self.m4ob.mtuples.keys()), [('chr1', 577, 579, 589, 609), ('chr1', 571, 577, 579, 589), ('chr1', 563, 571, 577, 579), ('chr1', 525, 542, 563, 571), ('chr1', 542, 563, 571, 577), ('chr1', 579, 589, 609, 617), ('chr1', 493, 497, 525, 542), ('chr1', 497, 525, 542, 563), ('chr1', 589, 609, 617, 620)])
-		self.assertItemsEqual(list(self.m5ob.mtuples.keys()), [('chr1', 563, 571, 577, 579, 589), ('chr1', 571, 577, 579, 589, 609), ('chr1', 577, 579, 589, 609, 617), ('chr1', 497, 525, 542, 563, 571), ('chr1', 493, 497, 525, 542, 563), ('chr1', 579, 589, 609, 617, 620), ('chr1', 542, 563, 571, 577, 579), ('chr1', 525, 542, 563, 571, 577)])
-		self.assertItemsEqual(list(self.m6ob.mtuples.keys()), [('chr1', 577, 579, 589, 609, 617, 620), ('chr1', 497, 525, 542, 563, 571, 577), ('chr1', 571, 577, 579, 589, 609, 617), ('chr1', 493, 497, 525, 542, 563, 571), ('chr1', 563, 571, 577, 579, 589, 609), ('chr1', 525, 542, 563, 571, 577, 579), ('chr1', 542, 563, 571, 577, 579, 589)])
-		self.assertItemsEqual(list(self.m7ob.mtuples.keys()), [('chr1', 525, 542, 563, 571, 577, 579, 589), ('chr1', 493, 497, 525, 542, 563, 571, 577), ('chr1', 497, 525, 542, 563, 571, 577, 579), ('chr1', 542, 563, 571, 577, 579, 589, 609), ('chr1', 571, 577, 579, 589, 609, 617, 620), ('chr1', 563, 571, 577, 579, 589, 609, 617)])
-		self.assertItemsEqual(list(self.m8ob.mtuples.keys()), [('chr1', 493, 497, 525, 542, 563, 571, 577, 579), ('chr1', 497, 525, 542, 563, 571, 577, 579, 589), ('chr1', 563, 571, 577, 579, 589, 609, 617, 620), ('chr1', 525, 542, 563, 571, 577, 579, 589, 609), ('chr1', 542, 563, 571, 577, 579, 589, 609, 617)])
-		self.assertItemsEqual(list(self.m9ob.mtuples.keys()), [('chr1', 497, 525, 542, 563, 571, 577, 579, 589, 609), ('chr1', 493, 497, 525, 542, 563, 571, 577, 579, 589), ('chr1', 542, 563, 571, 577, 579, 589, 609, 617, 620), ('chr1', 525, 542, 563, 571, 577, 579, 589, 609, 617)])
-		self.assertItemsEqual(list(self.m10ob.mtuples.keys()), [('chr1', 497, 525, 542, 563, 571, 577, 579, 589, 609, 617), ('chr1', 493, 497, 525, 542, 563, 571, 577, 579, 589, 609), ('chr1', 525, 542, 563, 571, 577, 579, 589, 609, 617, 620)])
-		self.assertItemsEqual(list(self.m11ob.mtuples.keys()), [('chr1', 497, 525, 542, 563, 571, 577, 579, 589, 609, 617, 620), ('chr1', 493, 497, 525, 542, 563, 571, 577, 579, 589, 609, 617)])
-		self.assertItemsEqual(list(self.m12ob.mtuples.keys()), [('chr1', 493, 497, 525, 542, 563, 571, 577, 579, 589, 609, 617, 620)])
+		# Can't use assertItemsEqual because it is renamed assertCountEqual in Python 3.
+		# Instead use assertEqual(sorted(expected), sorted(actual))
+		self.assertEqual(sorted(list(self.m1ot.mtuples.keys())), sorted([('chr1', 563), ('chr1', 571), ('chr1', 525), ('chr1', 493), ('chr1', 469), ('chr1', 484), ('chr1', 489), ('chr1', 497), ('chr1', 471), ('chr1', 542)]))
+		self.assertEqual(sorted(list(self.m2ot.mtuples.keys())), sorted([('chr1', 497, 525), ('chr1', 563, 571), ('chr1', 484, 489), ('chr1', 469, 471), ('chr1', 542, 563), ('chr1', 493, 497), ('chr1', 471, 484), ('chr1', 489, 493), ('chr1', 525, 542)]))
+		self.assertEqual(sorted(list(self.m3ot.mtuples.keys())), sorted([('chr1', 493, 497, 525), ('chr1', 497, 525, 542), ('chr1', 489, 493, 497), ('chr1', 525, 542, 563), ('chr1', 471, 484, 489), ('chr1', 484, 489, 493), ('chr1', 542, 563, 571), ('chr1', 469, 471, 484)]))
+		self.assertEqual(sorted(list(self.m4ot.mtuples.keys())), sorted([('chr1', 484, 489, 493, 497), ('chr1', 525, 542, 563, 571), ('chr1', 471, 484, 489, 493), ('chr1', 493, 497, 525, 542), ('chr1', 469, 471, 484, 489), ('chr1', 497, 525, 542, 563), ('chr1', 489, 493, 497, 525)]))
+		self.assertEqual(sorted(list(self.m5ot.mtuples.keys())), sorted([('chr1', 469, 471, 484, 489, 493), ('chr1', 497, 525, 542, 563, 571), ('chr1', 493, 497, 525, 542, 563), ('chr1', 489, 493, 497, 525, 542), ('chr1', 484, 489, 493, 497, 525), ('chr1', 471, 484, 489, 493, 497)]))
+		self.assertEqual(sorted(list(self.m6ot.mtuples.keys())), sorted([('chr1', 469, 471, 484, 489, 493, 497), ('chr1', 471, 484, 489, 493, 497, 525), ('chr1', 489, 493, 497, 525, 542, 563), ('chr1', 484, 489, 493, 497, 525, 542), ('chr1', 493, 497, 525, 542, 563, 571)]))
+		self.assertEqual(sorted(list(self.m7ot.mtuples.keys())), sorted([('chr1', 469, 471, 484, 489, 493, 497, 525), ('chr1', 471, 484, 489, 493, 497, 525, 542), ('chr1', 484, 489, 493, 497, 525, 542, 563), ('chr1', 489, 493, 497, 525, 542, 563, 571)]))
+		self.assertEqual(sorted(list(self.m8ot.mtuples.keys())), sorted([('chr1', 469, 471, 484, 489, 493, 497, 525, 542), ('chr1', 484, 489, 493, 497, 525, 542, 563, 571), ('chr1', 471, 484, 489, 493, 497, 525, 542, 563)]))
+		self.assertEqual(sorted(list(self.m9ot.mtuples.keys())), sorted([('chr1', 471, 484, 489, 493, 497, 525, 542, 563, 571), ('chr1', 469, 471, 484, 489, 493, 497, 525, 542, 563)]))
+		self.assertEqual(sorted(list(self.m10ot.mtuples.keys())), sorted([('chr1', 469, 471, 484, 489, 493, 497, 525, 542, 563, 571)]))
+		self.assertEqual(sorted(list(self.m1ob.mtuples.keys())), sorted([('chr1', 563), ('chr1', 617), ('chr1', 493), ('chr1', 577), ('chr1', 525), ('chr1', 542), ('chr1', 579), ('chr1', 589), ('chr1', 571), ('chr1', 620), ('chr1', 497), ('chr1', 609)]))
+		self.assertEqual(sorted(list(self.m2ob.mtuples.keys())), sorted([('chr1', 589, 609), ('chr1', 609, 617), ('chr1', 571, 577), ('chr1', 563, 571), ('chr1', 577, 579), ('chr1', 542, 563), ('chr1', 493, 497), ('chr1', 617, 620), ('chr1', 579, 589), ('chr1', 525, 542), ('chr1', 497, 525)]))
+		self.assertEqual(sorted(list(self.m3ob.mtuples.keys())), sorted([('chr1', 571, 577, 579), ('chr1', 493, 497, 525), ('chr1', 609, 617, 620), ('chr1', 497, 525, 542), ('chr1', 589, 609, 617), ('chr1', 579, 589, 609), ('chr1', 525, 542, 563), ('chr1', 563, 571, 577), ('chr1', 542, 563, 571), ('chr1', 577, 579, 589)]))
+		self.assertEqual(sorted(list(self.m4ob.mtuples.keys())), sorted([('chr1', 577, 579, 589, 609), ('chr1', 571, 577, 579, 589), ('chr1', 563, 571, 577, 579), ('chr1', 525, 542, 563, 571), ('chr1', 542, 563, 571, 577), ('chr1', 579, 589, 609, 617), ('chr1', 493, 497, 525, 542), ('chr1', 497, 525, 542, 563), ('chr1', 589, 609, 617, 620)]))
+		self.assertEqual(sorted(list(self.m5ob.mtuples.keys())), sorted([('chr1', 563, 571, 577, 579, 589), ('chr1', 571, 577, 579, 589, 609), ('chr1', 577, 579, 589, 609, 617), ('chr1', 497, 525, 542, 563, 571), ('chr1', 493, 497, 525, 542, 563), ('chr1', 579, 589, 609, 617, 620), ('chr1', 542, 563, 571, 577, 579), ('chr1', 525, 542, 563, 571, 577)]))
+		self.assertEqual(sorted(list(self.m6ob.mtuples.keys())), sorted([('chr1', 577, 579, 589, 609, 617, 620), ('chr1', 497, 525, 542, 563, 571, 577), ('chr1', 571, 577, 579, 589, 609, 617), ('chr1', 493, 497, 525, 542, 563, 571), ('chr1', 563, 571, 577, 579, 589, 609), ('chr1', 525, 542, 563, 571, 577, 579), ('chr1', 542, 563, 571, 577, 579, 589)]))
+		self.assertEqual(sorted(list(self.m7ob.mtuples.keys())), sorted([('chr1', 525, 542, 563, 571, 577, 579, 589), ('chr1', 493, 497, 525, 542, 563, 571, 577), ('chr1', 497, 525, 542, 563, 571, 577, 579), ('chr1', 542, 563, 571, 577, 579, 589, 609), ('chr1', 571, 577, 579, 589, 609, 617, 620), ('chr1', 563, 571, 577, 579, 589, 609, 617)]))
+		self.assertEqual(sorted(list(self.m8ob.mtuples.keys())), sorted([('chr1', 493, 497, 525, 542, 563, 571, 577, 579), ('chr1', 497, 525, 542, 563, 571, 577, 579, 589), ('chr1', 563, 571, 577, 579, 589, 609, 617, 620), ('chr1', 525, 542, 563, 571, 577, 579, 589, 609), ('chr1', 542, 563, 571, 577, 579, 589, 609, 617)]))
+		self.assertEqual(sorted(list(self.m9ob.mtuples.keys())), sorted([('chr1', 497, 525, 542, 563, 571, 577, 579, 589, 609), ('chr1', 493, 497, 525, 542, 563, 571, 577, 579, 589), ('chr1', 542, 563, 571, 577, 579, 589, 609, 617, 620), ('chr1', 525, 542, 563, 571, 577, 579, 589, 609, 617)]))
+		self.assertEqual(sorted(list(self.m10ob.mtuples.keys())), sorted([('chr1', 497, 525, 542, 563, 571, 577, 579, 589, 609, 617), ('chr1', 493, 497, 525, 542, 563, 571, 577, 579, 589, 609), ('chr1', 525, 542, 563, 571, 577, 579, 589, 609, 617, 620)]))
+		self.assertEqual(sorted(list(self.m11ob.mtuples.keys())), sorted([('chr1', 497, 525, 542, 563, 571, 577, 579, 589, 609, 617, 620), ('chr1', 493, 497, 525, 542, 563, 571, 577, 579, 589, 609, 617)]))
+		self.assertEqual(sorted(list(self.m12ob.mtuples.keys())), sorted([('chr1', 493, 497, 525, 542, 563, 571, 577, 579, 589, 609, 617, 620)]))
 
 	def test_correct_number_of_methylation_loci_in_fragment(self):
 		self.assertEqual(self.nmlifot, 10)

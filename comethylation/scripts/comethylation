@@ -46,6 +46,7 @@
 # u for not methylated C in "unknown"-context, e.g. CNN-context, (was converted). Non-standard Bismark XM-tag values; unique to output of XM_tag.py.
 
 #### Import required modules ####
+from __future__ import print_function
 import re
 import argparse
 import sys
@@ -284,7 +285,7 @@ methylation_m_tuples = MTuple(args.output_prefix, m, methylation_type, chr_map) 
 
 # Print key variable names and command line parameter options to STDOUT
 print("comethylation (v"+__version__+")\n")
-print('Input BAM file =', BAM.filename)
+print('Input BAM file =', BAM.filename.decode("utf-8"))
 print(''.join(['Output file of ', methylation_type, ' ', str(m), '-tuples = ', OUT.name]))
 if args.ss:
     print('The output will be strand-specific')

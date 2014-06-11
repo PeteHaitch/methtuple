@@ -1,3 +1,4 @@
+from __future__ import print_function
 from .mtuple import *
 
 import re
@@ -105,7 +106,8 @@ def ignore_low_quality_bases(read, methylation_index, min_qual, phred_offset):
 
     ignore_these_bases = []
     for i in methylation_index:
-        if (ord(read.qual[i]) - phred_offset) < min_qual:
+        bqual = bytearray(read.qual)
+        if (bqual[i] - phred_offset) < min_qual:
             ignore_these_bases.append(i)
     return [x for x in methylation_index if x not in ignore_these_bases]
 
@@ -238,8 +240,10 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
     ignore_these_bases = []
     # Readpair is informative for OT-strand
     if strand_1 == 'OT' and strand_2 == 'OT':
-        overlap_quals_1 = sum([ord(x) for x in read_1.qual[-n_overlap:]])
-        overlap_quals_2 = sum([ord(x) for x in read_2.qual[:n_overlap]])
+        bqual_1 = bytearray(read_1.qual)
+        bqual_2 = bytearray(read_2.qual)
+        overlap_quals_1 = sum([x for x in bqual_1[-n_overlap:]])
+        overlap_quals_2 = sum([x for x in bqual_2[:n_overlap]])
         if (overlap_quals_1 >= overlap_quals_2) | (overlap_check == 'bismark'): # overlap_check == 'bismark' simply means use the overlapping sequence from read_1.
             for i in methylation_index_2:
                 if i < n_overlap:
@@ -252,8 +256,10 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
                     methylation_index_1 = [x for x in methylation_index_1 if x not in ignore_these_bases]
     # Readpair is inforamtive for OB-strand
     elif strand_1 == 'OB' and strand_2 == 'OB':
-        overlap_quals_1 = sum([ord(x) for x in read_1.qual[:n_overlap]])
-        overlap_quals_2 = sum([ord(x) for x in read_2.qual[-n_overlap:]])
+        bqual_1 = bytearray(read_1.qual)
+        bqual_2 = bytearray(read_2.qual)
+        overlap_quals_1 = sum([x for x in bqual_1[:n_overlap]])
+        overlap_quals_2 = sum([x for x in bqual_2[-n_overlap:]])
         if (overlap_quals_1 >= overlap_quals_2) | (overlap_check == 'bismark'): # overlap_check == 'bismark' simply means use the overlapping sequence from read_1.
             for i in methylation_index_2:
                 if i >= (read_2.alen - n_overlap):
@@ -369,8 +375,8 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         positions_2 = [read_2.pos + x + 1 for x in methylation_index_2] # +1 to transform from 0-based to 1-based co-ordinates.
         if any(x in positions_1 for x in positions_2):
             exit_msg = ''.join(['ERROR: For readpair ', read_1.qname, ', position_1 and position_2 contain a common position. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
-            print(positions_1)
-            print(positions_2)
+            print(positions_1) # TODO: Remove? This is a debugging statement
+            print(positions_2) # TODO: Remove? This is a debugging statement
             sys.exit(exit_msg)
         # Case 1: Readpair is informative for OT-strand
         if strand_1 == 'OT' and strand_2 == 'OT':
