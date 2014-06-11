@@ -239,7 +239,7 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
     # Readpair is informative for OT-strand
     if strand_1 == 'OT' and strand_2 == 'OT':
         overlap_quals_1 = sum([ord(x) for x in read_1.qual[-n_overlap:]])
-        overlap_quals_2 = sum([ord(x) for x in read_2.qual[-n_overlap:]])
+        overlap_quals_2 = sum([ord(x) for x in read_2.qual[:n_overlap]])
         if (overlap_quals_1 >= overlap_quals_2) | (overlap_check == 'bismark'): # overlap_check == 'bismark' simply means use the overlapping sequence from read_1.
             for i in methylation_index_2:
                 if i < n_overlap:
