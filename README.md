@@ -12,9 +12,9 @@ python setup.py install
 ```
 in the root `comethylation` directory should work for most systems.
 
-`comethylation` is written in Python and relies upon the pysam module. Running `python setup.py install` will attempt to install pysam if it isn't found on your system. Alternatively, pysam is available from [https://code.google.com/p/pysam/](https://code.google.com/p/pysam/).
+`comethylation` is written in Python and relies upon the `pysam` module. Running `python setup.py install` will attempt to install `pysam` if it isn't found on your system. Alternatively, instructions for installing `pysam` are available from [https://github.com/pysam-developers/pysam](https://github.com/pysam-developers/pysam).
 
-`comethylation` has only been tested on Python 2.7 with pysam v0.7.7.
+I have only used `comethylation` with Python 2.7 and `pysam` version >= 0.6. However, the Travis-CI builds indicate it should work on Python 2.7, 3.2 and 3.3 with `pysam v0.7.8`. It also probably works on Python 3.4, however I am unable to test this on Travis-CI due to problems installing `pysam` (related to [https://groups.google.com/forum/#!topic/pysam-user-group/fTVwny_XQ70](https://groups.google.com/forum/#!topic/pysam-user-group/fTVwny_XQ70)).
 
 # Usage
 ## Method
@@ -29,61 +29,56 @@ For a chosen value of _m_, all _m-tuples_ are extracted and tabulated across the
 
 Methylation measurements may be filtered by base quality or other criteria such as the mapping quality of the read or whether the read is marked as a PCR duplicate. For a full list of filtering options, please run `comethylation --help` or see the __Advanced Usage__ section below. 
 
-Currently, the BAM file must have been created with [Bismark](http://www.bioinformatics.bbsrc.ac.uk/projects/download.html#bismark). If the data were aligned with Bismark version < 0.8.3 please use the `--oldBismark` flag. A future version of this software will support the use of BAM files created with other popular bisulfite aligners such as [BSMAP](https://code.google.com/p/bsmap/), [BSmooth](https://github.com/BenLangmead/bsmooth-align), [bwa-meth](https://github.com/brentp/bwa-meth/), [gsnap](http://research-pub.gene.com/gmap/), [last](http://last.cbrc.jp/) and [Novoalign](http://www.novocraft.com/). Support will either be provided natively in `comethylation` or via an pre-processing script `bismarkify`.
+Currently, the BAM file must have been created with [Bismark](http://www.bioinformatics.bbsrc.ac.uk/projects/download.html#bismark). If the data were aligned with Bismark version < 0.8.3 please use the `--aligner Bismark_old` flag. A future version of this software will support the use of BAM files created with other popular bisulfite aligners such as [BSMAP](https://code.google.com/p/bsmap/), [BSmooth](https://github.com/BenLangmead/bsmooth-align), [bwa-meth](https://github.com/brentp/bwa-meth/), [gsnap](http://research-pub.gene.com/gmap/), [last](http://last.cbrc.jp/) and [Novoalign](http://www.novocraft.com/). Support will either be provided natively in `comethylation` or via an pre-processing script `bismarkify`.
 
-The main options to pass `comethylation` are the size of the m-tuple (`--mTuple`); the type of methylation, which is some combination of _CG_, _CHG_, _CHH_ and _CNN_ (`--methylationType`); any filters to be applied to reads or positions within reads (see below); the BAM file; and the sample name, which will be used as a prefix for all output files. 
-
-To simultaneously study multiple methylation types the `--methylationType` parameter must be specified multiple times, e.g. to study CG and CHH methylation `--methylationType CG --methylationType CHH`.
+The main options to pass `comethylation` are the size of the m-tuple (`-m`); the type of methylation, which is some combination of _CG_, _CHG_, _CHH_ and _CNN_ (`--methylation-type`); any filters to be applied to reads or positions within reads (see below); the BAM file; and the sample name, which will be used as a prefix for all output files. Multiple methylation types may be specified jointly, e.g., `--methylation-type CG --methylation-type CHG`
 
 ## Output
-Three output files are created and summary information is written to `STDOUT`.
+Three output files are created and summary information is written to `STDOUT`. The main output file is a tab-delimited file of all m-tuples (`<in>.<--methylation-type>.<-m>.tsv`), where `<in>` is the prefix of the `<in.bam>` BAM file.
 
-The main output file is a tab-delimited file of all m-tuples (`<sampleName>.<--methylationType>.<--mTuple>.tsv`). 
-
-Here are the 5 rows (along with the header row) from `data/se_directional.fq.gz_bismark_bt2.CG.2.tsv`, which is created by running the single-end directional example shown below:
+Here are the 5 rows (including with the header row) from `data/se_directional.fq.gz_bismark_bt2.CG.2.tsv`, which is created by running the single-end directional example shown below:
 
 ```
-chr		pos1		pos2		MM	MU	UM	UU
-chr10	42383637	42383660	1	0	0	0
-chr10	42383660	42383672	0	2	0	0
-chr10	42383672	42383686	0	0	2	0
-chr10	42385004	42385040	1	0	0	0
-chr10	42385040	42385063	1	0	0	0
+chr	pos1	pos2	MM	MU	UM	UU
+chr1	3079983	3079993	0	0	1	0
+chr1	6387768	6387783	1	0	0	0
+chr1	6790760	6790796	0	0	0	1
+chr1	6790796	6790841	0	0	1	0
 ```
-So, for the CpG 2-tuple chr10:(42,383,637, 42,383,660) we observed 1 read that was methylated at chr10:42,383,637 and methylated at chr10:42,383,660. For CpG 2-tuple chr10:(42,383,660, 42,383,672) we observed 2 reads that were both methylated at chr10:42,383,660 but unmethylated at chr10:42,383,672.
+So, for example, at the CpG 2-tuple chr1:(3,079,983, 3,079,993) we observed 1 read that was unmethylated at chr1:3,079,983 and methylated at chr1:3,079,993.
 
-The second file (`<sampleName>.<--methylationType>_per_read.hist`) is a text histogram of the number of methylation loci per read or readpair (of the type specified by `--methylationType`) that passed the filters specified at runtime of `comethylation`.
+The second file (`<in>.<--methylation-type>_per_read.hist`) is a text histogram of the number of methylation loci per read or readpair (of the type specified by `--methylation-type`) that passed the filters specified at runtime of `comethylation`.
 
 Here is the file `data/se_directional.fq.gz_bismark_bt2.CG_per_read.hist`, which is created by running the single-end directional example shown below:
 
 ```
-n       count
-0       4389
-1       2262
-2       750
-3       287
-4       131
-5       55
-6       27
-7       18
-8       3
-9       4
-10      2
-11      1
-12      3
-13      4
-14      1
-18      2
+n	count
+0	4389
+1	2262
+2	750
+3	287
+4	131
+5	55
+6	27
+7	18
+8	3
+9	4
+10	2
+11	1
+12	3
+13	4
+14	1
+18	2
 ```
-So, 4,389 reads aligned to a position with no CpGs while 2 reads aligned to a position with 18 CpGs.
+So, 4,389 reads aligned to a position containing no CpGs while 2 reads aligned to a position containing 18 CpGs.
 
-An optional third and final file (`<sampleName.reads_that_failed_QC.txt>`) records the querynames (`QNAME`) of all reads that failed to pass quality control filters and which filter the read failed. This file may be omitted by use of the `--noFailedQCFile` flag.
+An optional third and final file (`<in>.reads_that_failed_QC.txt>`) records the querynames (`QNAME`) of all reads that failed to pass quality control filters and which filter the read failed. This file may be omitted by use of the `--no-failed-filter-file` flag.
 
 Here are the first 2 rows of `data/se_directional.fq.gz_bismark_bt2.reads_that_failed_QC.txt`, which is created by running the single-end directional example shown below:
 
 ```
-SRR921747.5_JONAS:2105:C0G2AACXX:4:2205:18672:56112_length=101  read has indel
-SRR921747.81_JONAS:2105:C0G2AACXX:4:2205:18836:56196_length=101 read has indel
+SRR921747.5_JONAS:2105:C0G2AACXX:4:2205:18672:56112_length=101	read has indel
+SRR921747.81_JONAS:2105:C0G2AACXX:4:2205:18836:56196_length=101	read has indel
 ```
 So, both of these reads were filtered out because they contained indels (see section "__Limitations and notes__").
 
@@ -97,7 +92,7 @@ Although the example datasets are both from directional bisulfite-sequencing pro
 The following command will extract all CpG 2-tuples from the file `data/se_directional.bam`:
 
 ```
-comethylation --mTuple 2 --methylationType CG data/se_directional.fq.gz_bismark_bt2.bam data/se_directional.fq.gz_bismark_bt2
+comethylation -m 2 --methylation-type CG data/se_directional.fq.gz_bismark_bt2.bam
 ```
 
 This results in 3 files: 
@@ -106,15 +101,13 @@ This results in 3 files:
 * `data/se_directional.fq.gz_bismark_bt2.CG_per_read.hist`
 * `data/se_directional.fq.gz_bismark_bt2.reads_that_failed_QC.txt`
 
-
-
 ### Paired-end
 Paired-end data must firstly be sorted by queryname prior to running `comethylation`. `BAM` files created by Bismark, such as `data/pe_directional.bam`, are already sorted by queryname. So, to extract all CG/CHH 3-tuples we would simply run:
 
 ```
-comethylation --mTuple 3 --methylationType CG --methylationType CHH --strandSpecific data/pe_directional_1.fq.gz_bismark_bt2_pe.bam data/pe_directional_1.fq.gz_bismark_bt2_pe
+comethylation -m 3 --methylation-type CG --methylation-type CHH --strand-specific data/pe_directional_1.fq.gz_bismark_bt2_pe.bam
 ```
-Note that we had to specify `--strandSpecific` because __CHH__ methylation is not symmetric between the Watson and Crick strands.
+Note that we had to specify `--strand-specific` because __CHH__ methylation is not symmetric across the Watson and Crick strands.
 
 This results in 3 files: 
 
@@ -122,26 +115,30 @@ This results in 3 files:
 * `data/pe_directional_1.fq.gz_bismark_bt2_pe.CG_CHH_per_read.hist` 
 * `data/pe_directional_1.fq.gz_bismark_bt2_pe.reads_that_failed_QC.txt`
 
+#### Note on sort-order of paired-end BAM files
+
 If your paired-end BAM file is sorted by genomic coordinates, then you must first sort the `BAM` by queryname and then run `comethylation` on the queryname-sorted `BAM`:
 
 ```
 # Create a coordinate-sorted BAM for the sake of argument
 samtools sort data/pe_directional_1.fq.gz_bismark_bt2_pe.bam data/cs_pe_directional_1.fq.gz_bismark_bt2_pe
 # Re-sort the coordinate-sorted BAM by queryname
-samtools sort -n data/cs_pe_directional_1.fq.gz_bismark_bt2_pe.bam data/qs_pe_directional_1.fq.gz_bismark_bt2_pe
+SortSam I=data/cs_pe_directional_1.fq.gz_bismark_bt2_pe.bam O=data/qs_pe_directional_1.fq.gz_bismark_bt2_pe SO=queryname
 # Run comethylation on the queryname sorted BAM
-comethylation --mTuple 3 --strandSpecific --methylationType CG --methylationType CHH data/qs_pe_directional_1.fq.gz_bismark_bt2_pe.bam data/qs_pe_directional
+comethylation -m 3 --methylation-type CG --methylation-type CHG --strand-specific data/qs_pe_directional_1.fq.gz_bismark_bt2_pe.bam
 ```
 
+__Note:__ Please use `SortSam` from the `Picard` library rather than `samtools sort`; `SortSam` guarantees that `read_1` will appear before `read_2` in the queryname sorted BAM file whereas `samtools sort` makes no such guarantee.
+
 ## Memory usage and running time
-Memory usage is dependent upon the number of methylation loci on the chromosome (more methylation loci means increased memory usage) and the value of `--mTuple` (roughly, larger values means increased memory usage), but largely independent of the number of reads in the `BAM` file. In contrast, running time is dependent on the number of reads in the `BAM` file and largely independent of the choice of `--mTuple`.
+Memory usage is dependent upon the number of methylation loci on the chromosome (more methylation loci means increased memory usage) and the value of `-m` (roughly, larger values means increased memory usage), but largely independent of the number of reads in the `BAM` file. In contrast, running time is dependent on the number of reads in the `BAM` file and largely independent of the choice of `-m`.
 
 I will include more detailed performance benchmarks in future releases. For a rough indication of performance, here are the results for processing approximately 41,000,000 100bp paired-end reads from chr1 of a 20-30x coverage whole-genome methylC-seq experiment of human data. This analysis used a single AMD Opteron 6276 CPU (2.3GHz) on a shared memory system.
 
-### `--mTuple 2`
+### `-m 2`
 Memory usage peaked at 2.9GB and the running time was approximately 1.5 hours. 
 
-### `--mTuple 5`
+### `-m 5`
 Memory usage peaked at 8.8GB and the running time was approximately 1.5 hours.
 
 ## Helper script
@@ -149,7 +146,7 @@ I frequently work with large, coordinate-sorted `BAM` files. To speed up the ext
 
 ### Warnings
 
-* __WARNING__: This simple strategy uses as many cores as there are chromosomes. This can result in __very__ large memory usage, depending on the value of `--mTuple`, and may cause problems if you have more chromosomes than available cores.
+* __WARNING__: This simple strategy uses as many cores as there are chromosomes. This can result in __very__ large memory usage, depending on the value of `-m`, and may cause problems if you have more chromosomes than available cores.
 * __WARNING__: The script `tabulate_hist.R` must be in the same directory as `run_comethylation.sh`
 
 ## Advanced usage
@@ -157,92 +154,103 @@ I frequently work with large, coordinate-sorted `BAM` files. To speed up the ext
 A full list of options is available by running `comethylation --help`:
 
 ```
-usage: comethylation [-h] [--mTuple <int>] [--methylationType <string>]
-                     [--oldBismark] [--ignoreDuplicates]
-                     [--ignoreStart_r1 <int>] [--ignoreStart_r2 <int>]
-                     [--ignoreEnd_r1 <int>] [--ignoreEnd_r2 <int>]
-                     [--minQual <int>] [--minMapQ <int>] [--phred64]
-                     [--overlappingPairedEndFilter <string>]
-                     [--strandSpecific] [--useImproperPairs]
-                     [--noFailedQCFile] [--version]
-                     BAM sampleName
+usage: comethylation [options] <in.bam>
+Please run 'comethylation -h' for a full list of options.
 
-Extract within-fragment co-methylation measurements at methylation loci from
-the aligned reads of a bisulfite-sequencing experiment. WARNING: Requires
-Bismark-style BAM files including XG-, XR- and XM-tags and corrected SAM
-flags. Currently only supports the directional (aka 2-strand) bisulfite-
-sequencing protocol.
+Extract methylation patterns at m-tuples of methylation loci from the aligned
+reads of a bisulfite-sequencing experiment. Currently only supports BAM files
+created with Bismark.
 
-positional arguments:
-  BAM                   The path to the SAM/BAM file
-  sampleName            The name of the sample. All output files will have
-                        this prefix.
+Input options:
+  --aligner {Bismark,Bismark_old}
+                        The aligner used to generate the BAM file. Bismark_old
+                        refers to Bismark version < 0.8.3 (default: Bismark)
+  --Phred64             Quality scores are encoded as Phred64 rather than
+                        Phred33 (default: False)
 
-optional arguments:
+Output options:
+  -o <text>, --output-prefix <text>
+                        By default, all output files have the same prefix as
+                        that of the input file. This will override the prefix
+                        of output file names
+  --ss, --strand-specific
+                        Produce strand-specific counts, i.e., don't collapse
+                        methylation calls across Watson and Crick strands.
+                        Required for non-CG methylation type (default: False)
+  --nfff, --no-failed-filter-file
+                        Do not create the file listing the reads that failed
+                        to pass to pass the filters and which filter it failed
+                        (default: False)
+  --gzip                gzip all output files. --gzip and --bzip2 are mutually
+                        exclusive (default: False)
+  --bzip2               bzip2 all output files. --gzip and --bzip2 are
+                        mutually exclusive (default: False)
+
+Construction of methylation loci m-tuples:
+  --mt {CG,CHG,CHH,CNN}, --methylation-type {CG,CHG,CHH,CNN}
+                        The methylation type. Multiple methylation types may
+                        be analysed jointly by repeated use of this argument,
+                        e.g., --methylation-type CG --methylation-type CHG
+                        (default: ['CG'])
+  -m <int>              The size of the m-tuples, i.e., the 'm' in m-tuples
+                        (default: 1)
+
+Filtering of reads:
+  Applied before filtering of bases
+
+  --id, --ignore-duplicates
+                        Ignore reads that have been flagged as PCR duplicates
+                        by, for example, Picard's MarkDuplicates function.
+                        More specifically, ignore reads with the 0x400 bit in
+                        the FLAG (default: False)
+  --mmq <int>, --min-mapq <int>
+                        Ignore reads with a mapping quality score (mapQ) less
+                        than <int> (default: 0)
+  --of {sequence,XM,quality,Bismark}, --overlap-filter {sequence,XM,quality,Bismark}
+                        Ignore overlapping reads from paired-end sequencing if
+                        they do not pass this filter. Currently, this option
+                        means that the entirety of both reads are ignored, not
+                        just the overlapping region. The options listed by
+                        most-to-least stringent: check the entire overlapping
+                        sequence is identical (sequence), check the XM-tag is
+                        identical for the overlapping region (XM), do no check
+                        of the overlapping bases but use the read with the
+                        higher quality basecalls in the overlapping region
+                        (quality), do no check of the overlapping bases and
+                        just use the overlapping bases from read_1 a la
+                        bismark_methylation_extractor (Bismark). (default: XM)
+  --uip, --use-improper-pairs
+                        Use the improper read-pairs, i.e. don't filter them.
+                        More specifically, check the 0x2 FLAG bit of each
+                        read; the exact definition of an improper read-pair
+                        depends on the aligner and alignment parameters
+                        (default: False)
+
+Filtering of bases:
+  Applied after filtering of reads
+
+  --ir1p VALUES, --ignore-read1-positions VALUES
+                        If single-end data, ignore these read positions from
+                        all reads. If paired-end data, ignore these read
+                        positions from just read_1 of each pair. Multiple
+                        values should be comma-delimited and ranges may be
+                        specified by use of the hyphen, e.g. 1-5,80,95-100
+                        (default: None)
+  --ir2p VALUES, --ignore-read2-positions VALUES
+                        Ignore these read positions from just read_2 of each
+                        pair if paired-end sequencing. Multiple values should
+                        be comma-delimited and ranges may be specified by use
+                        of the hyphen, e.g. 1-5,80,95-100 (default: None)
+  --mbq <int>, --min-base-qual <int>
+                        Ignore read positions with a base quality score less
+                        than <int> (default: 0)
+
+Other:
+  -v, --version         show program's version number and exit
   -h, --help            show this help message and exit
-  --mTuple <int>        The size of the methylation-loci m-tuples (i.e. the
-                        choice of m); must be an integer > 1 (default: 2).
-  --methylationType <string>
-                        The type of methylation loci to study: CG, CHG, CHH or
-                        CNN. This option may be specified multiple times in
-                        order to study multiple methylation types
-                        simultaneously, e.g. --methylationType CG
-                        --methylationType CHG
-  --oldBismark          SAM/BAM created with Bismark version < 0.8.3. The FLAG
-                        and QNAME field in SAM/BAM files created by these
-                        older versions of Bismark differed from the SAM
-                        specifications and need to be adjusted on the fly by
-                        comethylation
-  --ignoreDuplicates    Ignore reads that have been flagged as PCR duplicates
-                        by Picard's MarkDuplicates function
-  --ignoreStart_r1 <int>
-                        Ignore first <int> bases from start (5' end) of read
-                        (respectively, read_1) for single-end data
-                        (respectively, paired-end data) (default: 0). WARNING:
-                        Parameter value not sanity checked by program.
-  --ignoreStart_r2 <int>
-                        Only used if data are paired-end. Ignore first <int>
-                        bases from start (5' end) of read_2 (default: 0).
-                        WARNING: Parameter value not sanity checked by
-                        program.
-  --ignoreEnd_r1 <int>  Ignore last <int> bases from end (3' end) of read
-                        (respectively, read_1) for single-end data
-                        (respectively, paired-end data) (default: 0). WARNING:
-                        Parameter value not sanity checked by program.
-  --ignoreEnd_r2 <int>  Only used if data are paired-end. Ignore last <int>
-                        bases from end (5' end) of read_2 (default: 0).
-                        WARNING: Parameter value not sanity checked by
-                        program.
-  --minQual <int>       Minimum base-quality (default: 0). Any base with a
-                        lower base-quality is ignored.
-  --minMapQ <int>       Minimum mapping quality mapQ (default: 0). Any read
-                        with a lower mapQ is ignored. WARNING: This option has
-                        no effect with SAM/BAM files created with Bismark.
-                        Bismark sets all mapQ values to 255, which indicates
-                        that the mapping quality is not available.
-  --phred64             Quality scores are encoded as Phred64 (default:
-                        Phred33).
-  --overlappingPairedEndFilter <string>
-                        What filter should be applied to any overlapping
-                        paired-end reads. Read-pairs that don't pass the
-                        filter are not used for methylation calling (options
-                        listed by most-to-least stringent): check the entire
-                        overlapping sequence is identical (sequence), check
-                        the XM-tag is identical for the overlapping region
-                        (XM), do no check of the overlapping bases but use the
-                        read with the higher quality basecalls in the
-                        overlapping region (quality), do no check of the
-                        overlapping bases and just use the overlapping bases
-                        from read_1 a la bismark_methylation_extractor
-                        (bismark) (default: XM).
-  --strandSpecific      Produce strand-specific counts, i.e. don't collapse
-                        methylation calls across Watson and Crick strands
-  --useImproperPairs    Do not filter out improper readpairs. The definition
-                        of a proper readpair is aligner-specific and the value
-                        set with the 0x2 bit in the SAM flag
-  --noFailedQCFile      Do not create the file listing the reads that failed
-                        to pass a QC filter and which filter they failed
-  --version             show program's version number and exit
+
+comethylation (v1.1.0) by Peter Hickey (peter.hickey@gmail.com,
+https://github.com/PeteHaitch/comethylation/
 ```
 
 
@@ -262,7 +270,7 @@ The `BAM` file created by Bismark is natively in queryname order so this is not 
 ## `comethylation` will skip any read containing an indel 
 It is difficult, although not impossible, to assign coordinates to a cytosine within an indel. To avoid this complication, `comethylation` currently skips any reads containing an indel. I aim to improve the handling of indels in the next release.
 
-## The `--oldBismark` option is a bit crude
+## The `--aligner Bismark_old` option is a bit crude
 Specifically, it assumes that there are no '/' characters in the read names (`QNAME`) and that the BAM has not been processed with any other programs, e.g. Picard's MarkDuplicates, that might change the `FLAG` field. I am happy to improve this functionality if requested.
 
 ## Memory usage can be large 
@@ -270,14 +278,13 @@ For instance, 5-20Gb per chromosome for a typical 20-30x coverage whole-genome m
 
 ## Other notes
 
-* Bismark always sets the mapping quality (`mapQ`) as the value 255, which means unavailable in the SAM format specification. Thus the `--minMapQ` option will not have any effect for Bismark data.
-* `comethylation` skip paired-end reads where either mate is unmapped.
+* Bismark always sets the mapping quality (`mapQ`) as the value 255, which means unavailable in the SAM format specification. Thus the `--min-mapq` option will not have any effect for Bismark data.
+* `comethylation` skips paired-end reads where either mate is unmapped.
 
 # Acknowledgements
 A big thank you to [Felix Krueger](http://www.bioinformatics.babraham.ac.uk/people.html) (the author of Bismark) for his help in understanding mapping of bisulfite-sequencing data and for answering my many questions along the way.
 
 Thanks also to Tobias Sargeant ([@folded](https://github.com/folded)) for his help in turning the original `comethylation.py` script into the current Python module `comethylation` and for help in setting up a testing framework.
-
 
 # Questions and comments
 Please use the GitHub Issue Tracker (available at [www.github.com/PeteHaitch/comethylation](www.github.com/PeteHaitch/comethylation)) to file bug reports or request new functionality. I welcome questions and comments; you can email me at peter.hickey@gmail.com. 

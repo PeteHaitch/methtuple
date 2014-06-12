@@ -1,6 +1,6 @@
-Bismark report for: se_directional/se_directional.fq.gz (version: v0.10.0)
-Option '--directional' specified: alignments to complementary strands will be ignored (i.e. not performed!)
-Bowtie was run against the bisulfite genome of /usr/local/work/hickey/genomes/hg19_bowtie2/ with the specified options: -q --score-min L,0,-0.2 --ignore-quals
+Bismark report for: se_directional.fq.gz (version: v0.12.2)
+Option '--directional' specified (default mode): alignments to complementary strands (CTOT, CTOB) were ignored (i.e. not performed)
+Bismark was run with Bowtie 2 against the bisulfite genome of /usr/local/work/hickey/genomes/hg19_bowtie2/ with the specified options: -q --score-min L,0,-0.2 --ignore-quals
 
 Final Alignment report
 ======================

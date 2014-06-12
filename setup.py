@@ -9,7 +9,7 @@ CHANGES = '' # open(os.path.join(here, 'CHANGES.md')).read()
 
 setup(
   name='comethylation',
-  version='1.0.99',
+  version='1.1.0',
   description='comethylation',
   long_description=README + '\n\n' +  CHANGES,
   classifiers=[

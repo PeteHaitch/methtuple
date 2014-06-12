@@ -1,3 +1,4 @@
+from __future__ import print_function
 import re
 import itertools
 import sys
@@ -33,11 +34,11 @@ class MTuple:
         self.mtuples = {}
     def display(self): 
         """Display an MTuple instance."""
-        print 'Sample name =', self.sample_name
-        print 'Methylation type =', self.methylation_type
-        print 'm = ', self.m
-        print 'First 10 positions =', self.mtuples.keys()[:10]
-        print 'First 10 counts =', self.mtuples.values()[:10]
+        print('Sample name =', self.sample_name)
+        print('Methylation type =', self.methylation_type)
+        print('m = ', self.m)
+        print('First 10 positions =', list(self.mtuples.keys())[:10])
+        print('First 10 counts =', list(self.mtuples.values())[:10])
     def increment_count(self, pos, comethylation_state, read_1, read_2):
         """Increment the counts attribute based on the comethylation_state that has been extracted from read_1 and read_2.
         NB: read_2 should be set to None if data is single-end.

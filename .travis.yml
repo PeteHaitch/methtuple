@@ -1,10 +1,10 @@
 language: python
 python:
-  #- "2.6" Appears to install okay but fails Travis build at python setup.py test. This is due to some features of unittest, e.g. assertItemsEqual, assertRaises, either being absent from or different to the versions available in unittest for Python 2.7
+  # - "2.6" # Won't support until given reason to. See https://github.com/PeteHaitch/comethylation/issues/75.
   - "2.7"
-  #- "3.2" Appears to install okay but fails Travis build at python setup.py test. Presumably due to differences between unittest on Python 2.7 and Python 3.2.
-  #- "3.3" Appears to install okay but fails Travis build at python setup.py test. Presumably due to differences between unittest on Python 2.7 and Python 3.3.
-  #- "pypy" # pysam doesn't work with pypy
+  - "3.2"
+  - "3.3"
+  # - "3.4" # Currently failing due to problems installing Pysam v0.7.8 in Python 3.4 see https://github.com/PeteHaitch/comethylation/issues/75
 
 install:
     - python setup.py install
