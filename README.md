@@ -12,9 +12,9 @@ python setup.py install
 ```
 in the root `comethylation` directory should work for most systems.
 
-`comethylation` is written in Python and relies upon the pysam module. Running `python setup.py install` will attempt to install pysam if it isn't found on your system. Alternatively, instructions for installing pysam are available from [https://github.com/pysam-developers/pysam](https://github.com/pysam-developers/pysam).
+`comethylation` is written in Python and relies upon the `pysam` module. Running `python setup.py install` will attempt to install `pysam` if it isn't found on your system. Alternatively, instructions for installing `pysam` are available from [https://github.com/pysam-developers/pysam](https://github.com/pysam-developers/pysam).
 
-`comethylation` has only been tested on Python 2.7 with pysam version >= 0.6.
+I have only used `comethylation` with Python 2.7 and `pysam` version >= 0.6. However, the Travis-CI builds indicate it should work on Python 2.7, 3.2 and 3.3 with `pysam v0.7.8`. It also probably works on Python 3.4, however I am unable to test this on Travis-CI due to problems installing `pysam` (related to [https://groups.google.com/forum/#!topic/pysam-user-group/fTVwny_XQ70](https://groups.google.com/forum/#!topic/pysam-user-group/fTVwny_XQ70)).
 
 # Usage
 ## Method
