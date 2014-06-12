@@ -105,8 +105,8 @@ def ignore_low_quality_bases(read, methylation_index, min_qual, phred_offset):
         raise ValueError("ignore_low_quality_bases: 'phred_offset' must be a 33 or 64")
 
     ignore_these_bases = []
+    bqual = bytearray(read.qual)
     for i in methylation_index:
-        bqual = bytearray(read.qual)
         if (bqual[i] - phred_offset) < min_qual:
             ignore_these_bases.append(i)
     return [x for x in methylation_index if x not in ignore_these_bases]
