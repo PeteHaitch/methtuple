@@ -58,25 +58,25 @@ def ignore_read_pos(read, methylation_index, ignore_read_pos_list):
     strand = get_strand(read)
     # Single-end reads
     if not read.is_paired:
-        if strand == 'OT':
+        if strand == '+':
             mi_updated = [mi for mi in methylation_index if mi not in ignore_read_pos_list]
-        elif strand == 'OB':
+        elif strand == '-':
             ignore_read_pos_list = [read.rlen - ic - 1 for ic in ignore_read_pos_list]
             mi_updated = [mi for mi in methylation_index if mi not in ignore_read_pos_list]
 
     # Paired-end reads: read_1
     elif read.is_paired and read.is_read1:
-        if strand == 'OT':
+        if strand == '+':
             mi_updated = [mi for mi in methylation_index if mi not in ignore_read_pos_list]
-        elif strand == 'OB':
+        elif strand == '-':
             ignore_read_pos_list = [read.rlen - ic - 1 for ic in ignore_read_pos_list]
             mi_updated = [mi for mi in methylation_index if mi not in ignore_read_pos_list]
     # Paired-end reads: read_2
     elif read.is_paired and read.is_read2:
-        if strand == 'OT':
+        if strand == '+':
             ignore_read_pos_list = [read.rlen - ic - 1 for ic in ignore_read_pos_list]
             mi_updated = [mi for mi in methylation_index if mi not in ignore_read_pos_list]
-        if strand == 'OB':
+        if strand == '-':
             mi_updated = [mi for mi in methylation_index if mi not in ignore_read_pos_list]
 
     # Return updated methylation_index
@@ -144,40 +144,40 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
         read_1: A pysam.AlignedRead instance with read.is_read1 == true. Must be paired with read_2.
         read_2: A pysam.AlignedRead instance with read.is_read2 == true. Must be paired with read_1.
         n_overlap: The number of bases in the overlap of read_1 and read_2 (must be > 0)
-        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (quality), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark)
+        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (quality), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (Bismark)
 
     Returns:
-        True if the overlapping sequence passes the filter, False otherwise. Furthermore, if 'overlap_check = quality' or 'overlap_check = bismark' the result is always True.
+        True if the overlapping sequence passes the filter, False otherwise. Furthermore, if 'overlap_check = quality' or 'overlap_check = Bismark' the result is always True.
     """
     if (n_overlap < 0) or (round(n_overlap) != n_overlap):
         raise ValueError("is_overlapping_sequence_identical: 'n_overlap' must be a positive integer")
-    if overlap_check != 'sequence' and overlap_check != 'XM' and overlap_check != 'quality' and overlap_check != 'bismark':
-        raise ValueError("is_overlapping_sequence_identical: 'overlap_check' must be one of 'sequence', 'XM', 'quality' or 'bismark'")
+    if overlap_check != 'sequence' and overlap_check != 'XM' and overlap_check != 'quality' and overlap_check != 'Bismark':
+        raise ValueError("is_overlapping_sequence_identical: 'overlap_check' must be one of 'sequence', 'XM', 'quality' or 'Bismark'")
     strand_1 = get_strand(read_1)
     strand_2 = get_strand(read_2)
     # Readpair is informative for OT-strand
-    if strand_1 == 'OT' and strand_2 == 'OT':
+    if strand_1 == '+' and strand_2 == '+':
         if overlap_check == 'sequence':
             overlap_1 = read_1.seq[-n_overlap:]
             overlap_2 = read_2.seq[:n_overlap]
         elif overlap_check == 'XM':
             overlap_1 = read_1.opt('XM')[-n_overlap:]
             overlap_2 = read_2.opt('XM')[:n_overlap]
-        elif overlap_check == 'bismark': # return True as Bismark does not actually check the overlapping sequence but rather just takes the overlap from read_1
+        elif overlap_check == 'Bismark': # return True as Bismark does not actually check the overlapping sequence but rather just takes the overlap from read_1
             overlap_1 = True
             overlap_2 = True
         elif overlap_check == 'quality':
             overlap_1 = True
             overlap_2 = True
     # Readpair is informative for OB-strand
-    elif strand_1 == 'OB' and strand_2 == 'OB':
+    elif strand_1 == '-' and strand_2 == '-':
         if overlap_check == 'sequence':
             overlap_1 = read_1.seq[:n_overlap]
             overlap_2 = read_2.seq[-n_overlap:]
         elif overlap_check == 'XM':
             overlap_1 = read_1.opt('XM')[:n_overlap]
             overlap_2 = read_2.opt('XM')[-n_overlap:]
-        elif overlap_check == 'bismark': # return True as Bismark does not actually check the overlapping sequence but rather just takes the overlap from read_1
+        elif overlap_check == 'Bismark': # return True as Bismark does not actually check the overlapping sequence but rather just takes the overlap from read_1
             overlap_1 = True
             overlap_2 = True
         elif overlap_check == 'quality':
@@ -226,25 +226,25 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
         corresponds to read_1 with a methylation locus at the first and sixth positions of the read.
         methylation_index_2: As for methylation_index_1 but informative for read_2.
         n_overlap: The number of bases in the overlap (must be > 0).
-        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (quality), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark)
+        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (quality), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (Bismark)
 
     Returns:
         Updated versions of methylation_index_1 and methylation_index_2.
     """
     if (n_overlap < 0) or (round(n_overlap) != n_overlap):
         raise ValueError("ignore_overlapping_sequence: 'n_overlap' must be a positive integer")
-    if overlap_check != 'sequence' and overlap_check != 'XM' and overlap_check != 'quality' and overlap_check != 'bismark':
-        raise ValueError("ignore_overlapping_sequence: 'overlap_check' must be one of 'sequence', 'XM', 'quality' or 'bismark'")
+    if overlap_check != 'sequence' and overlap_check != 'XM' and overlap_check != 'quality' and overlap_check != 'Bismark':
+        raise ValueError("ignore_overlapping_sequence: 'overlap_check' must be one of 'sequence', 'XM', 'quality' or 'Bismark'")
     strand_1 = get_strand(read_1)
     strand_2 = get_strand(read_2)
     ignore_these_bases = []
     # Readpair is informative for OT-strand
-    if strand_1 == 'OT' and strand_2 == 'OT':
+    if strand_1 == '+' and strand_2 == '+':
         bqual_1 = bytearray(read_1.qual)
         bqual_2 = bytearray(read_2.qual)
         overlap_quals_1 = sum([x for x in bqual_1[-n_overlap:]])
         overlap_quals_2 = sum([x for x in bqual_2[:n_overlap]])
-        if (overlap_quals_1 >= overlap_quals_2) | (overlap_check == 'bismark'): # overlap_check == 'bismark' simply means use the overlapping sequence from read_1.
+        if (overlap_quals_1 >= overlap_quals_2) | (overlap_check == 'Bismark'): # overlap_check == 'Bismark' simply means use the overlapping sequence from read_1.
             for i in methylation_index_2:
                 if i < n_overlap:
                     ignore_these_bases.append(i)
@@ -255,12 +255,12 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
                     ignore_these_bases.append(i)
                     methylation_index_1 = [x for x in methylation_index_1 if x not in ignore_these_bases]
     # Readpair is inforamtive for OB-strand
-    elif strand_1 == 'OB' and strand_2 == 'OB':
+    elif strand_1 == '-' and strand_2 == '-':
         bqual_1 = bytearray(read_1.qual)
         bqual_2 = bytearray(read_2.qual)
         overlap_quals_1 = sum([x for x in bqual_1[:n_overlap]])
         overlap_quals_2 = sum([x for x in bqual_2[-n_overlap:]])
-        if (overlap_quals_1 >= overlap_quals_2) | (overlap_check == 'bismark'): # overlap_check == 'bismark' simply means use the overlapping sequence from read_1.
+        if (overlap_quals_1 >= overlap_quals_2) | (overlap_check == 'Bismark'): # overlap_check == 'Bismark' simply means use the overlapping sequence from read_1.
             for i in methylation_index_2:
                 if i >= (read_2.alen - n_overlap):
                     ignore_these_bases.append(i)
@@ -305,7 +305,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
     if n_methylation_loci >= m:
         positions = [read.pos + x + 1 for x in methylation_index] # +1 to transform from 0-based to 1-based co-ordinates.
         # If read is informative for the OB-strand then translate co-ordinate "ob_strand_offset" bases to the left so that it points to the C on the OT-strand of the methylation locus.
-        if strand == 'OB':
+        if strand == '-':
             positions = [x - ob_strand_offset for x in positions]
         # Exit if methylation loci are incorrectly ordered
         if not positions == sorted(positions):
@@ -315,7 +315,12 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
         for i in range(0, len(methylation_index) - m + 1): # For a read containing k methylation loci there are (k - m + 1) m-tuples.
             # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
             this_comethylation_pattern = ''.join([read.opt('XM')[j] for j in methylation_index[i:(i + m)]])
-            this_m_tuple_positions = (BAM.getrname(read.tid),) + tuple(positions[i:(i + m)])
+            # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
+            if ob_strand_offset != 0:
+                mt_strand = '*'
+            else:
+                mt_strand = strand
+            this_m_tuple_positions = (BAM.getrname(read.tid),) + (mt_strand, ) + tuple(positions[i:(i + m)])
             methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read, None)
     return methylation_m_tuples, n_methylation_loci
 
@@ -335,7 +340,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         min_qual: Ignore bases with quality-score less than this value.
         phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
         ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
-        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (quality), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (bismark)
+        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (quality), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (Bismark)
         n_fragment_skipped_due_to_bad_overlap: The total number of fragments (readpairs) skipped due to the overlapping sequencing not passing the filter.
         FAILED_QC: The file object where the QNAME of readpairs that fail the overlap check are written, along with the reason the readpairs failed
     Returns:
@@ -379,7 +384,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
             print(positions_2) # TODO: Remove? This is a debugging statement
             sys.exit(exit_msg)
         # Case 1: Readpair is informative for OT-strand
-        if strand_1 == 'OT' and strand_2 == 'OT':
+        if strand_1 == '+' and strand_2 == '+':
             # Exit if methylation loci are incorrectly ordered
             if positions_1 + positions_2 != sorted(positions_1 + positions_2):
                 exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for paired-end read", read_1.qname, ", which is informative for the OT-strand.\n'positions_1 + positions_2' =", str(positions_1 + positions_2), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
@@ -389,7 +394,12 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                 for i in range(0, len(methylation_index_1) - m + 1): # For a read containing k methylation loci there are (k - m + 1) m-tuples.
                     # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
                     this_comethylation_pattern = ''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]])
-                    this_m_tuple_positions = (BAM.getrname(read_1.tid),) + tuple(positions_1[i:(i + m)])
+                    # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
+                    if ob_strand_offset != 0:
+                        mt_strand = '*'
+                    else:
+                        mt_strand = strand_1
+                    this_m_tuple_positions = (BAM.getrname(read_1.tid),) + (mt_strand, ) + tuple(positions_1[i:(i + m)])
                     methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
             # Secondly, create all m-tuples of methylation loci where the leftmost locus is on read_1 and the rightmost locus is on read_2
             num_shared_m_tuples = max(len(methylation_index_1) + len(methylation_index_2) - m + 1, 0) - max(len(methylation_index_1) - m + 1, 0) - max(len(methylation_index_2) - m + 1, 0) # the number of m-tuples that span read_1 and read_2
@@ -403,17 +413,27 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                     sys.exit(exit_msg)
                 # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
                 this_comethylation_pattern = ''.join([read_1.opt('XM')[j] for j in methylation_index_1[(leftmost_shared_locus_index + i):]] + [read_2.opt('XM')[j] for j in methylation_index_2[:(m - len(this_m_tuple_positions_1))]])
-                this_m_tuple_positions = (BAM.getrname(read_1.tid),) + tuple(this_m_tuple_positions_1) + tuple(this_m_tuple_positions_2)
+                # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
+                if ob_strand_offset != 0:
+                    mt_strand = '*'
+                else:
+                    mt_strand = strand_1
+                this_m_tuple_positions = (BAM.getrname(read_1.tid),) + (mt_strand, ) + tuple(this_m_tuple_positions_1) + tuple(this_m_tuple_positions_2)
                 methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern,  read_1, read_2)
             # Finally, create all m-tuples of methylation loci where each locus is from read_2.        
             if len(methylation_index_2) >= m:
                 for i in range(0, len(methylation_index_2) - m + 1): # For a read containing k methylation loci there are (k - m + 1) m-tuples.:
                     this_comethylation_pattern = ''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]])
-                    this_m_tuple_positions = (BAM.getrname(read_2.tid),) + tuple(positions_2[i:(i + m)])
+                    # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
+                    if ob_strand_offset != 0:
+                        mt_strand = '*'
+                    else:
+                        mt_strand = strand_1
+                    this_m_tuple_positions = (BAM.getrname(read_2.tid),) + (mt_strand, ) + tuple(positions_2[i:(i + m)])
                     methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
 
         # Case 2: Readpair is informative for OB-strand
-        elif strand_1 == 'OB' and strand_2 == 'OB':
+        elif strand_1 == '-' and strand_2 == '-':
             # Translate co-ordinates "ob_strand_offset" bases to the left so that it points to the C on the OT-strand of the methylation locus
             positions_1 = [x - ob_strand_offset for x in positions_1]
             positions_2 = [x - ob_strand_offset for x in positions_2]
@@ -426,7 +446,12 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                 for i in range(0, len(methylation_index_1) - m + 1): # For a read containing m methylation loci there are (m - m-tuple + 1) m-tuples.:
                     # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
                     this_comethylation_pattern = ''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]])
-                    this_m_tuple_positions = (BAM.getrname(read_1.tid),) + tuple(positions_1[i:(i + m)])
+                    # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
+                    if ob_strand_offset != 0:
+                        mt_strand = '*'
+                    else:
+                        mt_strand = strand_1
+                    this_m_tuple_positions = (BAM.getrname(read_1.tid),) + (mt_strand, ) + tuple(positions_1[i:(i + m)])
                     methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern,  read_1, read_2)
             # Secondly, create all m-tuples of methylation loci where the leftmost locus is on read_1 and the rightmost locus is on read_2
             num_shared_m_tuples = max(len(methylation_index_1) + len(methylation_index_2) - m + 1, 0) - max(len(methylation_index_1) - m + 1, 0) - max(len(methylation_index_2) - m + 1, 0) # the number of m-tuples that span read_1 and read_2
@@ -440,13 +465,23 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
                     sys.exit(exit_msg)
                 # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
                 this_comethylation_pattern = ''.join([read_2.opt('XM')[j] for j in methylation_index_2[(leftmost_shared_locus_index + i):]] + [read_1.opt('XM')[j] for j in methylation_index_1[:(m - len(this_m_tuple_positions_2))]])
-                this_m_tuple_positions = (BAM.getrname(read_1.tid),) + tuple(this_m_tuple_positions_2) + tuple(this_m_tuple_positions_1)
+                # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
+                if ob_strand_offset != 0:
+                    mt_strand = '*'
+                else:
+                    mt_strand = strand_1
+                this_m_tuple_positions = (BAM.getrname(read_1.tid),) + (mt_strand, ) + tuple(this_m_tuple_positions_2) + tuple(this_m_tuple_positions_1)
                 methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
             # Finally, create all m-tuples of methylation loci where each locus is from read_2.        
             if len(methylation_index_2) >= m:
                 for i in range(0, len(methylation_index_2) - m + 1): # For a read containing m methylation loci there are (m - m-tuple + 1) m-tuples.:
                     this_comethylation_pattern = ''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]])
-                    this_m_tuple_positions = (BAM.getrname(read_2.tid),) + tuple(positions_2[i:(i + m)])
+                    # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
+                    if ob_strand_offset != 0:
+                        mt_strand = '*'
+                    else:
+                        mt_strand = strand_1
+                    this_m_tuple_positions = (BAM.getrname(read_2.tid),) + (mt_strand, ) + tuple(positions_2[i:(i + m)])
                     methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
         else:
             exit_msg = ''.join(['ERROR: The informative strands for readpair ', read_1.qname, ',  do not agree between mates. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
@@ -466,10 +501,10 @@ def write_methylation_m_tuples_to_file(methylation_m_tuples, OUT):
     # Get m
     m = methylation_m_tuples.m
     # Create the header row and write to file
-    header = ['chr'] + ['pos' + str(i) for i in range(1, m + 1)] + methylation_m_tuples.comethylation_patterns
+    header = ['chr'] + ['strand'] + ['pos' + str(i) for i in range(1, m + 1)] + methylation_m_tuples.comethylation_patterns
     tab_writer.writerow(header)
-    # Sort methylation_m_tuples.mtuples.keys() by chromosome (using methylation_m_tuples.chr_map for sort order) and then positions (pos1, pos2, ... to posm)
-    for this_m_tuple in sorted(list(methylation_m_tuples.mtuples.keys()), key = lambda x: (methylation_m_tuples.chr_map[x[0]], ) + tuple(x[1:])):
+    # Sort methylation_m_tuples.mtuples.keys() by chromosome (using methylation_m_tuples.chr_map for sort order), then by strand ('+' > '-' > '*') and finally by positions (pos1, pos2, ... to posm)
+    for this_m_tuple in sorted(list(methylation_m_tuples.mtuples.keys()), key = lambda x: (methylation_m_tuples.chr_map[x[0]], ) + ({'+': 1, '-': 2, '*': 3}[x[1]], ) + tuple(x[2:])):
         row = this_m_tuple + tuple(methylation_m_tuples.mtuples[this_m_tuple])
         tab_writer.writerow(row)
 
@@ -483,18 +518,18 @@ def get_strand(read):
     Args:
         read: A pysam.AlignedRead instance with XR-tag and XG-tag.
     Returns:
-        strand: For which strand the read/readpair is informative (OT or OB)
+        strand: For which strand the read/readpair is informative: '+' (OT, original-top, Watson) or '-' (OB, original-bottom, Crick)
     """
     ## Single-end
     if not read.is_paired:
         ## Check if aligned to OT- or CTOT-strand, i.e., informative for OT-strand.
         if (read.opt('XR') == 'CT' and read.opt('XG') == 'CT') or (read.opt('XR') == 'GA' and read.opt('XG') == 'CT'): 
         # if read_1.opt('XG') == 'CT'
-            strand = 'OT'
+            strand = '+'
         ## Else, check if aligned to OB- or CTOB-strand, i.e., informative for OB-strand.
         elif (read.opt('XR') == 'CT' and read.opt('XG') == 'GA') or (read.opt('XR') == 'GA' and read.opt('XG') == 'GA'):
         # elif read_1.opt('XG') == 'GA'
-            strand = 'OB'
+            strand = '-'
         ## Else, something odd about this read
         else:
             exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
@@ -505,11 +540,11 @@ def get_strand(read):
             ## Check if aligned to CT- or CTOT-strand, i.e., informative for OT-strand.
             if (read.opt('XR') == 'CT' and read.opt('XG') == 'CT') or (read.opt('XR') == 'GA' and read.opt('XG') == 'CT'):
             #if read.opt('XG') == 'CT':
-                strand = 'OT'
+                strand = '+'
             ## Else, check if aligned to OB- or CTOB-strand, i.e., informative for OB-strand.
             elif (read.opt('XR') == 'CT' and read.opt('XG') == 'GA') or (read.opt('XR') == 'GA' and read.opt('XG') == 'GA'):
             #elif read.opt('XG') == 'GA':
-                strand = 'OB'
+                strand = '-'
             ## Else, something odd about this read
             else:
                 exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
@@ -517,10 +552,10 @@ def get_strand(read):
         elif read.is_read2:
             ## Check if aligned CT or CTOT-strand, i.e., informative for OT-strand.
             if (read.opt('XR') == 'GA' and read.opt('XG') == 'CT') or (read.opt('XR') == 'CT' and read.opt('XG') == 'CT'):
-                strand = 'OT'
+                strand = '+'
             ## Else, check if aligned OB- or CTOB-strand, i.e., informative for OB-strand.
             elif (read.opt('XR') == 'GA' and read.opt('XG') == 'GA') or (read.opt('XR') == 'CT' and read.opt('XG') == 'GA'):
-                strand = 'OB'
+                strand = '-'
             ## Else, something odd about this read
             else:
                 exit_msg = ''.join(['ERROR: Read ', read.qname, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])

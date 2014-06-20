@@ -337,7 +337,7 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 		self.assertTrue(is_overlapping_sequence_identical(self.read_1, self.read_2, 99, 'quality'))
 
 	def test_bismark(self):
-		self.assertTrue(is_overlapping_sequence_identical(self.read_1, self.read_2, 99, 'bismark'))
+		self.assertTrue(is_overlapping_sequence_identical(self.read_1, self.read_2, 99, 'Bismark'))
 
 	def test_n_overlap(self):
 		n_overlap = self.read_1.alen + self.read_2.alen - abs(self.read_1.tlen)
@@ -350,7 +350,7 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 
 	def test_bad_overlap_check(self):
 		self.assertRaises(ValueError, is_overlapping_sequence_identical, self.read_1, self.read_2, 10, 'apples')
-		self.assertRaises(ValueError, is_overlapping_sequence_identical, self.read_1, self.read_2, 10, 'Bismark') # Should be 'bismark'
+		self.assertRaises(ValueError, is_overlapping_sequence_identical, self.read_1, self.read_2, 10, 'bismark') # Should be 'Bismark'
 
 	def test_invalid_strands(self):
 		self.mod_read_1 = self.read_1
@@ -553,15 +553,15 @@ class TestIgnoreOverlappingSequence(unittest.TestCase):
 		self.obm_2 = [3, 11, 17, 19, 29, 49, 57, 60]
 
 	def test_bismark(self):
-		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'bismark'), ([59, 98], []))
-		self.assertEqual(ignore_overlapping_sequence(self.obr_1, self.obr_2, self.obm_1, self.obm_2, 99, 'bismark'), ([2, 10, 16, 18, 28, 48, 56, 59], []))
+		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'Bismark'), ([59, 98], []))
+		self.assertEqual(ignore_overlapping_sequence(self.obr_1, self.obr_2, self.obm_1, self.obm_2, 99, 'Bismark'), ([2, 10, 16, 18, 28, 48, 56, 59], []))
 		# Make read_2 have higher quality bases than read_1
 		self.otr_1.qual = 'B' * len(self.otr_1.seq)
 		self.otr_2.qual = 'K' * len(self.otr_2.seq)
 		self.obr_1.qual = 'B' * len(self.obr_1.seq)
 		self.obr_2.qual = 'K' * len(self.obr_2.seq)
-		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'bismark'), ([59, 98], []))
-		self.assertEqual(ignore_overlapping_sequence(self.obr_1, self.obr_2, self.obm_1, self.obm_2, 99, 'bismark'), ([2, 10, 16, 18, 28, 48, 56, 59], []))
+		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'Bismark'), ([59, 98], []))
+		self.assertEqual(ignore_overlapping_sequence(self.obr_1, self.obr_2, self.obm_1, self.obm_2, 99, 'Bismark'), ([2, 10, 16, 18, 28, 48, 56, 59], []))
 
 	def test_quality(self):
 		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'quality'), ([59, 98], []))
@@ -603,7 +603,7 @@ class TestIgnoreOverlappingSequence(unittest.TestCase):
 	def test_bad_overlap_check(self):
 		# Should raise an exception
 		self.assertRaises(ValueError, ignore_overlapping_sequence, self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'apples')
-		self.assertRaises(ValueError, ignore_overlapping_sequence, self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'Bismark') # Should be 'bismark'
+		self.assertRaises(ValueError, ignore_overlapping_sequence, self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'bismark') # Should be 'Bismark'
 
 class TestExtractAndUpdateMethylationIndexFromSingleEndRead(unittest.TestCase):
 	'''Test the function extract_and_update_methylation_index_from_single_end_read
@@ -686,14 +686,14 @@ class TestExtractAndUpdateMethylationIndexFromSingleEndRead(unittest.TestCase):
 	def test_correct_m_tuple_ids(self):
 		# Can't use assertItemsEqual because it is renamed assertCountEqual in Python 3.
 		# Instead use assertEqual(sorted(expected), sorted(actual))
-		self.assertEqual(sorted(list(self.m1ot.mtuples.keys())), sorted([('chr1', 4562), ('chr1', 4604), ('chr1', 4579), ('chr1', 4573), ('chr1', 4610)]))
-		self.assertEqual(sorted(list(self.m2ot.mtuples.keys())), sorted([('chr1', 4579, 4604), ('chr1', 4562, 4573), ('chr1', 4604, 4610), ('chr1', 4573, 4579)]))
-		self.assertEqual(sorted(list(self.m3ot.mtuples.keys())), sorted([('chr1', 4562, 4573, 4579), ('chr1', 4573, 4579, 4604), ('chr1', 4579, 4604, 4610)]))
-		self.assertEqual(sorted(list(self.m4ot.mtuples.keys())), sorted([('chr1', 4562, 4573, 4579, 4604), ('chr1', 4573, 4579, 4604, 4610)]))
-		self.assertEqual(sorted(list(self.m5ot.mtuples.keys())), sorted([('chr1', 4562, 4573, 4579, 4604, 4610)]))
-		self.assertEqual(sorted(list(self.m1ob.mtuples.keys())), sorted([('chr1', 3400), ('chr1', 3366), ('chr1', 3391)]))
-		self.assertEqual(sorted(list(self.m2ob.mtuples.keys())), sorted([('chr1', 3391, 3400), ('chr1', 3366, 3391)]))
-		self.assertEqual(sorted(list(self.m3ob.mtuples.keys())), sorted([('chr1', 3366, 3391, 3400)]))
+		self.assertEqual(sorted(list(self.m1ot.mtuples.keys())), sorted([('chr1', '*', 4562), ('chr1', '*', 4604), ('chr1', '*', 4579), ('chr1', '*', 4573), ('chr1', '*', 4610)]))
+		self.assertEqual(sorted(list(self.m2ot.mtuples.keys())), sorted([('chr1', '*', 4579, 4604), ('chr1', '*', 4562, 4573), ('chr1', '*', 4604, 4610), ('chr1', '*', 4573, 4579)]))
+		self.assertEqual(sorted(list(self.m3ot.mtuples.keys())), sorted([('chr1', '*', 4562, 4573, 4579), ('chr1', '*', 4573, 4579, 4604), ('chr1', '*', 4579, 4604, 4610)]))
+		self.assertEqual(sorted(list(self.m4ot.mtuples.keys())), sorted([('chr1', '*', 4562, 4573, 4579, 4604), ('chr1', '*', 4573, 4579, 4604, 4610)]))
+		self.assertEqual(sorted(list(self.m5ot.mtuples.keys())), sorted([('chr1', '*', 4562, 4573, 4579, 4604, 4610)]))
+		self.assertEqual(sorted(list(self.m1ob.mtuples.keys())), sorted([('chr1', '*', 3400), ('chr1', '*', 3366), ('chr1', '*', 3391)]))
+		self.assertEqual(sorted(list(self.m2ob.mtuples.keys())), sorted([('chr1', '*', 3391, 3400), ('chr1', '*', 3366, 3391)]))
+		self.assertEqual(sorted(list(self.m3ob.mtuples.keys())), sorted([('chr1', '*', 3366, 3391, 3400)]))
 
 	def test_correct_number_of_methylation_loci_in_fragment(self):
 		self.assertEqual(self.nmlifot, 5)
@@ -705,7 +705,7 @@ class TestExtractAndUpdateMethylationIndexFromSingleEndRead(unittest.TestCase):
 		self.assertEqual(self.m2cgchg.methylation_type, 'CG/CHG')
 
 	def test_counts(self):
-		self.assertEqual(self.m1ot.mtuples[('chr1', 4562)], array.array('i', [1, 0]))
+		self.assertEqual(self.m1ot.mtuples[('chr1', '*', 4562)], array.array('i', [1, 0]))
 
 	def tearDown(self):
 		os.remove(self.BAM.filename)
@@ -814,29 +814,29 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 		self.BAM.close()
 		self.BAM = pysam.Samfile(self.filename, 'rb')
 		self.FAILED_QC = open(tempfile.mkstemp()[1], 'w')
-		self.m1ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m2ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m3ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m4ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m5ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m6ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 6, 'CG', {'chr1': 0}), m = 6, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m7ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 7, 'CG', {'chr1': 0}), m = 7, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m8ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 8, 'CG', {'chr1': 0}), m = 8, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m9ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 9, 'CG', {'chr1': 0}), m = 9, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m10ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 10, 'CG', {'chr1': 0}), m = 10, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m1ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m2ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m3ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m4ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m5ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m6ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 6, 'CG', {'chr1': 0}), m = 6, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m7ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 7, 'CG', {'chr1': 0}), m = 7, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m8ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 8, 'CG', {'chr1': 0}), m = 8, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m9ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 9, 'CG', {'chr1': 0}), m = 9, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m10ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 10, 'CG', {'chr1': 0}), m = 10, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m11ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 11, 'CG', {'chr1': 0}), m = 11, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m12ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 12, 'CG', {'chr1': 0}), m = 12, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m2cgchg, self.nmlifotcgchg , self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG/CHG', {'chr1': 0}), m = 2, methylation_type = 'CG/CHG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m1ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m2ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m3ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m4ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m5ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m6ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 6, 'CG', {'chr1': 0}), m = 6, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m7ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 7, 'CG', {'chr1': 0}), m = 7, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m8ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 8, 'CG', {'chr1': 0}), m = 8, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m9ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 9, 'CG', {'chr1': 0}), m = 9, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m10ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 10, 'CG', {'chr1': 0}), m = 10, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m1ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m2ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m3ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m4ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m5ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m6ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 6, 'CG', {'chr1': 0}), m = 6, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m7ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 7, 'CG', {'chr1': 0}), m = 7, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m8ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 8, 'CG', {'chr1': 0}), m = 8, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m9ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 9, 'CG', {'chr1': 0}), m = 9, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m10ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 10, 'CG', {'chr1': 0}), m = 10, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m11ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 11, 'CG', {'chr1': 0}), m = 11, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m12ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 12, 'CG', {'chr1': 0}), m = 12, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m2cgchg, self.nmlifotcgchg , self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG/CHG', {'chr1': 0}), m = 2, methylation_type = 'CG/CHG', methylation_pattern = re.compile(r'[Zz]'), ignore_read1_pos = [], ignore_read2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
 
 	def test_correct_number_of_m_tuples(self):
 		self.assertEqual(len(self.m1ot.mtuples), 10)
@@ -865,28 +865,28 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 	def test_correct_m_tuple_ids(self):
 		# Can't use assertItemsEqual because it is renamed assertCountEqual in Python 3.
 		# Instead use assertEqual(sorted(expected), sorted(actual))
-		self.assertEqual(sorted(list(self.m1ot.mtuples.keys())), sorted([('chr1', 563), ('chr1', 571), ('chr1', 525), ('chr1', 493), ('chr1', 469), ('chr1', 484), ('chr1', 489), ('chr1', 497), ('chr1', 471), ('chr1', 542)]))
-		self.assertEqual(sorted(list(self.m2ot.mtuples.keys())), sorted([('chr1', 497, 525), ('chr1', 563, 571), ('chr1', 484, 489), ('chr1', 469, 471), ('chr1', 542, 563), ('chr1', 493, 497), ('chr1', 471, 484), ('chr1', 489, 493), ('chr1', 525, 542)]))
-		self.assertEqual(sorted(list(self.m3ot.mtuples.keys())), sorted([('chr1', 493, 497, 525), ('chr1', 497, 525, 542), ('chr1', 489, 493, 497), ('chr1', 525, 542, 563), ('chr1', 471, 484, 489), ('chr1', 484, 489, 493), ('chr1', 542, 563, 571), ('chr1', 469, 471, 484)]))
-		self.assertEqual(sorted(list(self.m4ot.mtuples.keys())), sorted([('chr1', 484, 489, 493, 497), ('chr1', 525, 542, 563, 571), ('chr1', 471, 484, 489, 493), ('chr1', 493, 497, 525, 542), ('chr1', 469, 471, 484, 489), ('chr1', 497, 525, 542, 563), ('chr1', 489, 493, 497, 525)]))
-		self.assertEqual(sorted(list(self.m5ot.mtuples.keys())), sorted([('chr1', 469, 471, 484, 489, 493), ('chr1', 497, 525, 542, 563, 571), ('chr1', 493, 497, 525, 542, 563), ('chr1', 489, 493, 497, 525, 542), ('chr1', 484, 489, 493, 497, 525), ('chr1', 471, 484, 489, 493, 497)]))
-		self.assertEqual(sorted(list(self.m6ot.mtuples.keys())), sorted([('chr1', 469, 471, 484, 489, 493, 497), ('chr1', 471, 484, 489, 493, 497, 525), ('chr1', 489, 493, 497, 525, 542, 563), ('chr1', 484, 489, 493, 497, 525, 542), ('chr1', 493, 497, 525, 542, 563, 571)]))
-		self.assertEqual(sorted(list(self.m7ot.mtuples.keys())), sorted([('chr1', 469, 471, 484, 489, 493, 497, 525), ('chr1', 471, 484, 489, 493, 497, 525, 542), ('chr1', 484, 489, 493, 497, 525, 542, 563), ('chr1', 489, 493, 497, 525, 542, 563, 571)]))
-		self.assertEqual(sorted(list(self.m8ot.mtuples.keys())), sorted([('chr1', 469, 471, 484, 489, 493, 497, 525, 542), ('chr1', 484, 489, 493, 497, 525, 542, 563, 571), ('chr1', 471, 484, 489, 493, 497, 525, 542, 563)]))
-		self.assertEqual(sorted(list(self.m9ot.mtuples.keys())), sorted([('chr1', 471, 484, 489, 493, 497, 525, 542, 563, 571), ('chr1', 469, 471, 484, 489, 493, 497, 525, 542, 563)]))
-		self.assertEqual(sorted(list(self.m10ot.mtuples.keys())), sorted([('chr1', 469, 471, 484, 489, 493, 497, 525, 542, 563, 571)]))
-		self.assertEqual(sorted(list(self.m1ob.mtuples.keys())), sorted([('chr1', 563), ('chr1', 617), ('chr1', 493), ('chr1', 577), ('chr1', 525), ('chr1', 542), ('chr1', 579), ('chr1', 589), ('chr1', 571), ('chr1', 620), ('chr1', 497), ('chr1', 609)]))
-		self.assertEqual(sorted(list(self.m2ob.mtuples.keys())), sorted([('chr1', 589, 609), ('chr1', 609, 617), ('chr1', 571, 577), ('chr1', 563, 571), ('chr1', 577, 579), ('chr1', 542, 563), ('chr1', 493, 497), ('chr1', 617, 620), ('chr1', 579, 589), ('chr1', 525, 542), ('chr1', 497, 525)]))
-		self.assertEqual(sorted(list(self.m3ob.mtuples.keys())), sorted([('chr1', 571, 577, 579), ('chr1', 493, 497, 525), ('chr1', 609, 617, 620), ('chr1', 497, 525, 542), ('chr1', 589, 609, 617), ('chr1', 579, 589, 609), ('chr1', 525, 542, 563), ('chr1', 563, 571, 577), ('chr1', 542, 563, 571), ('chr1', 577, 579, 589)]))
-		self.assertEqual(sorted(list(self.m4ob.mtuples.keys())), sorted([('chr1', 577, 579, 589, 609), ('chr1', 571, 577, 579, 589), ('chr1', 563, 571, 577, 579), ('chr1', 525, 542, 563, 571), ('chr1', 542, 563, 571, 577), ('chr1', 579, 589, 609, 617), ('chr1', 493, 497, 525, 542), ('chr1', 497, 525, 542, 563), ('chr1', 589, 609, 617, 620)]))
-		self.assertEqual(sorted(list(self.m5ob.mtuples.keys())), sorted([('chr1', 563, 571, 577, 579, 589), ('chr1', 571, 577, 579, 589, 609), ('chr1', 577, 579, 589, 609, 617), ('chr1', 497, 525, 542, 563, 571), ('chr1', 493, 497, 525, 542, 563), ('chr1', 579, 589, 609, 617, 620), ('chr1', 542, 563, 571, 577, 579), ('chr1', 525, 542, 563, 571, 577)]))
-		self.assertEqual(sorted(list(self.m6ob.mtuples.keys())), sorted([('chr1', 577, 579, 589, 609, 617, 620), ('chr1', 497, 525, 542, 563, 571, 577), ('chr1', 571, 577, 579, 589, 609, 617), ('chr1', 493, 497, 525, 542, 563, 571), ('chr1', 563, 571, 577, 579, 589, 609), ('chr1', 525, 542, 563, 571, 577, 579), ('chr1', 542, 563, 571, 577, 579, 589)]))
-		self.assertEqual(sorted(list(self.m7ob.mtuples.keys())), sorted([('chr1', 525, 542, 563, 571, 577, 579, 589), ('chr1', 493, 497, 525, 542, 563, 571, 577), ('chr1', 497, 525, 542, 563, 571, 577, 579), ('chr1', 542, 563, 571, 577, 579, 589, 609), ('chr1', 571, 577, 579, 589, 609, 617, 620), ('chr1', 563, 571, 577, 579, 589, 609, 617)]))
-		self.assertEqual(sorted(list(self.m8ob.mtuples.keys())), sorted([('chr1', 493, 497, 525, 542, 563, 571, 577, 579), ('chr1', 497, 525, 542, 563, 571, 577, 579, 589), ('chr1', 563, 571, 577, 579, 589, 609, 617, 620), ('chr1', 525, 542, 563, 571, 577, 579, 589, 609), ('chr1', 542, 563, 571, 577, 579, 589, 609, 617)]))
-		self.assertEqual(sorted(list(self.m9ob.mtuples.keys())), sorted([('chr1', 497, 525, 542, 563, 571, 577, 579, 589, 609), ('chr1', 493, 497, 525, 542, 563, 571, 577, 579, 589), ('chr1', 542, 563, 571, 577, 579, 589, 609, 617, 620), ('chr1', 525, 542, 563, 571, 577, 579, 589, 609, 617)]))
-		self.assertEqual(sorted(list(self.m10ob.mtuples.keys())), sorted([('chr1', 497, 525, 542, 563, 571, 577, 579, 589, 609, 617), ('chr1', 493, 497, 525, 542, 563, 571, 577, 579, 589, 609), ('chr1', 525, 542, 563, 571, 577, 579, 589, 609, 617, 620)]))
-		self.assertEqual(sorted(list(self.m11ob.mtuples.keys())), sorted([('chr1', 497, 525, 542, 563, 571, 577, 579, 589, 609, 617, 620), ('chr1', 493, 497, 525, 542, 563, 571, 577, 579, 589, 609, 617)]))
-		self.assertEqual(sorted(list(self.m12ob.mtuples.keys())), sorted([('chr1', 493, 497, 525, 542, 563, 571, 577, 579, 589, 609, 617, 620)]))
+		self.assertEqual(sorted(list(self.m1ot.mtuples.keys())), sorted([('chr1', '*', 563), ('chr1', '*', 571), ('chr1', '*', 525), ('chr1', '*', 493), ('chr1', '*', 469), ('chr1', '*', 484), ('chr1', '*', 489), ('chr1', '*', 497), ('chr1', '*', 471), ('chr1', '*', 542)]))
+		self.assertEqual(sorted(list(self.m2ot.mtuples.keys())), sorted([('chr1', '*', 497, 525), ('chr1', '*', 563, 571), ('chr1', '*', 484, 489), ('chr1', '*', 469, 471), ('chr1', '*', 542, 563), ('chr1', '*', 493, 497), ('chr1', '*', 471, 484), ('chr1', '*', 489, 493), ('chr1', '*', 525, 542)]))
+		self.assertEqual(sorted(list(self.m3ot.mtuples.keys())), sorted([('chr1', '*', 493, 497, 525), ('chr1', '*', 497, 525, 542), ('chr1', '*', 489, 493, 497), ('chr1', '*', 525, 542, 563), ('chr1', '*', 471, 484, 489), ('chr1', '*', 484, 489, 493), ('chr1', '*', 542, 563, 571), ('chr1', '*', 469, 471, 484)]))
+		self.assertEqual(sorted(list(self.m4ot.mtuples.keys())), sorted([('chr1', '*', 484, 489, 493, 497), ('chr1', '*', 525, 542, 563, 571), ('chr1', '*', 471, 484, 489, 493), ('chr1', '*', 493, 497, 525, 542), ('chr1', '*', 469, 471, 484, 489), ('chr1', '*', 497, 525, 542, 563), ('chr1', '*', 489, 493, 497, 525)]))
+		self.assertEqual(sorted(list(self.m5ot.mtuples.keys())), sorted([('chr1', '*', 469, 471, 484, 489, 493), ('chr1', '*', 497, 525, 542, 563, 571), ('chr1', '*', 493, 497, 525, 542, 563), ('chr1', '*', 489, 493, 497, 525, 542), ('chr1', '*', 484, 489, 493, 497, 525), ('chr1', '*', 471, 484, 489, 493, 497)]))
+		self.assertEqual(sorted(list(self.m6ot.mtuples.keys())), sorted([('chr1', '*', 469, 471, 484, 489, 493, 497), ('chr1', '*', 471, 484, 489, 493, 497, 525), ('chr1', '*', 489, 493, 497, 525, 542, 563), ('chr1', '*', 484, 489, 493, 497, 525, 542), ('chr1', '*', 493, 497, 525, 542, 563, 571)]))
+		self.assertEqual(sorted(list(self.m7ot.mtuples.keys())), sorted([('chr1', '*', 469, 471, 484, 489, 493, 497, 525), ('chr1', '*', 471, 484, 489, 493, 497, 525, 542), ('chr1', '*', 484, 489, 493, 497, 525, 542, 563), ('chr1', '*', 489, 493, 497, 525, 542, 563, 571)]))
+		self.assertEqual(sorted(list(self.m8ot.mtuples.keys())), sorted([('chr1', '*', 469, 471, 484, 489, 493, 497, 525, 542), ('chr1', '*', 484, 489, 493, 497, 525, 542, 563, 571), ('chr1', '*', 471, 484, 489, 493, 497, 525, 542, 563)]))
+		self.assertEqual(sorted(list(self.m9ot.mtuples.keys())), sorted([('chr1', '*', 471, 484, 489, 493, 497, 525, 542, 563, 571), ('chr1', '*', 469, 471, 484, 489, 493, 497, 525, 542, 563)]))
+		self.assertEqual(sorted(list(self.m10ot.mtuples.keys())), sorted([('chr1', '*', 469, 471, 484, 489, 493, 497, 525, 542, 563, 571)]))
+		self.assertEqual(sorted(list(self.m1ob.mtuples.keys())), sorted([('chr1', '*', 563), ('chr1', '*', 617), ('chr1', '*', 493), ('chr1', '*', 577), ('chr1', '*', 525), ('chr1', '*', 542), ('chr1', '*', 579), ('chr1', '*', 589), ('chr1', '*', 571), ('chr1', '*', 620), ('chr1', '*', 497), ('chr1', '*', 609)]))
+		self.assertEqual(sorted(list(self.m2ob.mtuples.keys())), sorted([('chr1', '*', 589, 609), ('chr1', '*', 609, 617), ('chr1', '*', 571, 577), ('chr1', '*', 563, 571), ('chr1', '*', 577, 579), ('chr1', '*', 542, 563), ('chr1', '*', 493, 497), ('chr1', '*', 617, 620), ('chr1', '*', 579, 589), ('chr1', '*', 525, 542), ('chr1', '*', 497, 525)]))
+		self.assertEqual(sorted(list(self.m3ob.mtuples.keys())), sorted([('chr1', '*', 571, 577, 579), ('chr1', '*', 493, 497, 525), ('chr1', '*', 609, 617, 620), ('chr1', '*', 497, 525, 542), ('chr1', '*', 589, 609, 617), ('chr1', '*', 579, 589, 609), ('chr1', '*', 525, 542, 563), ('chr1', '*', 563, 571, 577), ('chr1', '*', 542, 563, 571), ('chr1', '*', 577, 579, 589)]))
+		self.assertEqual(sorted(list(self.m4ob.mtuples.keys())), sorted([('chr1', '*', 577, 579, 589, 609), ('chr1', '*', 571, 577, 579, 589), ('chr1', '*', 563, 571, 577, 579), ('chr1', '*', 525, 542, 563, 571), ('chr1', '*', 542, 563, 571, 577), ('chr1', '*', 579, 589, 609, 617), ('chr1', '*', 493, 497, 525, 542), ('chr1', '*', 497, 525, 542, 563), ('chr1', '*', 589, 609, 617, 620)]))
+		self.assertEqual(sorted(list(self.m5ob.mtuples.keys())), sorted([('chr1', '*', 563, 571, 577, 579, 589), ('chr1', '*', 571, 577, 579, 589, 609), ('chr1', '*', 577, 579, 589, 609, 617), ('chr1', '*', 497, 525, 542, 563, 571), ('chr1', '*', 493, 497, 525, 542, 563), ('chr1', '*', 579, 589, 609, 617, 620), ('chr1', '*', 542, 563, 571, 577, 579), ('chr1', '*', 525, 542, 563, 571, 577)]))
+		self.assertEqual(sorted(list(self.m6ob.mtuples.keys())), sorted([('chr1', '*', 577, 579, 589, 609, 617, 620), ('chr1', '*', 497, 525, 542, 563, 571, 577), ('chr1', '*', 571, 577, 579, 589, 609, 617), ('chr1', '*', 493, 497, 525, 542, 563, 571), ('chr1', '*', 563, 571, 577, 579, 589, 609), ('chr1', '*', 525, 542, 563, 571, 577, 579), ('chr1', '*', 542, 563, 571, 577, 579, 589)]))
+		self.assertEqual(sorted(list(self.m7ob.mtuples.keys())), sorted([('chr1', '*', 525, 542, 563, 571, 577, 579, 589), ('chr1', '*', 493, 497, 525, 542, 563, 571, 577), ('chr1', '*', 497, 525, 542, 563, 571, 577, 579), ('chr1', '*', 542, 563, 571, 577, 579, 589, 609), ('chr1', '*', 571, 577, 579, 589, 609, 617, 620), ('chr1', '*', 563, 571, 577, 579, 589, 609, 617)]))
+		self.assertEqual(sorted(list(self.m8ob.mtuples.keys())), sorted([('chr1', '*', 493, 497, 525, 542, 563, 571, 577, 579), ('chr1', '*', 497, 525, 542, 563, 571, 577, 579, 589), ('chr1', '*', 563, 571, 577, 579, 589, 609, 617, 620), ('chr1', '*', 525, 542, 563, 571, 577, 579, 589, 609), ('chr1', '*', 542, 563, 571, 577, 579, 589, 609, 617)]))
+		self.assertEqual(sorted(list(self.m9ob.mtuples.keys())), sorted([('chr1', '*', 497, 525, 542, 563, 571, 577, 579, 589, 609), ('chr1', '*', 493, 497, 525, 542, 563, 571, 577, 579, 589), ('chr1', '*', 542, 563, 571, 577, 579, 589, 609, 617, 620), ('chr1', '*', 525, 542, 563, 571, 577, 579, 589, 609, 617)]))
+		self.assertEqual(sorted(list(self.m10ob.mtuples.keys())), sorted([('chr1', '*', 497, 525, 542, 563, 571, 577, 579, 589, 609, 617), ('chr1', '*', 493, 497, 525, 542, 563, 571, 577, 579, 589, 609), ('chr1', '*', 525, 542, 563, 571, 577, 579, 589, 609, 617, 620)]))
+		self.assertEqual(sorted(list(self.m11ob.mtuples.keys())), sorted([('chr1', '*', 497, 525, 542, 563, 571, 577, 579, 589, 609, 617, 620), ('chr1', '*', 493, 497, 525, 542, 563, 571, 577, 579, 589, 609, 617)]))
+		self.assertEqual(sorted(list(self.m12ob.mtuples.keys())), sorted([('chr1', '*', 493, 497, 525, 542, 563, 571, 577, 579, 589, 609, 617, 620)]))
 
 	def test_correct_number_of_methylation_loci_in_fragment(self):
 		self.assertEqual(self.nmlifot, 10)
@@ -898,7 +898,7 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 		self.assertEqual(self.m2cgchg.methylation_type, 'CG/CHG')
 
 	def test_counts(self):
-		self.assertEqual(self.m1ot.mtuples[('chr1', 563)], array.array('i', [1, 0]))
+		self.assertEqual(self.m1ot.mtuples[('chr1', '*', 563)], array.array('i', [1, 0]))
 
 	def tearDown(self):
 		os.remove(self.BAM.filename)
@@ -1447,32 +1447,32 @@ class TestGetStrand(unittest.TestCase):
 		self.ctobpe_1, self.ctobpe_2 = buildCTOBPE()
 
 	def test_ot_se(self):
-		self.assertEqual(get_strand(self.otrse), 'OT')
+		self.assertEqual(get_strand(self.otrse), '+')
 
 	def test_ob_se(self):
-		self.assertEqual(get_strand(self.obrse), 'OB')
+		self.assertEqual(get_strand(self.obrse), '-')
 
 	def test_ctot_se(self):
-		self.assertEqual(get_strand(self.ctotrse), 'OT')
+		self.assertEqual(get_strand(self.ctotrse), '+')
 
 	def test_ctob_se(self):
-		self.assertEqual(get_strand(self.ctobrse), 'OB')
+		self.assertEqual(get_strand(self.ctobrse), '-')
 
 	def test_ot_pe(self):
-		self.assertEqual(get_strand(self.otrpe_1), 'OT')
-		self.assertEqual(get_strand(self.otrpe_2), 'OT')
+		self.assertEqual(get_strand(self.otrpe_1), '+')
+		self.assertEqual(get_strand(self.otrpe_2), '+')
 
 	def test_ob_pe(self):
-		self.assertEqual(get_strand(self.obrpe_1), 'OB')
-		self.assertEqual(get_strand(self.obrpe_2), 'OB')
+		self.assertEqual(get_strand(self.obrpe_1), '-')
+		self.assertEqual(get_strand(self.obrpe_2), '-')
 
 	def test_ctot_pe(self):
-		self.assertEqual(get_strand(self.ctotpe_1), 'OT')
-		self.assertEqual(get_strand(self.ctotpe_2), 'OT')
+		self.assertEqual(get_strand(self.ctotpe_1), '+')
+		self.assertEqual(get_strand(self.ctotpe_2), '+')
 
 	def test_ctob_pe(self):
-		self.assertEqual(get_strand(self.ctobpe_1), 'OB')
-		self.assertEqual(get_strand(self.ctobpe_2), 'OB')
+		self.assertEqual(get_strand(self.ctobpe_1), '-')
+		self.assertEqual(get_strand(self.ctobpe_2), '-')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
