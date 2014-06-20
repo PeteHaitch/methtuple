@@ -73,7 +73,7 @@ parser = argparse.ArgumentParser(description = 'Extract methylation patterns at 
     formatter_class = argparse.ArgumentDefaultsHelpFormatter,
     add_help = False,
     usage = '%(prog)s [options] <in.bam>\nPlease run \'%(prog)s -h\' for a full list of options.',
-    epilog = '%(prog)s (v'+__version__+') by Peter Hickey (peter.hickey@gmail.com, https://github.com/PeteHaitch/comethylation/')
+    epilog = '%(prog)s (v'+__version__+') by Peter Hickey (peter.hickey@gmail.com, https://github.com/PeteHaitch/comethylation/)')
 # Input arguments
 Input = parser.add_argument_group('Input options')
 Input.add_argument('BAM', 
@@ -96,7 +96,7 @@ Output.add_argument('-o', '--output-prefix',
 Output.add_argument('--sc', '--strand-collapse', 
     action = 'store_true', 
     default = False, 
-    help = 'Collapse counts across across Watson and Crick strands. Only possible for CG methylation type')
+    help = "Collapse counts across across Watson and Crick strands. Only possible for CG methylation type. The strand is recorded as '*' if this option is selected.")
 Output.add_argument('--nfff', '--no-failed-filter-file', 
     action = 'store_true', 
     default = False, 
