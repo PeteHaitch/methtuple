@@ -73,7 +73,7 @@ parser = argparse.ArgumentParser(description = 'Extract methylation patterns at 
     formatter_class = argparse.ArgumentDefaultsHelpFormatter,
     add_help = False,
     usage = '%(prog)s [options] <in.bam>\nPlease run \'%(prog)s -h\' for a full list of options.',
-    epilog = '%(prog)s (v'+__version__+') by Peter Hickey (peter.hickey@gmail.com, https://github.com/PeteHaitch/comethylation/')
+    epilog = '%(prog)s (v'+__version__+') by Peter Hickey (peter.hickey@gmail.com, https://github.com/PeteHaitch/comethylation/)')
 # Input arguments
 Input = parser.add_argument_group('Input options')
 Input.add_argument('BAM', 
@@ -93,10 +93,10 @@ Output.add_argument('-o', '--output-prefix',
     metavar = '<text>',
     default = argparse.SUPPRESS,
     help = 'By default, all output files have the same prefix as that of the input file. This will override the prefix of output file names')
-Output.add_argument('--ss', '--strand-specific', 
+Output.add_argument('--sc', '--strand-collapse', 
     action = 'store_true', 
     default = False, 
-    help = 'Produce strand-specific counts, i.e., don\'t collapse methylation calls across Watson and Crick strands. Required for non-CG methylation type')
+    help = "Collapse counts across across Watson and Crick strands. Only possible for CG methylation type. The strand is recorded as '*' if this option is selected.")
 Output.add_argument('--nfff', '--no-failed-filter-file', 
     action = 'store_true', 
     default = False, 
@@ -185,35 +185,35 @@ m = args.m
 # Iterate over the list of methylation types stored in args.mt and create the proper REGEXP for searching for that methylation pattern in the XM-tag. 
 # There are 4 methylation types and therefore 2^4 = 16 possible subsets (including the empty set). Each subset must be dealt with separately.
 # Also, set the ob_strand_offset variable.
-# If the --strand-specific flag is set then we do not collapse across strands (i.e. ob_strand_offset = 0). If the flag is not set then what happens depends on the value(s) of --methylation-type
+# If the --strand-collapse flag is not set then we collapse across strands (i.e. ob_strand_offset = 0). If the flag is set then what happens depends on the value(s) of --methylation-type
 methylation_type = list(set(args.mt)) # list(set(x)) takes a list, x, and returns the unique elements as a list.
-if args.ss:
+if not args.sc:
     ob_strand_offset = 0
 # Firstly, deal with the cases where only a single methylation type is specified
 if sorted(methylation_type) == ['CG']:
     methylation_pattern = re.compile(r'[Zz]')
-    if not args.ss:
+    if args.sc:
         ob_strand_offset = 1
 elif sorted(methylation_type) == ['CHG']:
     methylation_pattern = re.compile(r'[Xx]')
-    if not args.ss:
-        exit_msg = 'ERROR: CHG-methylation is not strand-symmetric and therefore the --strand-specific option must be specified.'
+    if args.sc:
+        exit_msg = 'ERROR: CHG-methylation is not strand-symmetric and therefore the --strand-collapse option cannot be specified.'
         sys.exit(exit_msg)
 elif sorted(methylation_type) == ['CHH']:
     methylation_pattern = re.compile(r'[Hh]')
-    if not args.ss:
-        exit_msg = 'ERROR: CHH-methylation is not strand-symmetric and therefore the --strand-specific option must be specified.'
+    if args.sc:
+        exit_msg = 'ERROR: CHH-methylation is not strand-symmetric and therefore the --strand-collapse option cannot be specified.'
         sys.exit(exit_msg)
 elif sorted(methylation_type) == ['CNN']:
     methylation_pattern = re.compile(r'[Uu]')
-    if not args.ss:
-        exit_msg = 'ERROR: CNN-methylation is not strand-symmetric and therefore the --strand-specific option must be specified.'
+    if args.sc:
+        exit_msg = 'ERROR: CNN-methylation is not strand-symmetric and therefore the --strand-collapse option cannot be specified.'
         sys.exit(exit_msg)
 # Secondly, deal with the cases where multiple methylation types are specified or where an incompatible methylation type has been specified
 else:
-    # If multiple methylation types are specified then the --strand-specific option must be set
-    if not args.ss:
-        exit_msg = 'ERROR: The --strand-specific option must be specified if multiple methylation types are passed via the --methylation-type flag.'
+    # If multiple methylation types are specified then the --strand-collapse option cannot be set
+    if args.sc:
+        exit_msg = 'ERROR: The --strand-collapse option cannot be specified if multiple methylation types are passed via the --methylation-type flag.'
         sys.exit(exit_msg)
     if sorted(methylation_type) == ['CG', 'CHG']:
         methylation_pattern = re.compile(r'[ZzXx]')
@@ -238,7 +238,7 @@ else:
     elif sorted(methylation_type) == ['CG', 'CHG', 'CHH', 'CNN']:
         methylation_pattern = re.compile(r'[ZzXxHhUu]')
     else:
-        exit_msg = "ERROR: --methylation-type must be one or more of 'CG', 'CHG', 'CHH' or 'CNN'. Multiple methylation types may be specified simultaneously, e.g., --methylation-type CG CHG."
+        exit_msg = "ERROR: --methylation-type must be one or more of 'CG', 'CHG', 'CHH' or 'CNN'. Multiple methylation types may be specified simultaneously, e.g., --methylation-type CG --methylation-type CHG."
         sys.exit(exit_msg)
 
 # Reformat the variable methylation_type to be a single string
@@ -287,8 +287,8 @@ methylation_m_tuples = MTuple(args.output_prefix, m, methylation_type, chr_map) 
 print("comethylation (v"+__version__+")\n")
 print('Input BAM file =', BAM.filename.decode("utf-8"))
 print(''.join(['Output file of ', methylation_type, ' ', str(m), '-tuples = ', OUT.name]))
-if args.ss:
-    print('The output will be strand-specific')
+if args.sc:
+    print(''.join(["The counts will be collapsed across Watson and Crick strands and the strand of each ", str(m), "-tuple will be recorded as '*'"]))
 if not args.nfff:
     print('Reads that fail to pass QC filters will be written to =', FAILED_QC.name, '\n')
 else:
@@ -324,10 +324,10 @@ elif overlap_check == 'XM':
     print('Ignoring paired-end reads that have overlapping mates if the XM-tags for the overlapping sequences are not identical\n')
 elif overlap_check == 'quality':
     print('Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only the mate with the higher quality scores in the overlapping region shall be used\n')
-elif overlap_check == 'bismark':
+elif overlap_check == 'Bismark':
     print("Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only read_1 shall be used (a la bismark_methylation_extractor)\n")
 else:
-    exit_msg = "ERROR: --overlap-filter must be one of 'sequence', 'XM', 'quality' or 'bismark'"
+    exit_msg = "ERROR: --overlap-filter must be one of 'sequence', 'XM', 'quality' or 'Bismark'"
     sys.exit(exit_msg)
 
 print(''.join(['Creating ', methylation_type, ' ', str(m), '-tuples']))
