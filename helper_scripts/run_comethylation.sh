@@ -145,7 +145,7 @@ head -n 1 ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}_${CHROMS[0]}.\${EXTENSION} > ${OUT
 parallel --joblog cat_tsvs.log -j ${NUM_CORES} "EXTENSION=\$(basename ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}_${CHROMS[0]}.*.tsv | rev | cut -d '.' -f -3 | rev);
         for CHROM in ${CHROMS[@]}
 	do
-		cat ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}_\${CHROM}.\${EXTENSION} | grep -v -P  '^chr\tpos1' >> ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}.\${EXTENSION} && rm ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}_\${CHROM}.\${EXTENSION}
+		cat ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}_\${CHROM}.\${EXTENSION} | grep -v -P  '^chr\tstrand' >> ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}.\${EXTENSION} && rm ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}_\${CHROM}.\${EXTENSION}
 	done
         gzip ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}.\${EXTENSION}" ::: ${M[@]} # Note the need to escape the $ character for variables defined within the command executed to avoid the shell interpreting them (i.e. EXTENSION and CHROM)
 # Concatenate the reads_that_failed_QC files and gzip (for given m)
