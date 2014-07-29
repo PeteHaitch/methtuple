@@ -81,7 +81,7 @@ def ignore_read_pos(read, methylation_index, ignore_read_pos_list):
 
     # Return updated methylation_index
     return mi_updated
-        
+
 def ignore_low_quality_bases(read, methylation_index, min_qual, phred_offset):
     """Ignore low quality bases of a read that contribute to a read's methylation_index.
 
@@ -97,7 +97,7 @@ def ignore_low_quality_bases(read, methylation_index, min_qual, phred_offset):
 
     Returns:
         An updated version of methylation_index.
-    
+
     """
     if (min_qual < 0) or (round(min_qual) != min_qual):
         raise ValueError("ignore_low_quality_bases: 'low_qual' must be a positive integer")
@@ -119,7 +119,7 @@ def fix_old_bismark(read):
 
 	Returns:
 		An updated version of the read.
-    
+
 	"""
 	# Strip '/1' or '/2' appended to the end of QNAMEs by Bismark version < 0.8.3. Assumes there are no forward slash characters in the QNAME field
 	read.qname = read.qname.split('/')[0]
@@ -135,8 +135,9 @@ def fix_old_bismark(read):
 	else:
 		exit_msg = ''.join(['ERROR: Unexpected FLAG (', str(read.flag), ') for read ', read.qname, 'Sorry, --aligner Bismark_old is unable to deal with this FLAG. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com.'])
 		sys.exit(exit_msg)
-	return read    
+	return read
 
+# TODO: Check works with soft-clipped reads, particularly that "overlapping" soft-clips are properly handled.
 def is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
     """Check whether the overlapping sequence of read_1 and read_2 passes the filter specified by overlap_check
 
@@ -188,20 +189,8 @@ def is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
         sys.exit(exit_msg)
     return overlap_1 == overlap_2
 
-def does_read_contain_indel(read):
-    """Check whether a read contains an insertion or deletion (InDel).
-
-    Args:
-        read: A pysam.AlignedRead instance.
-
-    Returns:
-        True if read contains an INDEL, False otherwise.
-    """
-    val = any([x[0] in [1, 2] for x in read.cigar]) # In pysam, the CIGAR operation for an insertion to the reference is 1 and the CIGAR operation for a deletion to the reference is 2.
-    return val
-
 def does_read_contain_complicated_cigar(read):
-    """Check whether a read contains a complicated CIGAR string character, defined as anything other than a match (M; 0), insertion (I; 1) or deletion (D; 2).
+    """Check whether a read contains a complicated CIGAR string character, defined as anything other than a match (M; 0), insertion (I; 1), deletion (D; 2), soft-clip (S, 4) or hard-clip (H, 5).
 
     Args:
         read: A pysam.AlignedRead instance.
@@ -209,9 +198,10 @@ def does_read_contain_complicated_cigar(read):
     Returns:
         True if read contains an complicated CIGAR string character, False otherwise.
     """
-    val = any([x[0] not in [0, 1, 2] for x in read.cigar]) # In pysam, the CIGAR operation for an insertion to the reference is 1 and the CIGAR operation for a deletion to the reference is 2.
+    val = any([x[0] not in [0, 1, 2, 4, 5] for x in read.cigar])
     return val
 
+# TODO: Check works with soft-clipped reads, particularly that "overlapping" soft-clips are properly handled.
 def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap, overlap_check):
     """Ignore the overlapping sequence of read_1 and read_2 from the read with the lower (sum) base qualities in the overlapping region.
        If base qualities are identical then (arbitrarily) ignore the overlapping bases from read_2.
@@ -277,7 +267,7 @@ def ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation
 
 def extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_read1_pos, min_qual, phred_offset, ob_strand_offset):
     """Extracts m-tuples of methylation loci from a single-end read and adds the comethylation m-tuple to the methylation_m_tuples object.
-    
+
     Args:
         read: An AlignedRead instance corresponding to a single-end read.
         BAM: The Samfile instance corresponding to the sample. Required in order to extract chromosome names from read.
@@ -303,30 +293,30 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
     strand = get_strand(read)
     # Case A: >= m methylation loci in the read
     if n_methylation_loci >= m:
-        positions = [read.pos + x + 1 for x in methylation_index] # +1 to transform from 0-based to 1-based co-ordinates.
-        # If read is informative for the OB-strand then translate co-ordinate "ob_strand_offset" bases to the left so that it points to the C on the OT-strand of the methylation locus.
-        if strand == '-':
-            positions = [x - ob_strand_offset for x in positions]
-        # Exit if methylation loci are incorrectly ordered
-        if not positions == sorted(positions):
-            exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for single-end read", read.qname, "\n'positions' =", str(positions), '.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
-            sys.exit(exit_msg)
-        # Construct each bookended methylation-loci m-tuple and add it to the methylation_m_tuple object.
-        for i in range(0, len(methylation_index) - m + 1): # For a read containing k methylation loci there are (k - m + 1) m-tuples.
-            # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
-            this_comethylation_pattern = ''.join([read.opt('XM')[j] for j in methylation_index[i:(i + m)]])
-            # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
-            if ob_strand_offset != 0:
-                mt_strand = '*'
-            else:
-                mt_strand = strand
-            this_m_tuple_positions = (BAM.getrname(read.tid),) + (mt_strand, ) + tuple(positions[i:(i + m)])
-            methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read, None)
-    return methylation_m_tuples, n_methylation_loci
+      positions = [get_read_positions(read)[x] + 1 for x in methylation_index] # +1 to transform from 0-based to 1-based co-ordinates. This will break if get_read_positions(read)[x] includes None, but this is intended (although it will lead to a cryptic error message).
+      # If read is informative for the OB-strand then translate co-ordinate "ob_strand_offset" bases to the left so that it points to the C on the OT-strand of the methylation locus (will only have an effect if collapsing by strand, in which case ob_strand_offset != 0).
+      if strand == '-':
+          positions = [x - ob_strand_offset for x in positions]
+      # Exit if methylation loci are incorrectly ordered
+      if not positions == sorted(positions):
+          exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for single-end read", read.qname, "\n'positions' =", str(positions), '.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
+          sys.exit(exit_msg)
+      # Construct each bookended methylation-loci m-tuple and add it to the methylation_m_tuple object.
+      for i in range(0, len(methylation_index) - m + 1): # For a read containing k methylation loci there are (k - m + 1) m-tuples.
+          # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
+          this_comethylation_pattern = ''.join([read.opt('XM')[j] for j in methylation_index[i:(i + m)]])
+          # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
+          if ob_strand_offset != 0:
+              mt_strand = '*'
+          else:
+              mt_strand = strand
+          this_m_tuple_positions = (BAM.getrname(read.tid),) + (mt_strand, ) + tuple(positions[i:(i + m)])
+          methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read, None)
+  return methylation_m_tuples, n_methylation_loci
 
 def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_read1_pos, ignore_read2_pos, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC):
     """Extracts m-tuples of methylation loci from a readpair and adds the comethylation m-tuple to the methylation_m_tuples object.
-    
+
     Args:
         read_1: An AlignedRead instance corresponding to read_1 of the readpair.
         read_2: An AlignedRead instance corresponding to read_2 of the readpair.
@@ -363,6 +353,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
     # Check for overlapping reads from a readpair.
     # If reads overlap check whether the overlapping sequence passes the filter given by overlap_check.
     # If the overlapping sequence does not pass the filter report a warning, increment a counter and skip the readpair (by setting methylation_index_1 and methylation_index_2 to be the empty list).
+    # TODO: Check that the n_overlap calculation is correct for soft-clipped reads
     n_overlap = read_1.alen + read_2.alen - abs(read_1.tlen)
     if n_overlap > 0:
         if is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
@@ -376,121 +367,121 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
     n_methylation_loci = len(methylation_index_1) + len(methylation_index_2)
     # Only process readpair if there are at least enough CpGs to form one m-tuple.
     if n_methylation_loci >= m:
-        positions_1 = [read_1.pos + x + 1 for x in methylation_index_1] # +1 to transform from 0-based to 1-based co-ordinates.
-        positions_2 = [read_2.pos + x + 1 for x in methylation_index_2] # +1 to transform from 0-based to 1-based co-ordinates.
-        if any(x in positions_1 for x in positions_2):
-            exit_msg = ''.join(['ERROR: For readpair ', read_1.qname, ', position_1 and position_2 contain a common position. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
-            print(positions_1) # TODO: Remove? This is a debugging statement
-            print(positions_2) # TODO: Remove? This is a debugging statement
-            sys.exit(exit_msg)
+      positions_1 = [get_read_positions(read_1)[x] + 1 for x in methylation_index_1] # +1 to transform from 0-based to 1-based co-ordinates. This will break if get_read_positions(read_1)[x] includes None, but this is intended (although it will lead to a cryptic error message).
+      positions_2 = [get_read_positions(read_2)[x] + 1 for x in methylation_index_2] # +1 to transform from 0-based to 1-based co-ordinates. This will break if get_read_positions(read_2)[x] includes None, but this is intended (although it will lead to a cryptic error message).
+      if any(x in positions_1 for x in positions_2):
+          exit_msg = ''.join(['ERROR: For readpair ', read_1.qname, ', position_1 and position_2 contain a common position. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
+          # print(positions_1) # DEBUGGING
+          # print(positions_2) # DEBUGGING
+          sys.exit(exit_msg)
         # Case 1: Readpair is informative for OT-strand
-        if strand_1 == '+' and strand_2 == '+':
-            # Exit if methylation loci are incorrectly ordered
-            if positions_1 + positions_2 != sorted(positions_1 + positions_2):
-                exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for paired-end read", read_1.qname, ", which is informative for the OT-strand.\n'positions_1 + positions_2' =", str(positions_1 + positions_2), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
-                sys.exit(exit_msg)
-            # Firstly, create all m-tuples of methylation loci where each locus is from read_1.
-            if len(methylation_index_1) >= m:
-                for i in range(0, len(methylation_index_1) - m + 1): # For a read containing k methylation loci there are (k - m + 1) m-tuples.
-                    # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
-                    this_comethylation_pattern = ''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]])
-                    # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
-                    if ob_strand_offset != 0:
-                        mt_strand = '*'
-                    else:
-                        mt_strand = strand_1
-                    this_m_tuple_positions = (BAM.getrname(read_1.tid),) + (mt_strand, ) + tuple(positions_1[i:(i + m)])
-                    methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
-            # Secondly, create all m-tuples of methylation loci where the leftmost locus is on read_1 and the rightmost locus is on read_2
-            num_shared_m_tuples = max(len(methylation_index_1) + len(methylation_index_2) - m + 1, 0) - max(len(methylation_index_1) - m + 1, 0) - max(len(methylation_index_2) - m + 1, 0) # the number of m-tuples that span read_1 and read_2
-            leftmost_shared_locus_index = max(0, len(methylation_index_1) - m + 1) # The index of the leftmost locus to be part of a "shared" m-tuple. The rightmost_shared_locus_index = min(m - 2, len(methylation_index_2) - 1), however this is not required
-            for i in range(0, num_shared_m_tuples):
-                this_m_tuple_positions_1 = positions_1[(leftmost_shared_locus_index + i):]
-                this_m_tuple_positions_2 = positions_2[:(m - len(this_m_tuple_positions_1))]
-                # Exit if methylation loci are incorrectly ordered. While a similar check is performed a few lines above, this is a sanity check to make sure than nothing has gone wrong in constructing the shared m-tuples
-                if this_m_tuple_positions_1 + this_m_tuple_positions_2 != sorted(this_m_tuple_positions_1 + this_m_tuple_positions_2):
-                    exit_msg = ' '.join(["ERROR: The positions of the shared methylation loci are not properly ordered for paired-end read", read_1.qname, ", which is informative for the OT-strand.\n'this_m_tuple_positions_1 + this_m_tuple_positions_2' =", str(this_m_tuple_positions_1 + this_m_tuple_positions_2), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
-                    sys.exit(exit_msg)
-                # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
-                this_comethylation_pattern = ''.join([read_1.opt('XM')[j] for j in methylation_index_1[(leftmost_shared_locus_index + i):]] + [read_2.opt('XM')[j] for j in methylation_index_2[:(m - len(this_m_tuple_positions_1))]])
-                # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
-                if ob_strand_offset != 0:
-                    mt_strand = '*'
-                else:
-                    mt_strand = strand_1
-                this_m_tuple_positions = (BAM.getrname(read_1.tid),) + (mt_strand, ) + tuple(this_m_tuple_positions_1) + tuple(this_m_tuple_positions_2)
-                methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern,  read_1, read_2)
-            # Finally, create all m-tuples of methylation loci where each locus is from read_2.        
-            if len(methylation_index_2) >= m:
-                for i in range(0, len(methylation_index_2) - m + 1): # For a read containing k methylation loci there are (k - m + 1) m-tuples.:
-                    this_comethylation_pattern = ''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]])
-                    # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
-                    if ob_strand_offset != 0:
-                        mt_strand = '*'
-                    else:
-                        mt_strand = strand_1
-                    this_m_tuple_positions = (BAM.getrname(read_2.tid),) + (mt_strand, ) + tuple(positions_2[i:(i + m)])
-                    methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
+      if strand_1 == '+' and strand_2 == '+':
+          # Exit if methylation loci are incorrectly ordered
+          if positions_1 + positions_2 != sorted(positions_1 + positions_2):
+              exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for paired-end read", read_1.qname, ", which is informative for the OT-strand.\n'positions_1 + positions_2' =", str(positions_1 + positions_2), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
+              sys.exit(exit_msg)
+          # Firstly, create all m-tuples of methylation loci where each locus is from read_1.
+          if len(methylation_index_1) >= m:
+              for i in range(0, len(methylation_index_1) - m + 1): # For a read containing k methylation loci there are (k - m + 1) m-tuples.
+                  # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
+                  this_comethylation_pattern = ''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]])
+                  # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
+                  if ob_strand_offset != 0:
+                      mt_strand = '*'
+                  else:
+                      mt_strand = strand_1
+                  this_m_tuple_positions = (BAM.getrname(read_1.tid),) + (mt_strand, ) + tuple(positions_1[i:(i + m)])
+                  methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
+          # Secondly, create all m-tuples of methylation loci where the leftmost locus is on read_1 and the rightmost locus is on read_2
+          num_shared_m_tuples = max(len(methylation_index_1) + len(methylation_index_2) - m + 1, 0) - max(len(methylation_index_1) - m + 1, 0) - max(len(methylation_index_2) - m + 1, 0) # the number of m-tuples that span read_1 and read_2
+          leftmost_shared_locus_index = max(0, len(methylation_index_1) - m + 1) # The index of the leftmost locus to be part of a "shared" m-tuple. The rightmost_shared_locus_index = min(m - 2, len(methylation_index_2) - 1), however this is not required
+          for i in range(0, num_shared_m_tuples):
+              this_m_tuple_positions_1 = positions_1[(leftmost_shared_locus_index + i):]
+              this_m_tuple_positions_2 = positions_2[:(m - len(this_m_tuple_positions_1))]
+              # Exit if methylation loci are incorrectly ordered. While a similar check is performed a few lines above, this is a sanity check to make sure than nothing has gone wrong in constructing the shared m-tuples
+              if this_m_tuple_positions_1 + this_m_tuple_positions_2 != sorted(this_m_tuple_positions_1 + this_m_tuple_positions_2):
+                  exit_msg = ' '.join(["ERROR: The positions of the shared methylation loci are not properly ordered for paired-end read", read_1.qname, ", which is informative for the OT-strand.\n'this_m_tuple_positions_1 + this_m_tuple_positions_2' =", str(this_m_tuple_positions_1 + this_m_tuple_positions_2), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
+                  sys.exit(exit_msg)
+              # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
+              this_comethylation_pattern = ''.join([read_1.opt('XM')[j] for j in methylation_index_1[(leftmost_shared_locus_index + i):]] + [read_2.opt('XM')[j] for j in methylation_index_2[:(m - len(this_m_tuple_positions_1))]])
+              # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
+              if ob_strand_offset != 0:
+                  mt_strand = '*'
+              else:
+                  mt_strand = strand_1
+              this_m_tuple_positions = (BAM.getrname(read_1.tid),) + (mt_strand, ) + tuple(this_m_tuple_positions_1) + tuple(this_m_tuple_positions_2)
+              methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern,  read_1, read_2)
+          # Finally, create all m-tuples of methylation loci where each locus is from read_2.
+          if len(methylation_index_2) >= m:
+              for i in range(0, len(methylation_index_2) - m + 1): # For a read containing k methylation loci there are (k - m + 1) m-tuples.:
+                  this_comethylation_pattern = ''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]])
+                  # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
+                  if ob_strand_offset != 0:
+                      mt_strand = '*'
+                  else:
+                      mt_strand = strand_1
+                  this_m_tuple_positions = (BAM.getrname(read_2.tid),) + (mt_strand, ) + tuple(positions_2[i:(i + m)])
+                  methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
 
-        # Case 2: Readpair is informative for OB-strand
-        elif strand_1 == '-' and strand_2 == '-':
-            # Translate co-ordinates "ob_strand_offset" bases to the left so that it points to the C on the OT-strand of the methylation locus
-            positions_1 = [x - ob_strand_offset for x in positions_1]
-            positions_2 = [x - ob_strand_offset for x in positions_2]
-            # Exit if methylation loci are incorrectly ordered.
-            if positions_2 + positions_1 != sorted(positions_2 + positions_1): 
-                exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for paired-end read", read_1.qname, "which is informative for the OB-strand.\n'positions_2 + positions_1' =", str(positions_2 + positions_1), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
-                sys.exit(exit_msg)
-            # Firstly, create all m-tuples of methylation loci where each locus is from read_1.
-            if len(methylation_index_1) >= m:
-                for i in range(0, len(methylation_index_1) - m + 1): # For a read containing m methylation loci there are (m - m-tuple + 1) m-tuples.:
-                    # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
-                    this_comethylation_pattern = ''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]])
-                    # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
-                    if ob_strand_offset != 0:
-                        mt_strand = '*'
-                    else:
-                        mt_strand = strand_1
-                    this_m_tuple_positions = (BAM.getrname(read_1.tid),) + (mt_strand, ) + tuple(positions_1[i:(i + m)])
-                    methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern,  read_1, read_2)
-            # Secondly, create all m-tuples of methylation loci where the leftmost locus is on read_1 and the rightmost locus is on read_2
-            num_shared_m_tuples = max(len(methylation_index_1) + len(methylation_index_2) - m + 1, 0) - max(len(methylation_index_1) - m + 1, 0) - max(len(methylation_index_2) - m + 1, 0) # the number of m-tuples that span read_1 and read_2
-            leftmost_shared_locus_index = max(0, len(methylation_index_2) - m + 1) # The index of the leftmost locus to be part of a "shared" m-tuple. The rightmost_shared_locus_index = min(m - 2, len(methylation_index_1) - 1), however this is not required (m - 2 = m - 1 - 1, because Python lists are 0-indexed)
-            for i in range(0, num_shared_m_tuples):
-                this_m_tuple_positions_2 = positions_2[(leftmost_shared_locus_index + i):]
-                this_m_tuple_positions_1 = positions_1[:(m - len(this_m_tuple_positions_2))]
-                # Exit if methylation loci are incorrectly ordered. While a similar check is performed a few lines above, this is a sanity check to make sure than nothing has gone wrong in constructing the shared m-tuples
-                if this_m_tuple_positions_2 + this_m_tuple_positions_1 != sorted(this_m_tuple_positions_2 + this_m_tuple_positions_1):
-                    exit_msg = ' '.join(["ERROR: The positions of the shared methylation loci are not properly ordered for paired-end read", read_1.qname, "which is aligned to the OB-strand.\n'this_m_tuple_positions_2 + this_m_tuple_positions_1' =", str(this_m_tuple_positions_2 + this_m_tuple_positions_1), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
-                    sys.exit(exit_msg)
-                # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
-                this_comethylation_pattern = ''.join([read_2.opt('XM')[j] for j in methylation_index_2[(leftmost_shared_locus_index + i):]] + [read_1.opt('XM')[j] for j in methylation_index_1[:(m - len(this_m_tuple_positions_2))]])
-                # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
-                if ob_strand_offset != 0:
-                    mt_strand = '*'
-                else:
-                    mt_strand = strand_1
-                this_m_tuple_positions = (BAM.getrname(read_1.tid),) + (mt_strand, ) + tuple(this_m_tuple_positions_2) + tuple(this_m_tuple_positions_1)
+      # Case 2: Readpair is informative for OB-strand
+      elif strand_1 == '-' and strand_2 == '-':
+          # Translate co-ordinates "ob_strand_offset" bases to the left so that it points to the C on the OT-strand of the methylation locus
+          positions_1 = [x - ob_strand_offset for x in positions_1]
+          positions_2 = [x - ob_strand_offset for x in positions_2]
+          # Exit if methylation loci are incorrectly ordered.
+          if positions_2 + positions_1 != sorted(positions_2 + positions_1):
+              exit_msg = ' '.join(["ERROR: The positions of the methylation loci are not properly ordered for paired-end read", read_1.qname, "which is informative for the OB-strand.\n'positions_2 + positions_1' =", str(positions_2 + positions_1), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
+              sys.exit(exit_msg)
+          # Firstly, create all m-tuples of methylation loci where each locus is from read_1.
+          if len(methylation_index_1) >= m:
+              for i in range(0, len(methylation_index_1) - m + 1): # For a read containing m methylation loci there are (m - m-tuple + 1) m-tuples.:
+                  # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
+                  this_comethylation_pattern = ''.join([read_1.opt('XM')[j] for j in methylation_index_1[i:(i + m)]])
+                  # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
+                  if ob_strand_offset != 0:
+                      mt_strand = '*'
+                  else:
+                      mt_strand = strand_1
+                  this_m_tuple_positions = (BAM.getrname(read_1.tid),) + (mt_strand, ) + tuple(positions_1[i:(i + m)])
+                  methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern,  read_1, read_2)
+          # Secondly, create all m-tuples of methylation loci where the leftmost locus is on read_1 and the rightmost locus is on read_2
+          num_shared_m_tuples = max(len(methylation_index_1) + len(methylation_index_2) - m + 1, 0) - max(len(methylation_index_1) - m + 1, 0) - max(len(methylation_index_2) - m + 1, 0) # the number of m-tuples that span read_1 and read_2
+          leftmost_shared_locus_index = max(0, len(methylation_index_2) - m + 1) # The index of the leftmost locus to be part of a "shared" m-tuple. The rightmost_shared_locus_index = min(m - 2, len(methylation_index_1) - 1), however this is not required (m - 2 = m - 1 - 1, because Python lists are 0-indexed)
+          for i in range(0, num_shared_m_tuples):
+              this_m_tuple_positions_2 = positions_2[(leftmost_shared_locus_index + i):]
+              this_m_tuple_positions_1 = positions_1[:(m - len(this_m_tuple_positions_2))]
+              # Exit if methylation loci are incorrectly ordered. While a similar check is performed a few lines above, this is a sanity check to make sure than nothing has gone wrong in constructing the shared m-tuples
+              if this_m_tuple_positions_2 + this_m_tuple_positions_1 != sorted(this_m_tuple_positions_2 + this_m_tuple_positions_1):
+                  exit_msg = ' '.join(["ERROR: The positions of the shared methylation loci are not properly ordered for paired-end read", read_1.qname, "which is aligned to the OB-strand.\n'this_m_tuple_positions_2 + this_m_tuple_positions_1' =", str(this_m_tuple_positions_2 + this_m_tuple_positions_1), '\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
+                  sys.exit(exit_msg)
+              # Increment count. The MTuple.increment_count() method automatically checks whether this particular m-tuple has been observed before and updated as appropriate.
+              this_comethylation_pattern = ''.join([read_2.opt('XM')[j] for j in methylation_index_2[(leftmost_shared_locus_index + i):]] + [read_1.opt('XM')[j] for j in methylation_index_1[:(m - len(this_m_tuple_positions_2))]])
+              # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
+              if ob_strand_offset != 0:
+                  mt_strand = '*'
+              else:
+                  mt_strand = strand_1
+              this_m_tuple_positions = (BAM.getrname(read_1.tid),) + (mt_strand, ) + tuple(this_m_tuple_positions_2) + tuple(this_m_tuple_positions_1)
                 methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
-            # Finally, create all m-tuples of methylation loci where each locus is from read_2.        
-            if len(methylation_index_2) >= m:
-                for i in range(0, len(methylation_index_2) - m + 1): # For a read containing m methylation loci there are (m - m-tuple + 1) m-tuples.:
-                    this_comethylation_pattern = ''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]])
-                    # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
-                    if ob_strand_offset != 0:
-                        mt_strand = '*'
-                    else:
-                        mt_strand = strand_1
-                    this_m_tuple_positions = (BAM.getrname(read_2.tid),) + (mt_strand, ) + tuple(positions_2[i:(i + m)])
-                    methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
-        else:
-            exit_msg = ''.join(['ERROR: The informative strands for readpair ', read_1.qname, ',  do not agree between mates. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
-            sys.exit(exit_msg)
-    return methylation_m_tuples, n_methylation_loci, n_fragment_skipped_due_to_bad_overlap
-                                  
+          # Finally, create all m-tuples of methylation loci where each locus is from read_2.
+          if len(methylation_index_2) >= m:
+              for i in range(0, len(methylation_index_2) - m + 1): # For a read containing m methylation loci there are (m - m-tuple + 1) m-tuples.:
+                  this_comethylation_pattern = ''.join([read_2.opt('XM')[j] for j in methylation_index_2[i:(i + m)]])
+                  # Set the m-tuple strand (mt_strand) as '*' if ob_strand_offset != 0 (which is True if --strand-collapse is set)
+                  if ob_strand_offset != 0:
+                      mt_strand = '*'
+                  else:
+                      mt_strand = strand_1
+                  this_m_tuple_positions = (BAM.getrname(read_2.tid),) + (mt_strand, ) + tuple(positions_2[i:(i + m)])
+                  methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
+      else:
+          exit_msg = ''.join(['ERROR: The informative strands for readpair ', read_1.qname, ',  do not agree between mates. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
+          sys.exit(exit_msg)
+  return methylation_m_tuples, n_methylation_loci, n_fragment_skipped_due_to_bad_overlap
+
 def write_methylation_m_tuples_to_file(methylation_m_tuples, OUT):
     """Write the methylation_m_tuples instance to a tab-separated file. The m-tuples are ordered by chromosome and genomic co-ordinates.
-    
+
     Args:
         methylation_m_tuples: An MTuple instance.
         OUT: The file to write output to.
@@ -510,8 +501,8 @@ def write_methylation_m_tuples_to_file(methylation_m_tuples, OUT):
 
 def get_strand(read):
     """
-    Report whether a read is informative for the OT-strand or OB-strand. 
-    Currently using a strict check that ensures the reads are in the expected orientation for the given strand. 
+    Report whether a read is informative for the OT-strand or OB-strand.
+    Currently using a strict check that ensures the reads are in the expected orientation for the given strand.
     See commented out lines for a less-strict version.
     Will report an error and call sys.exit() if the XR-tag or XG-tag is incompatible or missing.
 
@@ -523,7 +514,7 @@ def get_strand(read):
     ## Single-end
     if not read.is_paired:
         ## Check if aligned to OT- or CTOT-strand, i.e., informative for OT-strand.
-        if (read.opt('XR') == 'CT' and read.opt('XG') == 'CT') or (read.opt('XR') == 'GA' and read.opt('XG') == 'CT'): 
+        if (read.opt('XR') == 'CT' and read.opt('XG') == 'CT') or (read.opt('XR') == 'GA' and read.opt('XG') == 'CT'):
         # if read_1.opt('XG') == 'CT'
             strand = '+'
         ## Else, check if aligned to OB- or CTOB-strand, i.e., informative for OB-strand.
@@ -564,17 +555,64 @@ def get_strand(read):
         exit_msg = ''.join(['ERROR: Read ', read.qname, ' is neither a single-end read nor part of a paired-end read. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
     return strand
 
+# TODO: Extend to allow for soft-clipped reads. If this function handles soft-clipped reads correctly then comethylation can process soft-clipped reads (provided the XM-tag is has '.' for soft-clipped positions and read.seq, read.qual, read.opt('XM') and get_read_positions(read) are all of the same length and equal to the sequence length)!
+# TODO: It should be possible to write a faster version of this using C-level operations, e.g., see how aligned_pairs is defined.
+# TODO: Awaiting reply to issue posted to pysam GitHub issue tracker (16/07/2014).
+# TODO: See what read.inferred_length returns for reads with indels and/or soft-clips (requires pysam v >= 0.7.6)
+def get_read_positions(read):
+  """Get read positions while allowing for inserted and soft-clipped bases.
+
+  Args:
+      read: A pysam.AlignedRead instance.
+
+  Returns:
+      A list of read positions equal in length to read.seq. The result is identical to read.positions if the read does not contain any insertions or soft-clips. Read-positions that are insertions or soft-clips have None as the corresponding entry in the returned list.
+  """
+  # Check read actually has CIGAR
+  if read.cigar is None:
+    # No CIGAR string so positions must be [] because there is no alignment.
+    read_positions = []
+  else:
+    # From the SAM spec (http://samtools.github.io/hts-specs/SAMv1.pdf), "S may only have H operations between them and the ends of the CIGAR string".
+    n = len(read.cigar)
+    # If first CIGAR operation is H (5), check whether second is S (4).
+    if read.cigar[0][0] == 5:
+      if n > 1:
+        if read.cigar[1][0] == 4:
+          read_positions = [None] * read.cigar[1][1]
+        else:
+          read_positions = []
+    # Check if first CIGAR operation is S (4).
+    elif read.cigar[0][0] == 4:
+      read_positions = [None] * read.cigar[0][1]
+    # Otherwise there can't be any leftmost soft-clipping.
+    else:
+      read_positions = []
+    # Add "internal" read-positions, which are only made up of positions with M/I/D CIGAR operations and so can be extracted from read.aligned_pairs.
+    # TODO: read.aligned_pairs might not work as I expect for deletions
+    read_positions = read_positions + [y[1] for y in read.aligned_pairs if not y[0] is None]
+    # If last CIGAR operation is H (5), check whether second-last is S (4).
+    if read.cigar[n - 1][0] == 5:
+      if n > 1:
+        # If second-last positions is S (4), then need to pad but otherwise nothing to do (and also no need for "closing" else).
+        if read.cigar[n - 2][0] == 4:
+          read_positions = read_positions + [None] * read.cigar[n - 2][1]
+    # Check if last CIGAR operation is S (4).
+    elif read.cigar[n - 1][0] == 4:
+      read_positions = read_positions + [None] * read.cigar[n - 1][1]
+  return read_positions
+
 __all__ = [
     'make_ignores_list',
     'ignore_read_pos',
     'ignore_low_quality_bases',
     'fix_old_bismark',
     'is_overlapping_sequence_identical',
-    'does_read_contain_indel',
     'does_read_contain_complicated_cigar',
     'ignore_overlapping_sequence',
     'extract_and_update_methylation_index_from_single_end_read',
     'extract_and_update_methylation_index_from_paired_end_reads',
     'write_methylation_m_tuples_to_file',
-    'get_strand'
+    'get_strand',
+    'get_read_positions'
 ]

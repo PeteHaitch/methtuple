@@ -35,12 +35,12 @@
 # WARNING: methylation-loci m-tuples that span both mates of a readpair may have NIC > 0. Furthermore, filtering by base quality, read-position, etc. may also introduce methylation-loci m-tuples with NIC > 0. These should be post-hoc filtered.
 
 #### Explanation of XM-tag (methylation string). NB: This is an extension to the XM-tag defined in Bismark. ####
-# . for bases not involving cytosines                       
-# X for methylated C in CHG context (was protected)         
-# x for not methylated C in CHG context (was converted)     
-# H for methylated C in CHH context (was protected)         
-# h for not methylated C in CHH context (was converted)     
-# Z for methylated C in CpG context (was protected)         
+# . for bases not involving cytosines
+# X for methylated C in CHG context (was protected)
+# x for not methylated C in CHG context (was converted)
+# H for methylated C in CHH context (was protected)
+# h for not methylated C in CHH context (was converted)
+# Z for methylated C in CpG context (was protected)
 # z for not methylated C in CpG context (was converted)
 # U for methylated C in "unknown" context, e.g. CNN-context, (was protected). Non-standard Bismark XM-tag values; unique to output of XM_tag.py.
 # u for not methylated C in "unknown"-context, e.g. CNN-context, (was converted). Non-standard Bismark XM-tag values; unique to output of XM_tag.py.
@@ -76,7 +76,7 @@ parser = argparse.ArgumentParser(description = 'Extract methylation patterns at 
     epilog = '%(prog)s (v'+__version__+') by Peter Hickey (peter.hickey@gmail.com, https://github.com/PeteHaitch/comethylation/)')
 # Input arguments
 Input = parser.add_argument_group('Input options')
-Input.add_argument('BAM', 
+Input.add_argument('BAM',
     metavar = '<in.bam>',
     help = argparse.SUPPRESS)
 Input.add_argument('--aligner',
@@ -89,31 +89,31 @@ Input.add_argument('--Phred64',
     help = 'Quality scores are encoded as Phred64 rather than Phred33')
 # Output arguments
 Output = parser.add_argument_group('Output options')
-Output.add_argument('-o', '--output-prefix', 
+Output.add_argument('-o', '--output-prefix',
     metavar = '<text>',
     default = argparse.SUPPRESS,
     help = 'By default, all output files have the same prefix as that of the input file. This will override the prefix of output file names')
-Output.add_argument('--sc', '--strand-collapse', 
-    action = 'store_true', 
-    default = False, 
+Output.add_argument('--sc', '--strand-collapse',
+    action = 'store_true',
+    default = False,
     help = "Collapse counts across across Watson and Crick strands. Only possible for CG methylation type. The strand is recorded as '*' if this option is selected.")
-Output.add_argument('--nfff', '--no-failed-filter-file', 
-    action = 'store_true', 
-    default = False, 
+Output.add_argument('--nfff', '--no-failed-filter-file',
+    action = 'store_true',
+    default = False,
     help = 'Do not create the file listing the reads that failed to pass to pass the filters and which filter it failed')
-Output.add_argument('--gzip', 
-    action = 'store_true', 
-    default = False, 
+Output.add_argument('--gzip',
+    action = 'store_true',
+    default = False,
     help = 'gzip all output files. --gzip and --bzip2 are mutually exclusive')
-Output.add_argument('--bzip2', 
-    action = 'store_true', 
-    default = False, 
+Output.add_argument('--bzip2',
+    action = 'store_true',
+    default = False,
     help = 'bzip2 all output files. --gzip and --bzip2 are mutually exclusive')
 # Construction of methylation loci m-tuples
 Options = parser.add_argument_group('Construction of methylation loci m-tuples')
 # TODO: Better handling of multiple methylation types, e.g. this will break 'comethylation --mt CG CHG in.bam' because in.bam is read as --mt.
 Options.add_argument('--mt', '--methylation-type',
-    choices = ['CG', 'CHG', 'CHH', 'CNN'], 
+    choices = ['CG', 'CHG', 'CHH', 'CNN'],
     default = ['CG'],
     action = 'append',
     help = 'The methylation type. Multiple methylation types may be analysed jointly by repeated use of this argument, e.g., --methylation-type CG --methylation-type CHG')
@@ -137,7 +137,7 @@ read_filtering.add_argument('--of', '--overlap-filter',
     choices = ['sequence', 'XM', 'quality', 'Bismark'],
     default = 'XM',
     help = "Ignore overlapping reads from paired-end sequencing if they do not pass this filter. Currently, this option means that the entirety of both reads are ignored, not just the overlapping region. The options listed by most-to-least stringent: check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (quality), do no check of the overlapping bases and just use the overlapping bases from read_1 a la bismark_methylation_extractor (Bismark).")
-read_filtering.add_argument('--uip', '--use-improper-pairs', 
+read_filtering.add_argument('--uip', '--use-improper-pairs',
     action = 'store_true',
     default = False,
     help ='Use the improper read-pairs, i.e. don\'t filter them. More specifically, check the 0x2 FLAG bit of each read; the exact definition of an improper read-pair depends on the aligner and alignment parameters')
@@ -157,16 +157,16 @@ base_filtering.add_argument('--mbq', '--min-base-qual',
     default = 0,
     help = 'Ignore read positions with a base quality score less than <int>')
 # Other
-Other = parser.add_argument_group('Other') 
+Other = parser.add_argument_group('Other')
 Other.add_argument('-v', '--version',
     action = 'version',
     version = '%(prog)s (v'+__version__+')')
-Other.add_argument('-h', '--help', 
+Other.add_argument('-h', '--help',
     action = 'help',
     help = 'show this help message and exit')
 
 args = parser.parse_args()
-   
+
 #### Variable initialisations ####
 # Set output prefix if unspecified
 if not hasattr(args, 'output_prefix'):
@@ -182,10 +182,10 @@ else:
     phred_offset = 33
 # Set the "m" in "m-tuple", i.e. the size of the methylation-loci m-tuples
 m = args.m
-# Iterate over the list of methylation types stored in args.mt and create the proper REGEXP for searching for that methylation pattern in the XM-tag. 
+# Iterate over the list of methylation types stored in args.mt and create the proper REGEXP for searching for that methylation pattern in the XM-tag.
 # There are 4 methylation types and therefore 2^4 = 16 possible subsets (including the empty set). Each subset must be dealt with separately.
 # Also, set the ob_strand_offset variable.
-# If the --strand-collapse flag is not set then we collapse across strands (i.e. ob_strand_offset = 0). If the flag is set then what happens depends on the value(s) of --methylation-type
+# If the --strand-collapse flag is not set then we don't collapse across strands (i.e. ob_strand_offset = 0). If the flag is set then what happens depends on the value(s) of --methylation-type
 methylation_type = list(set(args.mt)) # list(set(x)) takes a list, x, and returns the unique elements as a list.
 if not args.sc:
     ob_strand_offset = 0
@@ -278,7 +278,7 @@ n_fragment_skipped_due_to_duplicate = 0 # The number of DNA fragments skipped du
 n_fragment_skipped_due_to_diff_chr = 0  # The number of DNA fragments skipped due to the mates being aligned to different chromosomes
 n_fragment_skipped_due_to_unmapped_read_or_mate = 0 # The number of DNA fragments skipped due to the read or its mate being unmapped
 n_fragment_skipped_due_to_improper_pair = 0 # The number of DNA fragments skipped due to the readpair being improperly paired
-n_fragment_skipped_due_to_indel = 0 # The number of DNA fragments skipped due to the read or readpair containing an indel
+n_fragment_skipped_due_to_complicated_cigar = 0 # The number of DNA fragments skipped due to the read or readpair containing a complicated CIGAR
 n_methylation_loci_per_read = {} # Dictionary of the number of methylation loci that passed QC per read
 chr_map = dict(list(zip(BAM.references, list(range(len(BAM.references)))))) # A dictionary mapping the reference names to their order in the BAM header
 methylation_m_tuples = MTuple(args.output_prefix, m, methylation_type, chr_map) # Initiate the MTuple object
@@ -308,13 +308,13 @@ if not args.uip:
 else:
     print('Not filtering out readpairs that are marked as improperly paired. The definition of a proper readpair is aligner-specific and the value is set with the 0x2 bit in the SAM flag')
 if ignore_read1_pos:
-    print("Ignoring positions ", ignore_read1_pos, "of each read (if data are single-end) or of each read_1 (if data are paired-end).") 
+    print("Ignoring positions ", ignore_read1_pos, "of each read (if data are single-end) or of each read_1 (if data are paired-end).")
 else:
     print("Using all positions of each read (if data are single-end) or of each read_1 (if data are paired-end).")
 if ignore_read2_pos:
     print("Ignoring positions ", ignore_read2_pos, "of each read_2 (if data are paired-end).")
 else:
-    print("Using all positions of each read_2 (if data are paired-end).")    
+    print("Using all positions of each read_2 (if data are paired-end).")
 print('Ignoring methylation calls with base-quality less than', min_qual)
 print('Ignoring reads with mapQ less than', min_mapq)
 
@@ -417,24 +417,18 @@ for read in BAM:
             read_1 = None
             read_2 = None
             continue
-        # Skip reads containing complicated CIGAR strings, i.e. anything except 'M', 'I' or 'D'
+        # Skip reads containing complicated CIGAR strings, i.e. anything except 'M', 'I', 'D', 'S' or 'H'.
         if does_read_contain_complicated_cigar(read_1) or does_read_contain_complicated_cigar(read_2):
-            failed_read_msg = '\t'.join([read_1.qname, 'read has complicated CIGAR\n'])
-            FAILED_QC.write(failed_read_msg)
-            n_fragment_skipped_due_to_indel += 1
-            # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
-            read_1 = None
-            read_2 = None
-            continue
-        # Skip reads containing indels
-        if does_read_contain_indel(read_1) or does_read_contain_indel(read_2):
-            failed_read_msg = '\t'.join([read_1.qname, 'read has indel\n'])
-            FAILED_QC.write(failed_read_msg)
-            n_fragment_skipped_due_to_indel += 1
-            # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
-            read_1 = None
-            read_2 = None
-            continue
+          if does_read_contain_complicated_cigar(read_1):
+            failed_read_msg = '\t'.join([read_1.qname, 'read has complicated CIGAR', read_1.cigar, '\n'])
+          elif does_read_contain_complicated_cigar(read_2):
+            failed_read_msg = '\t'.join([read_2.qname, 'read has complicated CIGAR', read_2.cigar, '\n'])
+          FAILED_QC.write(failed_read_msg)
+          n_fragment_skipped_due_to_complicated_cigar += 1
+          # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
+          read_1 = None
+          read_2 = None
+          continue
         # Check that read_1 and read_2 have identical read-names. If not, skip the readpair.
         if read_1.qname == read_2.qname:
             methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_read1_pos, ignore_read2_pos, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC)
@@ -478,20 +472,11 @@ for read in BAM:
             read_1 = None
             read_2 = None
             continue
-        # Skip read if it has a complicated CIGAR
+        # Skip reads containing complicated CIGAR strings, i.e. anything except 'M', 'I', 'D', 'S' or 'H'.
         if does_read_contain_complicated_cigar(read):
-            '\t'.join([read.qname, 'read has complicated CIGAR\n'])
+            '\t'.join([read.qname, 'read has complicated CIGAR', read.cigar, '\n'])
             FAILED_QC.write(failed_read_msg)
-            n_fragment_skipped_due_to_indel += 1
-            # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
-            read_1 = None
-            read_2 = None
-            continue
-        # Skip read if it contains an indel
-        if does_read_contain_indel(read):
-            failed_read_msg = '\t'.join([read.qname, 'read has indel\n'])
-            FAILED_QC.write(failed_read_msg)
-            n_fragment_skipped_due_to_indel += 1
+            n_fragment_skipped_due_to_complicated_cigar += 1
             # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
             read_1 = None
             read_2 = None
@@ -520,7 +505,7 @@ print(''.join(['Number of DNA fragments skipped due to being marked as PCR dupli
 print(''.join(['Number of DNA fragments skipped due to mates mapping to different chromosomes = ', str(n_fragment_skipped_due_to_diff_chr)]))
 print(''.join(['Number of DNA fragments skipped due to the read or its mate being unmapped = ' , str(n_fragment_skipped_due_to_unmapped_read_or_mate)]))
 print(''.join(['Number of DNA fragments skipped due to the readpair being improperly paired = ', str(n_fragment_skipped_due_to_improper_pair)]))
-print(''.join(['Number of DNA fragments skipped due to an indel in the read or its mate = ', str(n_fragment_skipped_due_to_indel)]))
+print(''.join(['Number of DNA fragments skipped due to a complicated CIGAR in the read or its mate = ', str(n_fragment_skipped_due_to_complicated_cigar)]))
 n_informative_fragments = 0
 for k, v in n_methylation_loci_per_read.items():
     if k >= m:
@@ -538,4 +523,3 @@ BAM.close()
 OUT.close()
 HIST.close()
 FAILED_QC.close()
-

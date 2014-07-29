@@ -34,7 +34,7 @@ class TestIgnoreCycles(unittest.TestCase):
 			read.cigar = [(0,61)]
 			read.rnext = 1
 			read.pnext = 512
-			read.isize = 121
+			read.tlen = 121
 			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....")] + [("XR", "CT")]
 			return read
@@ -53,7 +53,7 @@ class TestIgnoreCycles(unittest.TestCase):
 			read.cigar = [(0,59)]
 			read.rnext = 1
 			read.pnext = 450
-			read.isize = -121
+			read.tlen = -121
 			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "....x....h.xZ.hh..x......hh.xZ.....x....x......h..Z.x..H.xZ")] + [("XR", "GA")]
 			return read
@@ -72,7 +72,7 @@ class TestIgnoreCycles(unittest.TestCase):
 			read.cigar = [(0,63)]
 			read.rnext = 1
 			read.pnext = 492
-			read.isize = -131
+			read.tlen = -131
 			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
 			read.tags = read.tags + [("XG", "GA")] + [("XM", "...Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx.")] + [("XR", "CT")]
 			return read
@@ -91,7 +91,7 @@ class TestIgnoreCycles(unittest.TestCase):
 			read.cigar = [(0,67)]
 			read.rnext = 1
 			read.pnext = 560
-			read.isize = 131
+			read.tlen = 131
 			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
 			read.tags = read.tags + [("XG", "GA")] + [("XM", ".z...Zxh...x....x.hh.h....x.h....Z......x.h.......Z......x.h..x.hh.")] + [("XR", "GA")]
 			return read
@@ -164,7 +164,7 @@ class TestIgnoreLowQualityBases(unittest.TestCase):
 			read.cigar = [(0,61)]
 			read.rnext = 1
 			read.pnext = 512
-			read.isize = 121
+			read.tlen = 121
 			read.qual = "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" # Phred33 = 0
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....")] + [("XR", "CT")]
 			return read
@@ -183,7 +183,7 @@ class TestIgnoreLowQualityBases(unittest.TestCase):
 			read.cigar = [(0,61)]
 			read.rnext = 1
 			read.pnext = 512
-			read.isize = 121
+			read.tlen = 121
 			read.qual = "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" # Phred64 = 0
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....")] + [("XR", "CT")]
 			return read
@@ -201,7 +201,7 @@ class TestIgnoreLowQualityBases(unittest.TestCase):
 		self.assertEqual(ignore_low_quality_bases(self.p64, self.p64m, 0, 64), [18, 20, 33, 38, 42, 46])
 
 	def test_all_fail_low_qual_filter(self):
-		# Should remove all elements from methylation indexes 
+		# Should remove all elements from methylation indexes
 		self.assertEqual(ignore_low_quality_bases(self.p33, self.p33m, 1, 33), [])
 		self.assertEqual(ignore_low_quality_bases(self.p64, self.p64m, 1, 64), [])
 
@@ -242,7 +242,7 @@ class TestFixOldBismark(unittest.TestCase):
 			read.cigar = [(0,61)]
 			read.rnext = 1
 			read.pnext = 512
-			read.isize = 121
+			read.tlen = 121
 			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
 			#read.tags = read.tags + [("XG", "CT")] + [("XM", "..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....")] + [("XR", "CT")] # Not required for testing fix_old_bismark
 			return read
@@ -283,7 +283,7 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 			read.cigar = [(0,100)]
 			read.rnext = 0
 			read.pnext = 854
-			read.isize = 100
+			read.tlen = 100
 			read.qual = "BBCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@"
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "hh..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z.")] + [("XR", "CT")]
 			return read
@@ -301,7 +301,7 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 			read.cigar = [(0,100)]
 			read.rnext = 0
 			read.pnext = 853
-			read.isize = 100
+			read.tlen = 100
 			read.qual = "BCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@:"
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "h..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z..")] + [("XR", "GA")]
 			return read
@@ -309,7 +309,7 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 		# Create the reads
 		self.read_1 = buildRead1()
 		self.read_2 = buildRead2()
-	
+
 	def test_sequence(self):
 		self.assertTrue(is_overlapping_sequence_identical(self.read_1, self.read_2, 99, 'sequence'))
 		self.mod_read_1 = self.read_1
@@ -328,7 +328,7 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 		self.mod_read_1.cigar = self.read_1.cigar
 		self.mod_read_1.rnext = self.read_1.rnext
 		self.mod_read_1.pnext = self.read_1.pnext
-		self.mod_read_1.isize = self.read_1.isize
+		self.mod_read_1.tlen = self.read_1.tlen
 		self.mod_read_1.qual = self.read_1.qual
 		self.mod_read_1.tags = self.mod_read_1.tags + [("XG", "CT")] + [("XM", "hh..h.....x........x....hh.h....h......x.....h..x...x..x..xz....h.h.....h.....x.......h.........h.z.")] + [("XR", "CT")] # Change a 'Z' to a 'z' at cycle 60
 		self.assertFalse(is_overlapping_sequence_identical(self.mod_read_1, self.read_2, 99, 'XM'))
@@ -359,45 +359,263 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 		with self.assertRaises(SystemExit) as cm:
 			is_overlapping_sequence_identical(self.mod_read_1, self.read_2, 10, 'sequence')
 			self.assertEqual(cm.exception.code, 1)
- 
-class TestDoesReadContainIndel(unittest.TestCase):
-	'''Test the function does_read_contain_indel
+
+# TODO: Add test cases with soft- and hard-clipped positions.
+class TestGetReadPositions(unittest.TestCase):
+	'''Test the function get_read_positions.
 	'''
 
 	def setUp(self):
 
-		def buildRead1():
-			'''build an example read_1 aligned to OT-strand.
+		def buildRead1OTNoINDELs():
+			'''build an example read_1 aligned to OT-strand that contains no INDELs
 			'''
 			read = pysam.AlignedRead()
-			read.qname = "tr"
-			read.seq = "TTTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTG"
+			read.qname = "HWI-D00119:25:D1WYEACXX:3:2116:11787:72282_1:N:0:"
+			read.seq = "ATTTTTATTTTAATTTTAATTTTCGCGGTATTTTTAGTCGGTTTGTTCGTTCGGGTTTGATTTGAGGAGAATTGTGTTTCGTTTTTAGAGTATTATCGAA"
 			read.flag = 99
-			read.tid = 0
-			read.pos = 853
+			read.pos = 10445
 			read.mapq = 255
-			read.cigar = [(0,100)]
+			read.cigar = [(0, 100)]
 			read.rnext = 0
-			read.pnext = 854
-			read.isize = 100
-			read.qual = "BBCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@"
-			read.tags = read.tags + [("XG", "CT")] + [("XM", "hh..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z.")] + [("XR", "CT")]
+			read.pnext = 10506
+			read.tlen = 161
+			read.qual = "BBBFFFFFFFFFFIIIIIIIIIIIIIIIBFFIIIIFIFFFIFFIIFIIIFFIIIF7BFFBFFFFBBFBBBBFFFBBBBFFFFFFFFFFBFBFFFFFFFBF"
+			read.tags = read.tags + [("XG", "CT")] + [("XM", ".hhh...hhh...hhh...hhh.Z.Z....hhh.x..xZ..hxz.hxZ.hxZ....x...hx.........x....h.xZ.hh..x......hh.xZ...")] + [("XR", "CT")]
+			return read
+
+		def buildRead1OT1Insertion():
+			'''build an example read_1 aligned to OT-strand that contains a single insertion.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "HWI-D00119:27:C22KTACXX:3:1210:2378:71483_1:N:0:"
+			read.seq = "ATGAAAAATGTGTTGTTGTAGTTTGTTATTAGATTTTTTTTTTTTTATTGGTTTAATTAGGAATGGGGAATTTAGAGTTTTATTTGTTTAGGTTTTTTTT"
+			read.flag = 99
+			read.pos = 16315
+			read.mapq = 255
+			read.cigar = [(0, 33), (1, 1), (0, 66)]
+			read.rnext = 0
+			read.pnext = 16422
+			read.tlen = 208
+			read.qual = "BBBFFFFFFFFFFIIFIIFFIIIIIFFFIIIIIIIIIIIIIIIIFF0<BBB<BBBBBF<BBBBBBBFF07BBF<<'<<<BF<BBF<<BFBBBBB<BBFFF"
+			read.tags = read.tags + [('XG', 'CT')] + [('XM', '...............x..................hhhh..h...hh........................hhx....hh.h.h.....x...h.hhh.x.')] + [('XR', 'CT')]
+			return read
+
+		def buildRead1OT1Deletion():
+			'''build an example read_1 aligned to OT-strand that contains a single deletion.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "HWI-ST1445:66:D1W8JACXX:8:2201:2380:75186_1:N:0:"
+			read.seq = "TTAATTTTAATTTTAATTTTAATCTTAATTTTAATTTTTGTGGTATTTTTAGTTGGTTTGTTTGTTTGGGTTTGATTTGAGGAGAATTGTGTTTTGT"
+			read.flag = 99
+			read.pos = 10429
+			read.mapq = 255
+			read.cigar = [(0, 10), (2, 1), (0, 87)]
+			read.rnext = 0
+			read.pnext = 10471
+			read.tlen = 142
+			read.qual = "BBBFFFFFFFFFFIIIIIIIIIIIIIIFIIIIIIIIIIIBFBBFFFIIIIFBFF7BFFFFFIIBFFF777FFF<B<FF0<77B<BBBF<BBBBFF7B"
+			read.tags = read.tags + [('XG', 'CT')] + [('XM', 'h...hhh...hhh...hhh...hHh...hhh...hhh.z.z....hhh.x..xz..hxz.hxz.hxz....x...hx.........x....h.xz.h')] + [('XR', 'CT')]
+			return read
+
+		def buildRead1OTMultipleInsertions():
+			'''build an example read_1 aligned to OT-strand that contains more than one insertion.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "HWI-D00119:25:D1WYEACXX:3:2310:4022:64703_1:N:0:"
+			read.seq = "GGGTTAATTTGATAGTAGTTGTTTGGGTATTGGGGTATTTTTTCGTTTGTTAGGTGGGTAGTGGATAGTTTGTTTTTTTTTTTGGGGAAGGGAGACGAGG"
+			read.flag = 99
+			read.pos = 1053796
+			read.mapq = 255
+			read.cigar = [(0, 31), (1, 1), (0, 40), (1, 1), (0, 27)]
+			read.rnext = 0
+			read.pnext = 1053855
+			read.tlen = 159
+			read.qual = "BBBFFFFFFFFFFFIFIIIIIIIIIIIFFFFIIIIBFFIIIIIIIIIIIFIFIIBFFI<BFFFFBFFFFFFFFFFFFFFFFFF7<BF7<BBF777<B7<B"
+			read.tags = read.tags + [('XG', 'CT')] + [('XM', '...hh..hx...x..x..x..hx....h.h.....h.h.hhh.Z..x...x...z...x.........h.z...hh.h.hhx.............Z....')] + [('XR', 'CT')]
+			return read
+
+		def buildRead1OTMultipleDeletions():
+			'''build an example read_1 aligned to OT-strand that contains more than one deletion.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "HWI-D00119:27:C22KTACXX:3:1211:13000:93908_1:N:0:"
+			read.seq = "TGATTTTTATTTATAGGGTTTATTAGTAAAGTTATAGTGGGGGTAGGAGGGTGGTTAGGTTTTTAATATTTTTTTTTCGTTGATTTTAGTAGGTGGAGAGG"
+			read.flag = 99
+			read.pos = 880552
+			read.mapq = 255
+			read.cigar = [(0, 68), (2, 1), (0, 15), (2, 1), (0, 18)]
+			read.rnext = 0
+			read.pnext = 880596
+			read.tlen = 147
+			read.qual = "BBBFFFFFFFFFFIIIIIBFFFFIIIFFIIIIFIIIIFFFFII7BFFBBFI0<B<BFFF7BFBFFFFFFFFFFFFFFFFBBFFFFFBFFBFFFBBBBFBFB"
+			read.tags = read.tags + [('XG', 'CT')] + [('XM', '...h.hhh.hhh.x.....hh.hx..h.....h.x........x..........hx...h.hhh..h.hh..hhh.xZ.x.....hx..x...........')] + [('XR', 'CT')]
+			return read
+
+		def buildRead1OTInsertionAndDeletion():
+			'''build an example read_1 aligned to OT-strand that contains an insertion and a deletion.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "HWI-D00119:27:C22KTACXX:3:2110:14312:31481_1:N:0:"
+			read.seq = "AAAAAAAATAAAAAAAAAAAAAATAAAAAAAAATTAGAGTTGATTTTTAGGTTTTGATTTTGTTATAATTATTTAAATGTGTGTGCGGGTTTTAAGTATG"
+			read.flag = 99
+			read.pos = 1606063
+			read.mapq = 255
+			read.cigar = [(0, 9), (1, 1), (0, 85), (2, 2), (0, 5)]
+			read.rnext = 0
+			read.pnext = 1606135
+			read.tlen = 174
+			read.qual = "BBBFFFFFFFFFFIIIIIIIIFF<BFFFFFFFFBBBB7BFFB0<BFFF<BFBBFFBBBBFFBFFBBFFFBBBFBFBBBBFF<B070<<BBFFBFFB<<BB"
+			read.tags = read.tags + [('XG', 'CT')] + [('XM', '........h..............h.........hx........h.......h.................h.hh....z.......Z....h.h...h...')] + [('XR', 'CT')]
+			return read
+
+		def buildRead1OBNoINDELs():
+			'''build an example read_1 aligned to OB-strand that contains no INDELs
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "HWI-ST1445:66:D1W8JACXX:8:1112:17127:12640_1:N:0:"
+			read.seq = "AAAATCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACN"
+			read.flag = 83
+			read.pos = 9994
+			read.mapq = 255
+			read.cigar = [(0, 71)]
+			read.rnext = 0
+			read.pnext = 9994
+			read.tlen = 74
+			read.qual = "BBFFBBFBFFBBFBFB<BFBFFFFFBFFFFFBIFFFFFIFFFFFFFBBFFFBBBIFFFFBFFFFFBFB<0#"
+			read.tags = read.tags + [('XG', 'GA')] + [('XM', '.......................................................................')] + [('XR', 'CT')]
+			return read
+
+		def buildRead1OB1Insertion():
+			'''build an example read_1 aligned to OB-strand that contains a single insertion.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "HWI-D00119:25:D1WYEACXX:3:2316:15832:19438_1:N:0:"
+			read.seq = "AACCCTAACCCTAACCCTTACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCAACCCTAACC"
+			read.flag = 83
+			read.pos = 10019
+			read.mapq = 255
+			read.cigar = [(0, 17), (1, 1), (0, 82)]
+			read.rnext = 0
+			read.pnext = 9994
+			read.tlen = -124
+			read.qual = "<7FFBB<7FBBFBBFFBBFFFFFBB<0FBBBB<FFFBB<FFFBB7IFFFB7IIFFF<IFFFFBIIIFFFIIIFFBIIFFFBIIIFFBFFFFFFFFFFBBB"
+			read.tags = read.tags + [('XG', 'GA')] + [('XM', '....................................................................................................')] + [('XR', 'CT')]
+			return read
+
+		def buildRead1OB1Deletion():
+			'''build an example read_1 aligned to OB-strand that contains a single deletion.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "HWI-D00119:27:C22KTACXX:3:1307:10748:81180_1:N:0:"
+			read.seq = "AACCCTAACCCTAACCCTAACCCTAACCCTAACCCTACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCA"
+			read.flag = 83
+			read.pos =  10013
+			read.mapq = 255
+			read.cigar = [(0, 36), (2, 1), (0, 59)]
+			read.rnext = 0
+			read.pnext = 10012
+			read.tlen = -97
+			read.qual = "70B<70BB<0<770BB<70<BBB<7'FFBBB<FB<<7FFFBF<FFFF<0IIFBBFFIFFFFIFFFFBFFFFFFIIFFFFIIFFBFFFFFFBFBBB"
+			read.tags = read.tags + [('XG', 'GA')] + [('XM', '...............................................................................................')] + [('XR', 'CT')]
+			return read
+
+		def buildRead1OBMultipleInsertions():
+			'''build an example read_1 aligned to OB-strand that contains more than one insertion.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "HWI-D00119:25:D1WYEACXX:3:1204:4767:23545_1:N:0:"
+			read.seq = "CCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAAC"
+			read.flag = 83
+			read.pos = 10081
+			read.mapq = 255
+			read.cigar = [(0, 27), (1, 1), (0, 2), (1, 1), (0, 68)]
+			read.rnext = 0
+			read.pnext = 10007
+			read.tlen = -171
+			read.qual = "BBB7<7B777BBBBBBBBFFFFBFBB<7<0BBB<7B7FFB<B0FFFB<0FFBBB<IIFFFFFFFFFFFFFFBFFIFFFFFFFFFFFFFFFFFFFFFBBB"
+			read.tags = read.tags + [('XG', 'GA')] + [('XM', '...................................................................................................')] + [('XR', 'CT')]
+			return read
+
+		def buildRead1OBMultipleDeletions():
+			'''build an example read_1 aligned to OB-strand that contains more than one deletion.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "HWI-D00119:27:C22KTACXX:3:2111:5724:55868_1:N:0:"
+			read.seq = "AACCCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCT"
+			read.flag = 83
+			read.pos = 10055
+			read.mapq = 255
+			read.cigar = [(0, 29), (2, 1), (0, 61), (2, 1), (0, 10)]
+			read.rnext = 0
+			read.pnext = 10041
+			read.tlen = -116
+			read.qual = "<0FFFBB7BBBB<7FFBBB7BFFB<7FFBBBFBBB<7FFB<<0FFFBB7IFFFBIFFFFBIFFFFBIFFFF<FFFFFBIIIFFBIFFFFBFFFFFBFBBB"
+			read.tags = read.tags + [('XG', 'GA')] + [('XM', '....................................................................................................')] + [('XR', 'CT')]
+			return read
+
+		def buildRead1OBInsertionAndDeletion():
+			'''build an example read_1 aligned to OB-strand that contains an insertion and a deletion.
+			'''
+			read = pysam.AlignedRead()
+			read.qname = "HWI-D00119:25:D1WYEACXX:3:1302:14214:50765_1:N:0:"
+			read.seq = "CCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC"
+			read.flag = 83
+			read.pos = 10034
+			read.mapq = 255
+			read.cigar = [(0, 26), (2, 1), (0, 47), (1, 1), (0, 27)]
+			read.rnext = 0
+			read.pnext = 10012
+			read.tlen = -123
+			read.qual = "FFFBBFFFBB7FFBB<0FFBB<7BB<<7BBB<B<FFBBB<FFFB<0IFFBFBIFFFFBIFF<FBIIFFFFIIIFFFIIIIFFIIIFFFFFFFFFFFFFBBB"
+			read.tags = read.tags + [('XG', 'GA')] + [('XM', '.....................................................................................................')] + [('XR', 'CT')]
 			return read
 
 		# Create the reads
-		self.read_1 = buildRead1()
+		self.read_1_ot_no_indels = buildRead1OTNoINDELs()
+		self.read_1_ob_no_indels = buildRead1OBNoINDELs()
+		self.read_1_ot_1_insertion = buildRead1OT1Insertion()
+		self.read_1_ob_1_insertion = buildRead1OB1Insertion()
+		self.read_1_ot_1_deletion = buildRead1OT1Deletion()
+		self.read_1_ob_1_deletion = buildRead1OB1Deletion()
+		self.read_1_ot_multiple_insertions = buildRead1OTMultipleInsertions()
+		self.read_1_ob_multiple_insertions = buildRead1OBMultipleInsertions()
+		self.read_1_ot_multiple_deletions = buildRead1OTMultipleDeletions()
+		self.read_1_ob_multiple_deletions = buildRead1OBMultipleDeletions()
+		self.read_1_ot_insertion_and_deletion = buildRead1OTInsertionAndDeletion()
+		self.read_1_ob_insertion_and_deletion = buildRead1OBInsertionAndDeletion()
 
-	def test_no_indel(self):
-		self.assertFalse(does_read_contain_indel(self.read_1))
+	def test_no_indels(self):
+		self.assertEqual(get_read_positions(self.read_1_ot_no_indels), self.read_1_ot_no_indels.positions)
+		self.assertEqual(get_read_positions(self.read_1_ob_no_indels), self.read_1_ob_no_indels.positions)
 
-	def test_insertion(self):
-		self.read_1.cigar = [(0, 50), (1, 50)]
-		self.assertTrue(does_read_contain_indel(self.read_1))
+	def test_1_insertion(self):
+		self.assertNotEqual(get_read_positions(self.read_1_ot_1_insertion), self.read_1_ot_1_insertion.positions)
+		self.assertEqual([x for x in get_read_positions(self.read_1_ot_1_insertion) if x is not None], self.read_1_ot_1_insertion.positions)
+		self.assertNotEqual(get_read_positions(self.read_1_ob_1_insertion), self.read_1_ob_1_insertion.positions)
+		self.assertEqual([x for x in get_read_positions(self.read_1_ob_1_insertion) if x is not None], self.read_1_ob_1_insertion.positions)
 
-	def test_deletion(self):
-		self.read_1.cigar = [(0, 50), (2, 50)]
-		self.assertTrue(does_read_contain_indel(self.read_1))
+	def test_1_deletion(self):
+		self.assertEqual(get_read_positions(self.read_1_ot_1_deletion), self.read_1_ot_1_deletion.positions)
+		self.assertEqual(get_read_positions(self.read_1_ob_1_deletion), self.read_1_ob_1_deletion.positions)
 
+	def test_multiple_insertions(self):
+		self.assertNotEqual(get_read_positions(self.read_1_ot_multiple_insertions), self.read_1_ot_multiple_insertions.positions)
+		self.assertEqual([x for x in get_read_positions(self.read_1_ot_multiple_insertions) if x is not None], self.read_1_ot_multiple_insertions.positions)
+		self.assertNotEqual(get_read_positions(self.read_1_ob_multiple_insertions), self.read_1_ob_multiple_insertions.positions)
+		self.assertEqual([x for x in get_read_positions(self.read_1_ob_multiple_insertions) if x is not None], self.read_1_ob_multiple_insertions.positions)
+
+	def test_multiple_deletions(self):
+		self.assertEqual(get_read_positions(self.read_1_ot_multiple_deletions), self.read_1_ot_multiple_deletions.positions)
+		self.assertEqual(get_read_positions(self.read_1_ob_multiple_deletions), self.read_1_ob_multiple_deletions.positions)
+
+	def test_insertion_and_deletion(self):
+		self.assertNotEqual(get_read_positions(self.read_1_ot_insertion_and_deletion), self.read_1_ot_insertion_and_deletion.positions)
+		self.assertEqual([x for x in get_read_positions(self.read_1_ot_insertion_and_deletion) if x is not None], self.read_1_ot_insertion_and_deletion.positions)
+		self.assertNotEqual(get_read_positions(self.read_1_ob_insertion_and_deletion), self.read_1_ob_insertion_and_deletion.positions)
+		self.assertEqual([x for x in get_read_positions(self.read_1_ob_insertion_and_deletion) if x is not None], self.read_1_ob_insertion_and_deletion.positions)
+
+# TODO: Re-write this test in light of changes to does_read_contain_compliated_cigar.
 class TestDoesReadContainComplicatedCigar(unittest.TestCase):
 	'''Test the function does_read_contain_complicated_cigar
 	'''
@@ -417,7 +635,7 @@ class TestDoesReadContainComplicatedCigar(unittest.TestCase):
 			read.cigar = [(0,100)]
 			read.rnext = 0
 			read.pnext = 854
-			read.isize = 100
+			read.tlen = 100
 			read.qual = "BBCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@"
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "hh..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z.")] + [("XR", "CT")]
 			return read
@@ -479,7 +697,7 @@ class TestIgnoreOverlappingSequence(unittest.TestCase):
 			read.cigar = [(0,100)]
 			read.rnext = 0
 			read.pnext = 854
-			read.isize = 100
+			read.tlen = 100
 			read.qual = "BBCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@"
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "hh..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z.")] + [("XR", "CT")]
 			return read
@@ -497,7 +715,7 @@ class TestIgnoreOverlappingSequence(unittest.TestCase):
 			read.cigar = [(0,100)]
 			read.rnext = 0
 			read.pnext = 853
-			read.isize = 100
+			read.tlen = 100
 			read.qual = "BCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@:"
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "h..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z..")] + [("XR", "GA")]
 			return read
@@ -515,7 +733,7 @@ class TestIgnoreOverlappingSequence(unittest.TestCase):
 			read.cigar = [(0,62)]
 			read.rnext = 1
 			read.pnext = 492
-			read.isize = 63
+			read.tlen = 63
 			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
 			read.tags = read.tags + [("XG", "GA")] + [("XM", "..Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx.")] + [("XR", "CT")]
 			return read
@@ -533,7 +751,7 @@ class TestIgnoreOverlappingSequence(unittest.TestCase):
 			read.cigar = [(0,62)]
 			read.rnext = 1
 			read.pnext = 493
-			read.isize = 63
+			read.tlen = 63
 			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
 			read.tags = read.tags + [("XG", "GA")] + [("XM", "...Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx")] + [("XR", "GA")]
 			return read
@@ -623,7 +841,7 @@ class TestExtractAndUpdateMethylationIndexFromSingleEndRead(unittest.TestCase):
 			read.cigar = [(0,86)]
 			read.rnext = 0
 			read.pnext = 0
-			read.isize = 0
+			read.tlen = 0
 			read.qual = "DBDB2;@>)@@F?EFG@GBGGGGDDBG@DGGGGEEFHHEGHHHHEFHHHHFHHHFHHHGHGBCEAA@?@?/A@>@3,.6,AA,@>="
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "...........h......hhhhh..Z....hhx...Z..hh.Z..hh.hh.x..hx.....x..x..Z.....Z..x.........")] + [("XR", "CT")]
 			return read
@@ -641,7 +859,7 @@ class TestExtractAndUpdateMethylationIndexFromSingleEndRead(unittest.TestCase):
 			read.cigar = [(0,84)]
 			read.rnext = 0
 			read.pnext = 0
-			read.isize = 0
+			read.tlen = 0
 			read.qual = "G7@G@BGB@GGGGGDIEEBIBA<AHEGEEEGGGDDEDFFEIIHIIGGDGGGGGGGGGGDGDBED<FAAFEGGGGGIHIFIGBDG"
 			read.tags = read.tags + [("XG", "GA")] + [("XM", "......x...xh..x..x.......x...xh.Z..x.h..........h....x...z..xh.h..zx.h...h....hhh...")] + [("XR", "CT")]
 			return read
@@ -729,7 +947,7 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 			read.cigar = [(0,61)]
 			read.rnext = 1
 			read.pnext = 512
-			read.isize = 121
+			read.tlen = 121
 			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....")] + [("XR", "CT")]
 			return read
@@ -748,7 +966,7 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 			read.cigar = [(0,59)]
 			read.rnext = 1
 			read.pnext = 450
-			read.isize = -121
+			read.tlen = -121
 			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "....x....h.xZ.hh..x......hh.xZ.....x....x......h..Z.x..H.xZ")] + [("XR", "GA")]
 			return read
@@ -767,7 +985,7 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 			read.cigar = [(0,63)]
 			read.rnext = 1
 			read.pnext = 492
-			read.isize = -131
+			read.tlen = -131
 			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
 			read.tags = read.tags + [("XG", "GA")] + [("XM", "...Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx.")] + [("XR", "CT")]
 			return read
@@ -786,7 +1004,7 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 			read.cigar = [(0,67)]
 			read.rnext = 1
 			read.pnext = 560
-			read.isize = 131
+			read.tlen = 131
 			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
 			read.tags = read.tags + [("XG", "GA")] + [("XM", ".z...Zxh...x....x.hh.h....x.h....Z......x.h.......Z......x.h..x.hh.")] + [("XR", "GA")]
 			return read
@@ -923,7 +1141,7 @@ class TestMTuple(unittest.TestCase):
 			read.cigar = [(0,86)]
 			read.rnext = 0
 			read.pnext = 0
-			read.isize = 0
+			read.tlen = 0
 			read.qual = "DBDB2;@>)@@F?EFG@GBGGGGDDBG@DGGGGEEFHHEGHHHHEFHHHHFHHHFHHHGHGBCEAA@?@?/A@>@3,.6,AA,@>="
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "...........h......hhhhh..Z....hhx...Z..hh.Z..hh.hh.x..hx.....x..x..Z.....Z..x.........")] + [("XR", "CT")]
 			return read
@@ -941,7 +1159,7 @@ class TestMTuple(unittest.TestCase):
 			read.cigar = [(0,84)]
 			read.rnext = 0
 			read.pnext = 0
-			read.isize = 0
+			read.tlen = 0
 			read.qual = "G7@G@BGB@GGGGGDIEEBIBA<AHEGEEEGGGDDEDFFEIIHIIGGDGGGGGGGGGGDGDBED<FAAFEGGGGGIHIFIGBDG"
 			read.tags = read.tags + [("XG", "GA")] + [("XM", "......x...xh..x..x.......x...xh.Z..x.h..........h....x...z..xh.h..zx.h...h....hhh...")] + [("XR", "CT")]
 			return read
@@ -959,7 +1177,7 @@ class TestMTuple(unittest.TestCase):
 			read.cigar = [(0,61)]
 			read.rnext = 1
 			read.pnext = 512
-			read.isize = 121
+			read.tlen = 121
 			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....")] + [("XR", "CT")]
 			return read
@@ -977,7 +1195,7 @@ class TestMTuple(unittest.TestCase):
 			read.cigar = [(0,59)]
 			read.rnext = 1
 			read.pnext = 450
-			read.isize = -121
+			read.tlen = -121
 			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "....x....h.xZ.hh..x......hh.xZ.....x....x......h..Z.x..H.xZ")] + [("XR", "GA")]
 			return read
@@ -995,7 +1213,7 @@ class TestMTuple(unittest.TestCase):
 			read.cigar = [(0,63)]
 			read.rnext = 1
 			read.pnext = 492
-			read.isize = -131
+			read.tlen = -131
 			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
 			read.tags = read.tags + [("XG", "GA")] + [("XM", "...Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx.")] + [("XR", "CT")]
 			return read
@@ -1013,7 +1231,7 @@ class TestMTuple(unittest.TestCase):
 			read.cigar = [(0,67)]
 			read.rnext = 1
 			read.pnext = 560
-			read.isize = 131
+			read.tlen = 131
 			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
 			read.tags = read.tags + [("XG", "GA")] + [("XM", ".z...Zxh...x....x.hh.h....x.h....Z......x.h.......Z......x.h..x.hh.")] + [("XR", "GA")]
 			return read
@@ -1203,7 +1421,7 @@ class TestMTuple(unittest.TestCase):
 		self.wfobrpe.increment_count(('chr1', 563, 571), 'UM', self.obr_1, self.obr_2)
 		self.assertEqual(self.wfobrpe.mtuples[('chr1', 563, 571)], array.array('i', [2, 1, 1, 0]))
 		self.wfobrpe.increment_count(('chr1', 563, 571), 'UU', self.obr_1, self.obr_2)
-		self.assertEqual(self.wfobrpe.mtuples[('chr1', 563, 571)], array.array('i', [2, 1, 1, 1]))	
+		self.assertEqual(self.wfobrpe.mtuples[('chr1', 563, 571)], array.array('i', [2, 1, 1, 1]))
 
 	def test_increment_count_multiple_methylation_types_pe(self):
 		self.assertEqual(self.wfotrpecgchg.mtuples[('chr1', 497, 525, 534)], array.array('i', [1, 0, 0, 0, 0, 0, 0, 0]))
@@ -1267,7 +1485,7 @@ class TestGetStrand(unittest.TestCase):
 			read.cigar = [(0, 50)]
 			read.rnext = 0
 			read.pnext = 0
-			read.isize = 0
+			read.tlen = 0
 			read.qual = "BC?BBBBBCCCCAA@BCB?AB@AB>CABB@@BB@?BB497@@B:@@B5>@"
 			read.tags = read.tags + [("XM", "Z........h....h.............z.......x..x.....h....")] + [('XR', 'CT')] + [('XG', 'CT')]
 			return read
@@ -1283,7 +1501,7 @@ class TestGetStrand(unittest.TestCase):
 			read.cigar = [(0, 50)]
 			read.rnext = 0
 			read.pnext = 0
-			read.isize = 0
+			read.tlen = 0
 			read.qual = "CCBCACCBBCCCAACBBCAB@CCCCCCBBCCCCCCCCCBBBBCBCACBCB"
 			read.tags = read.tags + [('XM', "Z.h...Z..x.....h.......hh.h......x........h....x..")] + [('XR', 'CT')] + [('XG', 'GA')]
 			return read
@@ -1299,7 +1517,7 @@ class TestGetStrand(unittest.TestCase):
 			read.cigar = [(0, 50)]
 			read.rnext = 0
 			read.pnext = 0
-			read.isize = 0
+			read.tlen = 0
 			read.qual = "1)9<)@96'3%6@5:0=3::;;:89*;:@AA@=;A=3)2)1@>*9;-4:A"
 			read.tags = read.tags + [('XM', 'H.h...h...H...HHh.................................')] + [('XR', 'GA')] + [('XG', 'CT')]
 			return read
@@ -1315,7 +1533,7 @@ class TestGetStrand(unittest.TestCase):
 			read.cigar = [(0, 50)]
 			read.rnext = 0
 			read.pnext = 0
-			read.isize = 0
+			read.tlen = 0
 			read.qual = "BCBBBBCCBCAA=@?B?A?@@BCCBCCAAA=B9@B?A=9?BBB??AC@2="
 			read.tags = read.tags + [('XM', '..HH...HHhh.HH...HH........HH.h.H..h.H..h.HH.h.HH.')] + [('XR', 'GA')] + [('XG', 'GA')]
 			return read
@@ -1331,7 +1549,7 @@ class TestGetStrand(unittest.TestCase):
 			read_1.cigar = [(0, 101)]
 			read_1.rnext = 0
 			read_1.pnext = 19979235
-			read_1.isize = 369
+			read_1.tlen = 369
 			read_1.qual = "BC@FDFFFHHHHHJIHICHHHIIJJIGGJJJJJHGIF11?CGHIJIIJJHHHIIJIHHG9BFHIJFFDAC@?6;;-;AC@?DD<98@BDBDD>CDD#####"
 			read_1.tags = read_1.tags + [('XM', 'Z...h.Z.h.h......h..hx..hh.hh.x..h.....x...hx....h..x......hhhhhx...........hx...x..Z...x..h.hx....h.')] + [('XR', 'CT')] + [('XG', 'CT')]
 			read_2 = pysam.AlignedRead()
@@ -1344,7 +1562,7 @@ class TestGetStrand(unittest.TestCase):
 			read_2.cigar = [(0, 101)]
 			read_2.rnext = 0
 			read_2.pnext = 19978967
-			read_2.isize = -369
+			read_2.tlen = -369
 			read_2.qual = "EDDDDDDBBDDDDDDDCDEEEEEFFFFFHHGHIIFJJJIJJJJIJJJJJIHIJJIJJJJJIJJJJJJJJJJJJJJJJJJJJJJJJJJJHHHHHFFFFFCCC"
 			read_2.tags = read_2.tags + [('XM', 'h.x....x......h.z.hX...h....hx...x...h.h......h..hx..hh.hh.x..h....x....hx.........Z...hx..hh.hh..hh.')] + [('XR', 'GA')] + [('XG', 'CT')]
 			return read_1, read_2
@@ -1360,7 +1578,7 @@ class TestGetStrand(unittest.TestCase):
 			read_1.cigar = [(0, 101)]
 			read_1.rnext = 0
 			read_1.pnext = 19195917
-			read_1.isize = -164
+			read_1.tlen = -164
 			read_1.qual = "#####@:4B@;(85DDD@:;DDBBAACD?FD@HHHFIIJIIIHFJIFDJJIIFBGFGIGIGJIHFFDEJJJGIIGJIJJJJIJJHJIHHHHHHFDDDF@@@"
 			read_1.tags = read_1.tags + [('XM', 'Z.......xhh..Zxh.h..h..h....x...xh.......Zx.h...............................h...xh.Z.hh.hh..x......x.')] + [('XR', 'CT')] + [('XG', 'GA')]
 			read_2 = pysam.AlignedRead()
@@ -1373,7 +1591,7 @@ class TestGetStrand(unittest.TestCase):
 			read_2.cigar = [(0, 101)]
 			read_2.rnext = 0
 			read_2.pnext = 19195980
-			read_2.isize = 164
+			read_2.tlen = 164
 			read_2.qual = "CCCFFFFFHHHHHJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJEHHIJJJJJJIJJIIJHHHFFFFFEEDEEDDDDDDDDDDDDDDDDDDDDDD"
 			read_2.tags = read_2.tags + [("XM", ".x...hh..xh..z.hh.hh.....h...x........x......hhh.h...x.hh...h..Z.......xhh..Zxh.h..h..h....x...xh....")] + [('XR', 'GA')] + [('XG', 'GA')]
 			return read_1, read_2
@@ -1389,7 +1607,7 @@ class TestGetStrand(unittest.TestCase):
 			read_1.cigar = [(0, 101)]
 			read_1.rnext = 0
 			read_1.pnext = 3287383
-			read_1.isize = -271
+			read_1.tlen = -271
 			read_1.qual = "#########################################73GE@CEGECGDFAFAB@IGD?FB0HF?1JHGF@HFAJIHFJJIHGEA22222224B@:4"
 			read_1.tags = read_1.tags + [('XM', 'Z...HH.HH..H....H..HH..HH..HH.HHH.HHH..HH..HH...........H..HH..HH.HHH.HHH..HH.HH..HH...H..HH..HH..HH.')] + [('XR', 'GA')] + [('XG', 'CT')]
 			read_2 = pysam.AlignedRead()
@@ -1402,7 +1620,7 @@ class TestGetStrand(unittest.TestCase):
 			read_2.cigar = [(0, 101)]
 			read_2.rnext = 0
 			read_2.pnext = 3287553
-			read_2.isize = 271
+			read_2.tlen = 271
 			read_2.qual = "CCCFFFFFHHHHHJJJJJJJJJJIIJIGHIJIJJJJJJJJJJJJJJJJJJGGCBFHCHGGCHIIJHHHFFFFECEDEDDDDE@>@CD:ACCDDD>>?::@C"
 			read_2.tags = read_2.tags + [('XM', '..HH.HH..H....H..HH..XZ..HH.HHH.HHH..HH..HH.........HH..HH.HHH.HHH..HH.HH..HH...H..HH..HH..HH..HH...H')] + [('XR', 'CT')] + [('XG', 'CT')]
 			return read_1, read_2
@@ -1418,7 +1636,7 @@ class TestGetStrand(unittest.TestCase):
 			read_1.cigar = [(0, 101)]
 			read_1.rnext = 0
 			read_1.pnext = 55291173
-			read_1.isize = 154
+			read_1.tlen = 154
 			read_1.qual = "1:BD42222300<CGHIIIJIIJJIIJGIIIIIIIJJIIJIJIIIIIGHIIIIHHGGGFFFFFFDECCDCBBDB@BBA<?BC<0<AC?CB@:@CC@CBC:>"
 			read_1.tags = read_1.tags + [('XM', 'z..Hh.HHh..Hh..Hh...h...h...h...H.h..hh..h...h..Hh...h...h.....hh......Hh...h...h..........H..hH.hhH.')] + [('XR', 'GA')] + [('XG', 'GA')]
 			read_2 = pysam.AlignedRead()
@@ -1431,7 +1649,7 @@ class TestGetStrand(unittest.TestCase):
 			read_2.cigar = [(0, 101)]
 			read_2.rnext = 0
 			read_2.pnext = 55291120
-			read_2.isize = -154
+			read_2.tlen = -154
 			read_2.qual = "5DDA;DDEC@66DHHHHC=GJJIGJJIGJJJJIIJIHGHIHHHGFFFFBIIJHHGJJIGJJJJJIIHHJIGJJJGJJJJJJJJJIJJJHHHHHFFFDDBBB"
 			read_2.tags = read_2.tags + [('XM', 'h...H.....HH......HH...H...H..........H..HH.HHH..HH..HH...H...H..HHH......H..........H..HH.HHH...H..H')] + [('XR', 'CT')] + [('XG', 'GA')]
 			return read_1, read_2
