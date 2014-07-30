@@ -360,260 +360,138 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 			is_overlapping_sequence_identical(self.mod_read_1, self.read_2, 10, 'sequence')
 			self.assertEqual(cm.exception.code, 1)
 
-# TODO: Add test cases with soft- and hard-clipped positions.
+# TODO: SIMPLIFY. These are unit tests and should be as simple as possible. This simplification will be done in two parts.
+# Part 1: Move these more complex examples to elsewhere in this file - they may still be useful in another test case setting. DONE
+# Part 2: Use very simple alignments where I can write down the aligned bases of each read-position by hand. For example, all reads based on a perfect alignment to chr1:1-10. Then, vary these reads by adding soft-clipping, hard-clipping, insertions and deletions and compare the results of get_read_positions against a hand-crafted list of the true alignment. IN PROGRESS
 class TestGetReadPositions(unittest.TestCase):
 	'''Test the function get_read_positions.
 	'''
 
 	def setUp(self):
 
-		def buildRead1OTNoINDELs():
-			'''build an example read_1 aligned to OT-strand that contains no INDELs
+		def buildBasicRead(rl):
+			''' Build a basic read of length rl.
 			'''
 			read = pysam.AlignedRead()
-			read.qname = "HWI-D00119:25:D1WYEACXX:3:2116:11787:72282_1:N:0:"
-			read.seq = "ATTTTTATTTTAATTTTAATTTTCGCGGTATTTTTAGTCGGTTTGTTCGTTCGGGTTTGATTTGAGGAGAATTGTGTTTCGTTTTTAGAGTATTATCGAA"
-			read.flag = 99
-			read.pos = 10445
+			read.qname = "test"
+			read.seq = "A" * rl
+			read.flag = 0
+			read.tid = 1
+			read.pos = 1
 			read.mapq = 255
-			read.cigar = [(0, 100)]
+			read.cigar = [(0, rl)]
 			read.rnext = 0
-			read.pnext = 10506
-			read.tlen = 161
-			read.qual = "BBBFFFFFFFFFFIIIIIIIIIIIIIIIBFFIIIIFIFFFIFFIIFIIIFFIIIF7BFFBFFFFBBFBBBBFFFBBBBFFFFFFFFFFBFBFFFFFFFBF"
-			read.tags = read.tags + [("XG", "CT")] + [("XM", ".hhh...hhh...hhh...hhh.Z.Z....hhh.x..xZ..hxz.hxZ.hxZ....x...hx.........x....h.xZ.hh..x......hh.xZ...")] + [("XR", "CT")]
+			read.pnext = 0
+			read.tlen = rl
+			read.qual = "B" * rl
 			return read
 
-		def buildRead1OT1Insertion():
-			'''build an example read_1 aligned to OT-strand that contains a single insertion.
+		def addInsertionAndDeletion(read, rpi, rpd, li, ld, f):
+			'''Add insertion at rpi of length li. Add deletion at rpd of length rpd. Insertion first if f = 'i', deletion first if f = 'd'.
 			'''
-			read = pysam.AlignedRead()
-			read.qname = "HWI-D00119:27:C22KTACXX:3:1210:2378:71483_1:N:0:"
-			read.seq = "ATGAAAAATGTGTTGTTGTAGTTTGTTATTAGATTTTTTTTTTTTTATTGGTTTAATTAGGAATGGGGAATTTAGAGTTTTATTTGTTTAGGTTTTTTTT"
-			read.flag = 99
-			read.pos = 16315
-			read.mapq = 255
-			read.cigar = [(0, 33), (1, 1), (0, 66)]
-			read.rnext = 0
-			read.pnext = 16422
-			read.tlen = 208
-			read.qual = "BBBFFFFFFFFFFIIFIIFFIIIIIFFFIIIIIIIIIIIIIIIIFF0<BBB<BBBBBF<BBBBBBBFF07BBF<<'<<<BF<BBF<<BFBBBBB<BBFFF"
-			read.tags = read.tags + [('XG', 'CT')] + [('XM', '...............x..................hhhh..h...hh........................hhx....hh.h.h.....x...h.hhh.x.')] + [('XR', 'CT')]
-			return read
+			# Make a copy so that we don't modify the original
+			r = read
 
-		def buildRead1OT1Deletion():
-			'''build an example read_1 aligned to OT-strand that contains a single deletion.
+			if (rpi < 1 and li > 0) or (rpd < 1 and ld > 0) or rpi > len(r.seq) or rpd > len(r.seq):
+				sys.exit("Can only add 'internal' indels.")
+
+			if li > 0 and ld > 0 and f == 'i':
+				nc = [(0, rpi - 1), (1, li), (0, rpd - rpi - li + 1), (2, ld), (0, r.qlen - rpd)]
+			elif li > 0 and ld > 0 and f == 'd':
+				nc = [(0, rpd - 1), (2, ld), (0, rpi - rpd), (1, li), (0, r.qlen - rpi - li + 1)]
+			elif ld > 0:
+				nc = [(0, rpd - 1), (2, ld), (0, r.qlen - rpd + 1)]
+			elif li > 0:
+				nc = [(0, rpi - 1), (1, li), (0, r.qlen - rpi - li + 1)]
+			else:
+				sys.exit("Incompatible parameter combination")
+
+			read.cigar = nc
+			return r
+
+		def hardClipAndSoftClip(read, sh, eh, ss, es):
+			'''Hard clip sh bases from start and eh bases from end then soft clip ss bases from start and es bases from end.
 			'''
-			read = pysam.AlignedRead()
-			read.qname = "HWI-ST1445:66:D1W8JACXX:8:2201:2380:75186_1:N:0:"
-			read.seq = "TTAATTTTAATTTTAATTTTAATCTTAATTTTAATTTTTGTGGTATTTTTAGTTGGTTTGTTTGTTTGGGTTTGATTTGAGGAGAATTGTGTTTTGT"
-			read.flag = 99
-			read.pos = 10429
-			read.mapq = 255
-			read.cigar = [(0, 10), (2, 1), (0, 87)]
-			read.rnext = 0
-			read.pnext = 10471
-			read.tlen = 142
-			read.qual = "BBBFFFFFFFFFFIIIIIIIIIIIIIIFIIIIIIIIIIIBFBBFFFIIIIFBFF7BFFFFFIIBFFF777FFF<B<FF0<77B<BBBF<BBBBFF7B"
-			read.tags = read.tags + [('XG', 'CT')] + [('XM', 'h...hhh...hhh...hhh...hHh...hhh...hhh.z.z....hhh.x..xz..hxz.hxz.hxz....x...hx.........x....h.xz.h')] + [('XR', 'CT')]
-			return read
+			# Make a copy so that we don't modify the original
+			r = read
 
-		def buildRead1OTMultipleInsertions():
-			'''build an example read_1 aligned to OT-strand that contains more than one insertion.
-			'''
-			read = pysam.AlignedRead()
-			read.qname = "HWI-D00119:25:D1WYEACXX:3:2310:4022:64703_1:N:0:"
-			read.seq = "GGGTTAATTTGATAGTAGTTGTTTGGGTATTGGGGTATTTTTTCGTTTGTTAGGTGGGTAGTGGATAGTTTGTTTTTTTTTTTGGGGAAGGGAGACGAGG"
-			read.flag = 99
-			read.pos = 1053796
-			read.mapq = 255
-			read.cigar = [(0, 31), (1, 1), (0, 40), (1, 1), (0, 27)]
-			read.rnext = 0
-			read.pnext = 1053855
-			read.tlen = 159
-			read.qual = "BBBFFFFFFFFFFFIFIIIIIIIIIIIFFFFIIIIBFFIIIIIIIIIIIFIFIIBFFI<BFFFFBFFFFFFFFFFFFFFFFFF7<BF7<BBF777<B7<B"
-			read.tags = read.tags + [('XG', 'CT')] + [('XM', '...hh..hx...x..x..x..hx....h.h.....h.h.hhh.Z..x...x...z...x.........h.z...hh.h.hhx.............Z....')] + [('XR', 'CT')]
-			return read
+			if (sh + eh) > r.cigar[0][1] or (ss + es) > r.cigar[len(r.cigar) - 1][1]:
+				sys.exit("Too much clipping; cannot clip across multiple CIGAR operations.")
+			if (sh + ss + eh + es) > r.qlen:
+				sys.exit("Too much clipping; sum of clipping operations cannot exceed query length.")
+			# if sh == 0 or eh == 0 or ss == 0 or es == 0:
+			# 	sys.exit("All of sh, eh, ss and es must be non-zero")
 
-		def buildRead1OTMultipleDeletions():
-			'''build an example read_1 aligned to OT-strand that contains more than one deletion.
-			'''
-			read = pysam.AlignedRead()
-			read.qname = "HWI-D00119:27:C22KTACXX:3:1211:13000:93908_1:N:0:"
-			read.seq = "TGATTTTTATTTATAGGGTTTATTAGTAAAGTTATAGTGGGGGTAGGAGGGTGGTTAGGTTTTTAATATTTTTTTTTCGTTGATTTTAGTAGGTGGAGAGG"
-			read.flag = 99
-			read.pos = 880552
-			read.mapq = 255
-			read.cigar = [(0, 68), (2, 1), (0, 15), (2, 1), (0, 18)]
-			read.rnext = 0
-			read.pnext = 880596
-			read.tlen = 147
-			read.qual = "BBBFFFFFFFFFFIIIIIBFFFFIIIFFIIIIFIIIIFFFFII7BFFBBFI0<B<BFFF7BFBFFFFFFFFFFFFFFFFBBFFFFFBFFBFFFBBBBFBFB"
-			read.tags = read.tags + [('XG', 'CT')] + [('XM', '...h.hhh.hhh.x.....hh.hx..h.....h.x........x..........hx...h.hhh..h.hh..hhh.xZ.x.....hx..x...........')] + [('XR', 'CT')]
-			return read
+			q = r.qual
+			oc = r.cigar
+			r.seq = r.seq[sh:(len(r.seq) - eh)]
+			r.qual = q[sh:(len(q) - eh)]
 
-		def buildRead1OTInsertionAndDeletion():
-			'''build an example read_1 aligned to OT-strand that contains an insertion and a deletion.
-			'''
-			read = pysam.AlignedRead()
-			read.qname = "HWI-D00119:27:C22KTACXX:3:2110:14312:31481_1:N:0:"
-			read.seq = "AAAAAAAATAAAAAAAAAAAAAATAAAAAAAAATTAGAGTTGATTTTTAGGTTTTGATTTTGTTATAATTATTTAAATGTGTGTGCGGGTTTTAAGTATG"
-			read.flag = 99
-			read.pos = 1606063
-			read.mapq = 255
-			read.cigar = [(0, 9), (1, 1), (0, 85), (2, 2), (0, 5)]
-			read.rnext = 0
-			read.pnext = 1606135
-			read.tlen = 174
-			read.qual = "BBBFFFFFFFFFFIIIIIIIIFF<BFFFFFFFFBBBB7BFFB0<BFFF<BFBBFFBBBBFFBFFBBFFFBBBFBFBBBBFF<B070<<BBFFBFFB<<BB"
-			read.tags = read.tags + [('XG', 'CT')] + [('XM', '........h..............h.........hx........h.......h.................h.hh....z.......Z....h.h...h...')] + [('XR', 'CT')]
-			return read
+			n = len(oc)
+			if r.cigar[0][0] != 0 or r.cigar[len(r.cigar) - 1][0] != 0 or len(r.cigar) == 2:
+				sys.exit("Can only clip reads with match operations as first and last CIGAR operations.")
 
-		def buildRead1OBNoINDELs():
-			'''build an example read_1 aligned to OB-strand that contains no INDELs
-			'''
-			read = pysam.AlignedRead()
-			read.qname = "HWI-ST1445:66:D1W8JACXX:8:1112:17127:12640_1:N:0:"
-			read.seq = "AAAATCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACN"
-			read.flag = 83
-			read.pos = 9994
-			read.mapq = 255
-			read.cigar = [(0, 71)]
-			read.rnext = 0
-			read.pnext = 9994
-			read.tlen = 74
-			read.qual = "BBFFBBFBFFBBFBFB<BFBFFFFFBFFFFFBIFFFFFIFFFFFFFBBFFFBBBIFFFFBFFFFFBFB<0#"
-			read.tags = read.tags + [('XG', 'GA')] + [('XM', '.......................................................................')] + [('XR', 'CT')]
-			return read
+			nc = []
+			if sh > 0:
+				nc = nc + [(5, sh)]
+			if ss > 0:
+				nc = nc + [(4, ss)]
+			if n > 2:
+				nc = nc + [(oc[0][0], oc[0][1] - sh - ss)] + oc[1:(n - 1)] + [(oc[n - 1][0], oc[n - 1][1] - es - eh)]
+			elif n == 1:
+				nc = nc + [(oc[0][0], oc[0][1] - sh - ss - eh - es)]
+			if es > 0:
+				nc = nc + [(4, es)]
+			if eh > 0:
+				nc = nc + [(5, eh)]
 
-		def buildRead1OB1Insertion():
-			'''build an example read_1 aligned to OB-strand that contains a single insertion.
-			'''
-			read = pysam.AlignedRead()
-			read.qname = "HWI-D00119:25:D1WYEACXX:3:2316:15832:19438_1:N:0:"
-			read.seq = "AACCCTAACCCTAACCCTTACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCAACCCTAACC"
-			read.flag = 83
-			read.pos = 10019
-			read.mapq = 255
-			read.cigar = [(0, 17), (1, 1), (0, 82)]
-			read.rnext = 0
-			read.pnext = 9994
-			read.tlen = -124
-			read.qual = "<7FFBB<7FBBFBBFFBBFFFFFBB<0FBBBB<FFFBB<FFFBB7IFFFB7IIFFF<IFFFFBIIIFFFIIIFFBIIFFFBIIIFFBFFFFFFFFFFBBB"
-			read.tags = read.tags + [('XG', 'GA')] + [('XM', '....................................................................................................')] + [('XR', 'CT')]
-			return read
+			r.cigar = nc
+			r.pos = r.pos + ss + sh
+			return r
 
-		def buildRead1OB1Deletion():
-			'''build an example read_1 aligned to OB-strand that contains a single deletion.
-			'''
-			read = pysam.AlignedRead()
-			read.qname = "HWI-D00119:27:C22KTACXX:3:1307:10748:81180_1:N:0:"
-			read.seq = "AACCCTAACCCTAACCCTAACCCTAACCCTAACCCTACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCA"
-			read.flag = 83
-			read.pos =  10013
-			read.mapq = 255
-			read.cigar = [(0, 36), (2, 1), (0, 59)]
-			read.rnext = 0
-			read.pnext = 10012
-			read.tlen = -97
-			read.qual = "70B<70BB<0<770BB<70<BBB<7'FFBBB<FB<<7FFFBF<FFFF<0IIFBBFFIFFFFIFFFFBFFFFFFIIFFFFIIFFBFFFFFFBFBBB"
-			read.tags = read.tags + [('XG', 'GA')] + [('XM', '...............................................................................................')] + [('XR', 'CT')]
-			return read
+	# Basically, what we test test is that the output of get_read_positions(read) is identical to the output of read.positions with two exceptions:
+	# (1) If the read contains an insertion, then compare against read.aligned_pairs, which returns None for inserted bases
+	# (2) If the read contains soft-clipped bases then need to trim those "start/end Nones" from get_read_positions(read).
+		# No clipping
+		self.br = buildBasicRead(10)
+		self.I1 = addInsertionAndDeletion(buildBasicRead(10), 4, 0, 1, 0, 'i')
+		self.I3 = addInsertionAndDeletion(buildBasicRead(10), 4, 0, 3, 0, 'i')
+		self.D1 = addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 1, 'i')
+		self.D3 = addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 3, 'i')
+		self.I1D1 = addInsertionAndDeletion(buildBasicRead(10), 4, 7, 1, 1, 'i')
+		self.I2D3 = addInsertionAndDeletion(buildBasicRead(10), 4, 7, 2, 3, 'i')
+		self.D1I1 = addInsertionAndDeletion(buildBasicRead(10), 8, 2, 1, 1, 'd')
+		self.D2I3 = addInsertionAndDeletion(buildBasicRead(10), 7, 2, 3, 2, 'd')
 
-		def buildRead1OBMultipleInsertions():
-			'''build an example read_1 aligned to OB-strand that contains more than one insertion.
-			'''
-			read = pysam.AlignedRead()
-			read.qname = "HWI-D00119:25:D1WYEACXX:3:1204:4767:23545_1:N:0:"
-			read.seq = "CCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAAC"
-			read.flag = 83
-			read.pos = 10081
-			read.mapq = 255
-			read.cigar = [(0, 27), (1, 1), (0, 2), (1, 1), (0, 68)]
-			read.rnext = 0
-			read.pnext = 10007
-			read.tlen = -171
-			read.qual = "BBB7<7B777BBBBBBBBFFFFBFBB<7<0BBB<7B7FFB<B0FFFB<0FFBBB<IIFFFFFFFFFFFFFFBFFIFFFFFFFFFFFFFFFFFFFFFBBB"
-			read.tags = read.tags + [('XG', 'GA')] + [('XM', '...................................................................................................')] + [('XR', 'CT')]
-			return read
+		# Hard clipping
+		self.br_hcs = hardClipAndSoftClip(buildBasicRead(10), 2, 0, 0, 0)
+		self.br_hce = hardClipAndSoftClip(buildBasicRead(10), 0, 3, 0, 0)
+		self.br_hcse = hardClipAndSoftClip(buildBasicRead(10), 2, 3, 0, 0)
+		self.I1_hcs = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 0, 1, 0, 'i'), 2, 0, 0, 0)
+		self.I1_hce = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 0, 1, 0, 'i'), 0, 1, 0, 0)
+		self.I1_hcse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 0, 1, 0, 'i'), 2, 1, 0, 0)
 
-		def buildRead1OBMultipleDeletions():
-			'''build an example read_1 aligned to OB-strand that contains more than one deletion.
-			'''
-			read = pysam.AlignedRead()
-			read.qname = "HWI-D00119:27:C22KTACXX:3:2111:5724:55868_1:N:0:"
-			read.seq = "AACCCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCT"
-			read.flag = 83
-			read.pos = 10055
-			read.mapq = 255
-			read.cigar = [(0, 29), (2, 1), (0, 61), (2, 1), (0, 10)]
-			read.rnext = 0
-			read.pnext = 10041
-			read.tlen = -116
-			read.qual = "<0FFFBB7BBBB<7FFBBB7BFFB<7FFBBBFBBB<7FFB<<0FFFBB7IFFFBIFFFFBIFFFFBIFFFF<FFFFFBIIIFFBIFFFFBFFFFFBFBBB"
-			read.tags = read.tags + [('XG', 'GA')] + [('XM', '....................................................................................................')] + [('XR', 'CT')]
-			return read
+	def test_no_clipping(self):
+		self.assertEqual(get_read_positions(self.br), range(1, 11))
+		self.assertEqual(get_read_positions(self.I1), range(1, 4) + [None] + range(4, 10))
+		self.assertEqual(get_read_positions(self.I3), range(1, 4) + [None] * 3 + range(4, 8))
+		self.assertEqual(get_read_positions(self.D1), range(1, 4) + range(5, 12))
+		self.assertEqual(get_read_positions(self.D3), range(1, 4) + range(7, 14))
+		self.assertEqual(get_read_positions(self.I1D1), range(1, 4) + [None] + range(4, 7) + range(8, 11))
+		self.assertEqual(get_read_positions(self.I2D3), range(1, 4) + [None] * 2 + range(4, 6) + range(9, 12))
+		self.assertEqual(get_read_positions(self.D1I1), range(1, 2) + range(3, 9) + [None] + range(9, 11))
+		self.assertEqual(get_read_positions(self.D2I3), range(1, 2) + range(4, 9) + [None] * 3 + range(9, 10))
 
-		def buildRead1OBInsertionAndDeletion():
-			'''build an example read_1 aligned to OB-strand that contains an insertion and a deletion.
-			'''
-			read = pysam.AlignedRead()
-			read.qname = "HWI-D00119:25:D1WYEACXX:3:1302:14214:50765_1:N:0:"
-			read.seq = "CCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC"
-			read.flag = 83
-			read.pos = 10034
-			read.mapq = 255
-			read.cigar = [(0, 26), (2, 1), (0, 47), (1, 1), (0, 27)]
-			read.rnext = 0
-			read.pnext = 10012
-			read.tlen = -123
-			read.qual = "FFFBBFFFBB7FFBB<0FFBB<7BB<<7BBB<B<FFBBB<FFFB<0IFFBFBIFFFFBIFF<FBIIFFFFIIIFFFIIIIFFIIIFFFFFFFFFFFFFBBB"
-			read.tags = read.tags + [('XG', 'GA')] + [('XM', '.....................................................................................................')] + [('XR', 'CT')]
-			return read
+	def test_soft_clipping(self):
+		self.assertEqual(get_read_positions(self.br_hcs), range(3, 11))
+		self.assertEqual(get_read_positions(self.br_hce), range(1, 8))
+		self.assertEqual(get_read_positions(self.br_hcse), range(3, 8))
+		self.assertEqual(get_read_positions(self.I1_hcs), range(3, 4) + [None] + range(4, 10))
+		self.assertEqual(get_read_positions(self.I1_hce), range(1, 4) + [None] + range(4, 9))
+		self.assertEqual(get_read_positions(self.I1_hcse), range(3, 4) + [None] + range(4, 9))
 
-		# Create the reads
-		self.read_1_ot_no_indels = buildRead1OTNoINDELs()
-		self.read_1_ob_no_indels = buildRead1OBNoINDELs()
-		self.read_1_ot_1_insertion = buildRead1OT1Insertion()
-		self.read_1_ob_1_insertion = buildRead1OB1Insertion()
-		self.read_1_ot_1_deletion = buildRead1OT1Deletion()
-		self.read_1_ob_1_deletion = buildRead1OB1Deletion()
-		self.read_1_ot_multiple_insertions = buildRead1OTMultipleInsertions()
-		self.read_1_ob_multiple_insertions = buildRead1OBMultipleInsertions()
-		self.read_1_ot_multiple_deletions = buildRead1OTMultipleDeletions()
-		self.read_1_ob_multiple_deletions = buildRead1OBMultipleDeletions()
-		self.read_1_ot_insertion_and_deletion = buildRead1OTInsertionAndDeletion()
-		self.read_1_ob_insertion_and_deletion = buildRead1OBInsertionAndDeletion()
+		# UP TO HERE: Continue writing test cases
 
-	def test_no_indels(self):
-		self.assertEqual(get_read_positions(self.read_1_ot_no_indels), self.read_1_ot_no_indels.positions)
-		self.assertEqual(get_read_positions(self.read_1_ob_no_indels), self.read_1_ob_no_indels.positions)
-
-	def test_1_insertion(self):
-		self.assertNotEqual(get_read_positions(self.read_1_ot_1_insertion), self.read_1_ot_1_insertion.positions)
-		self.assertEqual([x for x in get_read_positions(self.read_1_ot_1_insertion) if x is not None], self.read_1_ot_1_insertion.positions)
-		self.assertNotEqual(get_read_positions(self.read_1_ob_1_insertion), self.read_1_ob_1_insertion.positions)
-		self.assertEqual([x for x in get_read_positions(self.read_1_ob_1_insertion) if x is not None], self.read_1_ob_1_insertion.positions)
-
-	def test_1_deletion(self):
-		self.assertEqual(get_read_positions(self.read_1_ot_1_deletion), self.read_1_ot_1_deletion.positions)
-		self.assertEqual(get_read_positions(self.read_1_ob_1_deletion), self.read_1_ob_1_deletion.positions)
-
-	def test_multiple_insertions(self):
-		self.assertNotEqual(get_read_positions(self.read_1_ot_multiple_insertions), self.read_1_ot_multiple_insertions.positions)
-		self.assertEqual([x for x in get_read_positions(self.read_1_ot_multiple_insertions) if x is not None], self.read_1_ot_multiple_insertions.positions)
-		self.assertNotEqual(get_read_positions(self.read_1_ob_multiple_insertions), self.read_1_ob_multiple_insertions.positions)
-		self.assertEqual([x for x in get_read_positions(self.read_1_ob_multiple_insertions) if x is not None], self.read_1_ob_multiple_insertions.positions)
-
-	def test_multiple_deletions(self):
-		self.assertEqual(get_read_positions(self.read_1_ot_multiple_deletions), self.read_1_ot_multiple_deletions.positions)
-		self.assertEqual(get_read_positions(self.read_1_ob_multiple_deletions), self.read_1_ob_multiple_deletions.positions)
-
-	def test_insertion_and_deletion(self):
-		self.assertNotEqual(get_read_positions(self.read_1_ot_insertion_and_deletion), self.read_1_ot_insertion_and_deletion.positions)
-		self.assertEqual([x for x in get_read_positions(self.read_1_ot_insertion_and_deletion) if x is not None], self.read_1_ot_insertion_and_deletion.positions)
-		self.assertNotEqual(get_read_positions(self.read_1_ob_insertion_and_deletion), self.read_1_ob_insertion_and_deletion.positions)
-		self.assertEqual([x for x in get_read_positions(self.read_1_ob_insertion_and_deletion) if x is not None], self.read_1_ob_insertion_and_deletion.positions)
 
 # TODO: Re-write this test in light of changes to does_read_contain_compliated_cigar.
 class TestDoesReadContainComplicatedCigar(unittest.TestCase):
@@ -660,11 +538,11 @@ class TestDoesReadContainComplicatedCigar(unittest.TestCase):
 
 	def test_soft_clip(self):
 		self.read_1.cigar = [(0, 50), (4, 50)]
-		self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
+		self.assertFalse(does_read_contain_complicated_cigar(self.read_1))
 
 	def test_hard_clip(self):
 		self.read_1.cigar = [(0, 50), (5, 50)]
-		self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
+		self.assertFalse(does_read_contain_complicated_cigar(self.read_1))
 
 	def test_pad(self):
 		self.read_1.cigar = [(0, 50), (6, 50)]
@@ -1691,6 +1569,834 @@ class TestGetStrand(unittest.TestCase):
 	def test_ctob_pe(self):
 		self.assertEqual(get_strand(self.ctobpe_1), '-')
 		self.assertEqual(get_strand(self.ctobpe_2), '-')
+
+#############
+# Everything in this commented chunk was previously used in testing get_read_positions(). However, these examples were too complicated to be used to unit tests here. They may still be useful in another context, which is why they haven't been deleted.
+#
+# def buildRead1OTNoINDELs():
+# 	'''build an example read_1 aligned to OT-strand that contains no INDELs
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2116:11787:72282_1:N:0:"
+# 	read.seq = "ATTTTTATTTTAATTTTAATTTTCGCGGTATTTTTAGTCGGTTTGTTCGTTCGGGTTTGATTTGAGGAGAATTGTGTTTCGTTTTTAGAGTATTATCGAA"
+# 	read.flag = 99
+# 	read.pos = 10445
+# 	read.mapq = 255
+# 	read.cigar = [(0, 100)]
+# 	read.rnext = 0
+# 	read.pnext = 10506
+# 	read.tlen = 161
+# 	read.qual = "BBBFFFFFFFFFFIIIIIIIIIIIIIIIBFFIIIIFIFFFIFFIIFIIIFFIIIF7BFFBFFFFBBFBBBBFFFBBBBFFFFFFFFFFBFBFFFFFFFBF"
+# 	read.tags = read.tags + [("XG", "CT")] + [("XM", ".hhh...hhh...hhh...hhh.Z.Z....hhh.x..xZ..hxz.hxZ.hxZ....x...hx.........x....h.xZ.hh..x......hh.xZ...")] + [("XR", "CT")]
+# 	return read
+#
+# def buildRead1OTNoINDELsWithSoftClip():
+# 	'''build an example read_1 aligned to OT-strand that contains no INDELs but has 5' and 3' soft-clipping
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2116:11787:72282_1:N:0:sc"
+# 	read.seq = "ATTTTTATTTTAATTTTAATTTTCGCGGTATTTTTAGTCGGTTTGTTCGTTCGGGTTTGATTTGAGGAGAATTGTGTTTCGTTTTTAGAGTATTATCGAA"
+# 	read.flag = 99
+# 	read.pos = 10448
+# 	read.mapq = 255
+# 	read.cigar = [(4, 3), (0, 95), (4, 2)]
+# 	read.rnext = 0
+# 	read.pnext = 10506
+# 	read.tlen = 158
+# 	read.qual = "BBBFFFFFFFFFFIIIIIIIIIIIIIIIBFFIIIIFIFFFIFFIIFIIIFFIIIF7BFFBFFFFBBFBBBBFFFBBBBFFFFFFFFFFBFBFFFFFFFBF"
+# 	read.tags = read.tags + [("XG", "CT")] + [("XM", "...h...hhh...hhh...hhh.Z.Z....hhh.x..xZ..hxz.hxZ.hxZ....x...hx.........x....h.xZ.hh..x......hh.xZ...")] + [("XR", "CT")]
+# 	return read
+#
+# def buildRead1OTNoINDELsWithHardClip():
+# 	'''build an example read_1 aligned to OT-strand that contains no INDELs but has 5' and 3' hard-clipping
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2116:11787:72282_1:N:0:hc"
+# 	read.seq = "TTTATTTTAATTTTAATTTTCGCGGTATTTTTAGTCGGTTTGTTCGTTCGGGTTTGATTTGAGGAGAATTGTGTTTCGTTTTTAGAGTATTATCG"
+# 	read.flag = 99
+# 	read.pos = 10448
+# 	read.mapq = 255
+# 	read.cigar = [(5, 3), (0, 95), (5, 2)]
+# 	read.rnext = 0
+# 	read.pnext = 10506
+# 	read.tlen = 158
+# 	read.qual = "FFFFFFFFFFIIIIIIIIIIIIIIIBFFIIIIFIFFFIFFIIFIIIFFIIIF7BFFBFFFFBBFBBBBFFFBBBBFFFFFFFFFFBFBFFFFFFF"
+# 	read.tags = read.tags + [("XG", "CT")] + [("XM", "h...hhh...hhh...hhh.Z.Z....hhh.x..xZ..hxz.hxZ.hxZ....x...hx.........x....h.xZ.hh..x......hh.xZ.")] + [("XR", "CT")]
+# 	return read
+#
+# def buildRead1OTNoINDELsWithHardClipAndSoftClip():
+# 	'''build an example read_1 aligned to OT-strand that contains no INDELs but has 5' and 3' hard-clipping and soft-clipping
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2116:11787:72282_1:N:0:hcsc"
+# 	read.seq = "TTTATTTTAATTTTAATTTTCGCGGTATTTTTAGTCGGTTTGTTCGTTCGGGTTTGATTTGAGGAGAATTGTGTTTCGTTTTTAGAGTATTATCG"
+# 	read.flag = 99
+# 	read.pos = 10450
+# 	read.mapq = 255
+# 	read.cigar = [(5, 3), (4, 2), (0, 90), (4, 3), (5, 2)]
+# 	read.rnext = 0
+# 	read.pnext = 10506
+# 	read.tlen = 156
+# 	read.qual = "FFFFFFFFFFIIIIIIIIIIIIIIIBFFIIIIFIFFFIFFIIFIIIFFIIIF7BFFBFFFFBBFBBBBFFFBBBBFFFFFFFFFFBFBFFFFFFF"
+# 	read.tags = read.tags + [("XG", "CT")] + [("XM", "....hhh...hhh...hhh.Z.Z....hhh.x..xZ..hxz.hxZ.hxZ....x...hx.........x....h.xZ.hh..x......hh....")] + [("XR", "CT")]
+# 	return read
+#
+# def buildRead1OT1Insertion():
+# 	'''build an example read_1 aligned to OT-strand that contains a single insertion.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1210:2378:71483_1:N:0:"
+# 	read.seq = "ATGAAAAATGTGTTGTTGTAGTTTGTTATTAGATTTTTTTTTTTTTATTGGTTTAATTAGGAATGGGGAATTTAGAGTTTTATTTGTTTAGGTTTTTTTT"
+# 	read.flag = 99
+# 	read.pos = 16315
+# 	read.mapq = 255
+# 	read.cigar = [(0, 33), (1, 1), (0, 66)]
+# 	read.rnext = 0
+# 	read.pnext = 16422
+# 	read.tlen = 208
+# 	read.qual = "BBBFFFFFFFFFFIIFIIFFIIIIIFFFIIIIIIIIIIIIIIIIFF0<BBB<BBBBBF<BBBBBBBFF07BBF<<'<<<BF<BBF<<BFBBBBB<BBFFF"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '...............x..................hhhh..h...hh........................hhx....hh.h.h.....x...h.hhh.x.')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OT1InsertionWithSoftClip():
+# 	'''build an example read_1 aligned to OT-strand that contains a single insertion and also has 5' and 3' soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1210:2378:71483_1:N:0:sc"
+# 	read.seq = "ATGAAAAATGTGTTGTTGTAGTTTGTTATTAGATTTTTTTTTTTTTATTGGTTTAATTAGGAATGGGGAATTTAGAGTTTTATTTGTTTAGGTTTTTTTT"
+# 	read.flag = 99
+# 	read.pos = 16318
+# 	read.mapq = 255
+# 	read.cigar = [(4, 3), (0, 30), (1, 1), (0, 60), (4, 6)]
+# 	read.rnext = 0
+# 	read.pnext = 16422
+# 	read.tlen = 205
+# 	read.qual = "BBBFFFFFFFFFFIIFIIFFIIIIIFFFIIIIIIIIIIIIIIIIFF0<BBB<BBBBBF<BBBBBBBFF07BBF<<'<<<BF<BBF<<BFBBBBB<BBFFF"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '...............x..................hhhh..h...hh........................hhx....hh.h.h.....x...h.......')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OT1InsertionWithHardClip():
+# 	'''build an example read_1 aligned to OT-strand that contains a single insertion and also has 5' and 3' hard-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1210:2378:71483_1:N:0:hc"
+# 	read.seq = "AAAAATGTGTTGTTGTAGTTTGTTATTAGATTTTTTTTTTTTTATTGGTTTAATTAGGAATGGGGAATTTAGAGTTTTATTTGTTTAGGTT"
+# 	read.flag = 99
+# 	read.pos = 16318
+# 	read.mapq = 255
+# 	read.cigar = [(5, 3), (0, 30), (1, 1), (0, 60), (5, 6)]
+# 	read.rnext = 0
+# 	read.pnext = 16422
+# 	read.tlen = 205
+# 	read.qual = "FFFFFFFFFFIIFIIFFIIIIIFFFIIIIIIIIIIIIIIIIFF0<BBB<BBBBBF<BBBBBBBFF07BBF<<'<<<BF<BBF<<BFBBBBB"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '............x..................hhhh..h...hh........................hhx....hh.h.h.....x...h.')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OT1InsertionWithHardClipAndSoftClip():
+# 	'''build an example read_1 aligned to OT-strand that contains a single insertion and also has 5' and 3' hard-clipping and soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1210:2378:71483_1:N:0:hcsc"
+# 	read.seq = "AAAAATGTGTTGTTGTAGTTTGTTATTAGATTTTTTTTTTTTTATTGGTTTAATTAGGAATGGGGAATTTAGAGTTTTATTTGTTTAGGTT"
+# 	read.flag = 99
+# 	read.pos = 16320
+# 	read.mapq = 255
+# 	read.cigar = [(5, 3), (4, 2), (0, 28), (1, 1), (0, 58), (4, 2), (5, 6)]
+# 	read.rnext = 0
+# 	read.pnext = 16422
+# 	read.tlen = 203
+# 	read.qual = "FFFFFFFFFFIIFIIFFIIIIIFFFIIIIIIIIIIIIIIIIFF0<BBB<BBBBBF<BBBBBBBFF07BBF<<'<<<BF<BBF<<BFBBBBB"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '............x..................hhhh..h...hh........................hhx....hh.h.h.....x.....')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OT1Deletion():
+# 	'''build an example read_1 aligned to OT-strand that contains a single deletion.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-ST1445:66:D1W8JACXX:8:2201:2380:75186_1:N:0:"
+# 	read.seq = "TTAATTTTAATTTTAATTTTAATCTTAATTTTAATTTTTGTGGTATTTTTAGTTGGTTTGTTTGTTTGGGTTTGATTTGAGGAGAATTGTGTTTTGT"
+# 	read.flag = 99
+# 	read.pos = 10429
+# 	read.mapq = 255
+# 	read.cigar = [(0, 10), (2, 1), (0, 87)]
+# 	read.rnext = 0
+# 	read.pnext = 10471
+# 	read.tlen = 142
+# 	read.qual = "BBBFFFFFFFFFFIIIIIIIIIIIIIIFIIIIIIIIIIIBFBBFFFIIIIFBFF7BFFFFFIIBFFF777FFF<B<FF0<77B<BBBF<BBBBFF7B"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', 'h...hhh...hhh...hhh...hHh...hhh...hhh.z.z....hhh.x..xz..hxz.hxz.hxz....x...hx.........x....h.xz.h')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OT1DeletionWithSoftClip():
+# 	'''build an example read_1 aligned to OT-strand that contains a single deletion and also 5' and 3' soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-ST1445:66:D1W8JACXX:8:2201:2380:75186_1:N:0:sc"
+# 	read.seq = "TTAATTTTAATTTTAATTTTAATCTTAATTTTAATTTTTGTGGTATTTTTAGTTGGTTTGTTTGTTTGGGTTTGATTTGAGGAGAATTGTGTTTTGT"
+# 	read.flag = 99
+# 	read.pos = 10434
+# 	read.mapq = 255
+# 	read.cigar = [(4, 5), (0, 5), (2, 1), (0, 85), (4, 2)]
+# 	read.rnext = 0
+# 	read.pnext = 10471
+# 	read.tlen = 137
+# 	read.qual = "BBBFFFFFFFFFFIIIIIIIIIIIIIIFIIIIIIIIIIIBFBBFFFIIIIFBFF7BFFFFFIIBFFF777FFF<B<FF0<77B<BBBF<BBBBFF7B"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '.....hh...hhh...hhh...hHh...hhh...hhh.z.z....hhh.x..xz..hxz.hxz.hxz....x...hx.........x....h.xz..')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OT1DeletionWithHardClip():
+# 	'''build an example read_1 aligned to OT-strand that contains a single deletion and also 5' and 3' hard-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-ST1445:66:D1W8JACXX:8:2201:2380:75186_1:N:0:hc"
+# 	read.seq = "TTTAATTTTAATTTTAATCTTAATTTTAATTTTTGTGGTATTTTTAGTTGGTTTGTTTGTTTGGGTTTGATTTGAGGAGAATTGTGTTTT"
+# 	read.flag = 99
+# 	read.pos = 10434
+# 	read.mapq = 255
+# 	read.cigar = [(5, 5), (0, 5), (2, 1), (0, 85), (5, 2)]
+# 	read.rnext = 0
+# 	read.pnext = 10471
+# 	read.tlen = 137
+# 	read.qual = "FFFFFFFFIIIIIIIIIIIIIIFIIIIIIIIIIIBFBBFFFIIIIFBFF7BFFFFFIIBFFF777FFF<B<FF0<77B<BBBF<BBBBFF"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', 'hh...hhh...hhh...hHh...hhh...hhh.z.z....hhh.x..xz..hxz.hxz.hxz....x...hx.........x....h.xz')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OT1DeletionWithHardClipAndSoftClip():
+# 	'''build an example read_1 aligned to OT-strand that contains a single deletion and also 5' and 3' hard-clipping and soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-ST1445:66:D1W8JACXX:8:2201:2380:75186_1:N:0:hcsc"
+# 	read.seq = "TTTAATTTTAATTTTAATCTTAATTTTAATTTTTGTGGTATTTTTAGTTGGTTTGTTTGTTTGGGTTTGATTTGAGGAGAATTGTGTTTT"
+# 	read.flag = 99
+# 	read.pos = 10437
+# 	read.mapq = 255
+# 	read.cigar = [(5, 5), (4, 3), (0, 2), (2, 1), (0, 80), (4, 5), (5, 2)]
+# 	read.rnext = 0
+# 	read.pnext = 10471
+# 	read.tlen = 134
+# 	read.qual = "FFFFFFFFIIIIIIIIIIIIIIFIIIIIIIIIIIBFBBFFFIIIIFBFF7BFFFFFIIBFFF777FFF<B<FF0<77B<BBBF<BBBBFF"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '.....hhh...hhh...hHh...hhh...hhh.z.z....hhh.x..xz..hxz.hxz.hxz....x...hx.........x........')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OTMultipleInsertions():
+# 	'''build an example read_1 aligned to OT-strand that contains more than one insertion.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2310:4022:64703_1:N:0:"
+# 	read.seq = "GGGTTAATTTGATAGTAGTTGTTTGGGTATTGGGGTATTTTTTCGTTTGTTAGGTGGGTAGTGGATAGTTTGTTTTTTTTTTTGGGGAAGGGAGACGAGG"
+# 	read.flag = 99
+# 	read.pos = 1053796
+# 	read.mapq = 255
+# 	read.cigar = [(0, 31), (1, 1), (0, 40), (1, 1), (0, 27)]
+# 	read.rnext = 0
+# 	read.pnext = 1053855
+# 	read.tlen = 159
+# 	read.qual = "BBBFFFFFFFFFFFIFIIIIIIIIIIIFFFFIIIIBFFIIIIIIIIIIIFIFIIBFFI<BFFFFBFFFFFFFFFFFFFFFFFF7<BF7<BBF777<B7<B"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '...hh..hx...x..x..x..hx....h.h.....h.h.hhh.Z..x...x...z...x.........h.z...hh.h.hhx.............Z....')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OTMultipleInsertionsWithSoftClip():
+# 	'''build an example read_1 aligned to OT-strand that contains more than one insertion and 5' and 3' soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2310:4022:64703_1:N:0:sc"
+# 	read.seq = "GGGTTAATTTGATAGTAGTTGTTTGGGTATTGGGGTATTTTTTCGTTTGTTAGGTGGGTAGTGGATAGTTTGTTTTTTTTTTTGGGGAAGGGAGACGAGG"
+# 	read.flag = 99
+# 	read.pos = 1053801
+# 	read.mapq = 255
+# 	read.cigar = [(4, 5), (0, 26), (1, 1), (0, 40), (1, 1), (0, 22), (4, 5)]
+# 	read.rnext = 0
+# 	read.pnext = 1053855
+# 	read.tlen = 154
+# 	read.qual = "BBBFFFFFFFFFFFIFIIIIIIIIIIIFFFFIIIIBFFIIIIIIIIIIIFIFIIBFFI<BFFFFBFFFFFFFFFFFFFFFFFF7<BF7<BBF777<B7<B"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '.......hx...x..x..x..hx....h.h.....h.h.hhh.Z..x...x...z...x.........h.z...hh.h.hhx..................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OTMultipleInsertionsWithHardClip():
+# 	'''build an example read_1 aligned to OT-strand that contains more than one insertion and 5' and 3' hard-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2310:4022:64703_1:N:0:hc"
+# 	read.seq = "AATTTGATAGTAGTTGTTTGGGTATTGGGGTATTTTTTCGTTTGTTAGGTGGGTAGTGGATAGTTTGTTTTTTTTTTTGGGGAAGGGAGA"
+# 	read.flag = 99
+# 	read.pos = 1053801
+# 	read.mapq = 255
+# 	read.cigar = [(5, 5), (0, 26), (1, 1), (0, 40), (1, 1), (0, 22), (5, 5)]
+# 	read.rnext = 0
+# 	read.pnext = 1053855
+# 	read.tlen = 154
+# 	read.qual = "FFFFFFFFFIFIIIIIIIIIIIFFFFIIIIBFFIIIIIIIIIIIFIFIIBFFI<BFFFFBFFFFFFFFFFFFFFFFFF7<BF7<BBF777"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '..hx...x..x..x..hx....h.h.....h.h.hhh.Z..x...x...z...x.........h.z...hh.h.hhx.............')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OTMultipleInsertionsWithHardClipAndSoftClip():
+# 	'''build an example read_1 aligned to OT-strand that contains more than one insertion and 5' and 3' hard-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2310:4022:64703_1:N:0:hcsc"
+# 	read.seq = "AATTTGATAGTAGTTGTTTGGGTATTGGGGTATTTTTTCGTTTGTTAGGTGGGTAGTGGATAGTTTGTTTTTTTTTTTGGGGAAGGGAGA"
+# 	read.flag = 99
+# 	read.pos = 1053801
+# 	read.mapq = 255
+# 	read.cigar = [(5, 5), (4, 4), (0, 22), (1, 1), (0, 40), (1, 1), (0, 20), (4, 2), (5, 5)]
+# 	read.rnext = 0
+# 	read.pnext = 1053851
+# 	read.tlen = 150
+# 	read.qual = "FFFFFFFFFIFIIIIIIIIIIIFFFFIIIIBFFIIIIIIIIIIIFIFIIBFFI<BFFFFBFFFFFFFFFFFFFFFFFF7<BF7<BBF777"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '.......x..x..x..hx....h.h.....h.h.hhh.Z..x...x...z...x.........h.z...hh.h.hhx.............')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OTMultipleDeletions():
+# 	'''build an example read_1 aligned to OT-strand that contains more than one deletion.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1211:13000:93908_1:N:0:"
+# 	read.seq = "TGATTTTTATTTATAGGGTTTATTAGTAAAGTTATAGTGGGGGTAGGAGGGTGGTTAGGTTTTTAATATTTTTTTTTCGTTGATTTTAGTAGGTGGAGAGG"
+# 	read.flag = 99
+# 	read.pos = 880552
+# 	read.mapq = 255
+# 	read.cigar = [(0, 68), (2, 1), (0, 15), (2, 1), (0, 18)]
+# 	read.rnext = 0
+# 	read.pnext = 880596
+# 	read.tlen = 147
+# 	read.qual = "BBBFFFFFFFFFFIIIIIBFFFFIIIFFIIIIFIIIIFFFFII7BFFBBFI0<B<BFFF7BFBFFFFFFFFFFFFFFFFBBFFFFFBFFBFFFBBBBFBFB"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '...h.hhh.hhh.x.....hh.hx..h.....h.x........x..........hx...h.hhh..h.hh..hhh.xZ.x.....hx..x...........')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OTMultipleDeletionsWithSoftClip():
+# 	'''build an example read_1 aligned to OT-strand that contains more than one deletion and 5' and 3' soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1211:13000:93908_1:N:0:sc"
+# 	read.seq = "TGATTTTTATTTATAGGGTTTATTAGTAAAGTTATAGTGGGGGTAGGAGGGTGGTTAGGTTTTTAATATTTTTTTTTCGTTGATTTTAGTAGGTGGAGAGG"
+# 	read.flag = 99
+# 	read.pos = 880556
+# 	read.mapq = 255
+# 	read.cigar = [(4, 4), (0, 64), (2, 1), (0, 15), (2, 1), (0, 16), (4, 2)]
+# 	read.rnext = 0
+# 	read.pnext = 880596
+# 	read.tlen = 143
+# 	read.qual = "BBBFFFFFFFFFFIIIIIBFFFFIIIFFIIIIFIIIIFFFFII7BFFBBFI0<B<BFFF7BFBFFFFFFFFFFFFFFFFBBFFFFFBFFBFFFBBBBFBFB"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '...h.hhh.hhh.x.....hh.hx..h.....h.x........x..........hx...h.hhh..h.hh..hhh.xZ.x.....hx..x...........')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OTMultipleDeletionsWithHardClip():
+# 	'''build an example read_1 aligned to OT-strand that contains more than one deletion and 5' and 3' hard-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1211:13000:93908_1:N:0:hc"
+# 	read.seq = "TTTTATTTATAGGGTTTATTAGTAAAGTTATAGTGGGGGTAGGAGGGTGGTTAGGTTTTTAATATTTTTTTTTCGTTGATTTTAGTAGGTGGAGA"
+# 	read.flag = 99
+# 	read.pos = 880556
+# 	read.mapq = 255
+# 	read.cigar = [(5, 4), (0, 64), (2, 1), (0, 15), (2, 1), (0, 16), (5, 2)]
+# 	read.rnext = 0
+# 	read.pnext = 880596
+# 	read.tlen = 143
+# 	read.qual = "FFFFFFFFFIIIIIBFFFFIIIFFIIIIFIIIIFFFFII7BFFBBFI0<B<BFFF7BFBFFFFFFFFFFFFFFFFBBFFFFFBFFBFFFBBBBFB"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '.hhh.hhh.x.....hh.hx..h.....h.x........x..........hx...h.hhh..h.hh..hhh.xZ.x.....hx..x.........')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OTMultipleDeletionsWithHardClipAndSoftClip():
+# 	'''build an example read_1 aligned to OT-strand that contains more than one deletion and 5' and 3' hard-clipping and soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1211:13000:93908_1:N:0:hcsc"
+# 	read.seq = "TTTTATTTATAGGGTTTATTAGTAAAGTTATAGTGGGGGTAGGAGGGTGGTTAGGTTTTTAATATTTTTTTTTCGTTGATTTTAGTAGGTGGAGA"
+# 	read.flag = 99
+# 	read.pos = 880560
+# 	read.mapq = 255
+# 	read.cigar = [(5, 4), (4, 4), (0, 60), (2, 1), (0, 15), (2, 1), (0, 10), (4, 6), (5, 2)]
+# 	read.rnext = 0
+# 	read.pnext = 880596
+# 	read.tlen = 139
+# 	read.qual = "FFFFFFFFFIIIIIBFFFFIIIFFIIIIFIIIIFFFFII7BFFBBFI0<B<BFFF7BFBFFFFFFFFFFFFFFFFBBFFFFFBFFBFFFBBBBFB"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '.....hhh.x.....hh.hx..h.....h.x........x..........hx...h.hhh..h.hh..hhh.xZ.x.....hx..x.........')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OTInsertionAndDeletion():
+# 	'''build an example read_1 aligned to OT-strand that contains an insertion and a deletion.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:2110:14312:31481_1:N:0:"
+# 	read.seq = "AAAAAAAATAAAAAAAAAAAAAATAAAAAAAAATTAGAGTTGATTTTTAGGTTTTGATTTTGTTATAATTATTTAAATGTGTGTGCGGGTTTTAAGTATG"
+# 	read.flag = 99
+# 	read.pos = 1606063
+# 	read.mapq = 255
+# 	read.cigar = [(0, 9), (1, 1), (0, 85), (2, 2), (0, 5)]
+# 	read.rnext = 0
+# 	read.pnext = 1606135
+# 	read.tlen = 174
+# 	read.qual = "BBBFFFFFFFFFFIIIIIIIIFF<BFFFFFFFFBBBB7BFFB0<BFFF<BFBBFFBBBBFFBFFBBFFFBBBFBFBBBBFF<B070<<BBFFBFFB<<BB"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '........h..............h.........hx........h.......h.................h.hh....z.......Z....h.h...h...')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OTInsertionAndDeletionWithSoftClip():
+# 	'''build an example read_1 aligned to OT-strand that contains an insertion and a deletion and 5' and 3' soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:2110:14312:31481_1:N:0:sc"
+# 	read.seq = "AAAAAAAATAAAAAAAAAAAAAATAAAAAAAAATTAGAGTTGATTTTTAGGTTTTGATTTTGTTATAATTATTTAAATGTGTGTGCGGGTTTTAAGTATG"
+# 	read.flag = 99
+# 	read.pos = 1606064
+# 	read.mapq = 255
+# 	read.cigar = [(4, 1), (0, 8), (1, 1), (0, 85), (2, 2), (0, 2), (4, 3)]
+# 	read.rnext = 0
+# 	read.pnext = 1606135
+# 	read.tlen = 173
+# 	read.qual = "BBBFFFFFFFFFFIIIIIIIIFF<BFFFFFFFFBBBB7BFFB0<BFFF<BFBBFFBBBBFFBFFBBFFFBBBFBFBBBBFF<B070<<BBFFBFFB<<BB"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '........h..............h.........hx........h.......h.................h.hh....z.......Z....h.h.......')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OTInsertionAndDeletionWithHardClip():
+# 	'''build an example read_1 aligned to OT-strand that contains an insertion and a deletion and 5' and 3' hard-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:2110:14312:31481_1:N:0:hc"
+# 	read.seq = "AAAAAAATAAAAAAAAAAAAAATAAAAAAAAATTAGAGTTGATTTTTAGGTTTTGATTTTGTTATAATTATTTAAATGTGTGTGCGGGTTTTAAGT"
+# 	read.flag = 99
+# 	read.pos = 1606064
+# 	read.mapq = 255
+# 	read.cigar = [(5, 1), (0, 8), (1, 1), (0, 85), (2, 2), (0, 2), (5, 3)]
+# 	read.rnext = 0
+# 	read.pnext = 1606135
+# 	read.tlen = 173
+# 	read.qual = "BBFFFFFFFFFFIIIIIIIIFF<BFFFFFFFFBBBB7BFFB0<BFFF<BFBBFFBBBBFFBFFBBFFFBBBFBFBBBBFF<B070<<BBFFBFFB<"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '.......h..............h.........hx........h.......h.................h.hh....z.......Z....h.h....')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OTInsertionAndDeletionWithHardClipAndSoftClip():
+# 	'''build an example read_1 aligned to OT-strand that contains an insertion and a deletion and 5' and 3' hard-clipping and soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:2110:14312:31481_1:N:0:hcsc"
+# 	read.seq = "AAAAAAATAAAAAAAAAAAAAATAAAAAAAAATTAGAGTTGATTTTTAGGTTTTGATTTTGTTATAATTATTTAAATGTGTGTGCGGGTTTTAAGT"
+# 	read.flag = 99
+# 	read.pos = 1606064
+# 	read.mapq = 255
+# 	read.cigar = [(5, 1), (4, 1), (0, 7), (1, 1), (0, 85), (2, 2), (0, 1), (4, 1), (5, 3)]
+# 	read.rnext = 0
+# 	read.pnext = 1606135
+# 	read.tlen = 173
+# 	read.qual = "BBFFFFFFFFFFIIIIIIIIFF<BFFFFFFFFBBBB7BFFB0<BFFF<BFBBFFBBBBFFBFFBBFFFBBBFBFBBBBFF<B070<<BBFFBFFB<"
+# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '.......h..............h.........hx........h.......h.................h.hh....z.......Z....h.h....')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OBNoINDELs():
+# 	'''build an example read_1 aligned to OB-strand that contains no INDELs
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-ST1445:66:D1W8JACXX:8:1112:17127:12640_1:N:0:"
+# 	read.seq = "AAAATCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACN"
+# 	read.flag = 83
+# 	read.pos = 9994
+# 	read.mapq = 255
+# 	read.cigar = [(0, 71)]
+# 	read.rnext = 0
+# 	read.pnext = 9994
+# 	read.tlen = 74
+# 	read.qual = "BBFFBBFBFFBBFBFB<BFBFFFFFBFFFFFBIFFFFFIFFFFFFFBBFFFBBBIFFFFBFFFFFBFB<0#"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '.......................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OBNoINDELsWithSoftClip():
+# 	'''build an example read_1 aligned to OB-strand that contains no INDELs but with 5' and 3' soft-clipping
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-ST1445:66:D1W8JACXX:8:1112:17127:12640_1:N:0:sc"
+# 	read.seq = "AAAATCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACN"
+# 	read.flag = 83
+# 	read.pos = 9997
+# 	read.mapq = 255
+# 	read.cigar = [(4, 3), (0, 61), (4, 7)]
+# 	read.rnext = 0
+# 	read.pnext = 9994
+# 	read.tlen = 71
+# 	read.qual = "BBFFBBFBFFBBFBFB<BFBFFFFFBFFFFFBIFFFFFIFFFFFFFBBFFFBBBIFFFFBFFFFFBFB<0#"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '.......................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OBNoINDELsWithHardClip():
+# 	'''build an example read_1 aligned to OB-strand that contains no INDELs but with 5' and 3' hard-clipping
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-ST1445:66:D1W8JACXX:8:1112:17127:12640_1:N:0:hc"
+# 	read.seq = "ATCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC"
+# 	read.flag = 83
+# 	read.pos = 9997
+# 	read.mapq = 255
+# 	read.cigar = [(5, 3), (0, 61), (5, 7)]
+# 	read.rnext = 0
+# 	read.pnext = 9994
+# 	read.tlen = 71
+# 	read.qual = "FBBFBFFBBFBFB<BFBFFFFFBFFFFFBIFFFFFIFFFFFFFBBFFFBBBIFFFFBFFFF"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '.............................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OBNoINDELsWithHardClipAndSoftClip():
+# 	'''build an example read_1 aligned to OB-strand that contains no INDELs but with 5' and 3' hard-clipping and soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-ST1445:66:D1W8JACXX:8:1112:17127:12640_1:N:0:hcsc"
+# 	read.seq = "ATCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC"
+# 	read.flag = 83
+# 	read.pos = 9998
+# 	read.mapq = 255
+# 	read.cigar = [(5, 3), (4, 1), (0, 57), (4, 3), (5, 7)]
+# 	read.rnext = 0
+# 	read.pnext = 9994
+# 	read.tlen = 70
+# 	read.qual = "FBBFBFFBBFBFB<BFBFFFFFBFFFFFBIFFFFFIFFFFFFFBBFFFBBBIFFFFBFFFF"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '.............................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OB1Insertion():
+# 	'''build an example read_1 aligned to OB-strand that contains a single insertion.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2316:15832:19438_1:N:0:"
+# 	read.seq = "AACCCTAACCCTAACCCTTACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCAACCCTAACC"
+# 	read.flag = 83
+# 	read.pos = 10019
+# 	read.mapq = 255
+# 	read.cigar = [(0, 17), (1, 1), (0, 82)]
+# 	read.rnext = 0
+# 	read.pnext = 9994
+# 	read.tlen = -124
+# 	read.qual = "<7FFBB<7FBBFBBFFBBFFFFFBB<0FBBBB<FFFBB<FFFBB7IFFFB7IIFFF<IFFFFBIIIFFFIIIFFBIIFFFBIIIFFBFFFFFFFFFFBBB"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '....................................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OB1InsertionWithSoftClip():
+# 	'''build an example read_1 aligned to OB-strand that contains a single insertion and 5' and 3' soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2316:15832:19438_1:N:0:sc"
+# 	read.seq = "AACCCTAACCCTAACCCTTACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCAACCCTAACC"
+# 	read.flag = 83
+# 	read.pos = 10022
+# 	read.mapq = 255
+# 	read.cigar = [(4, 3), (0, 14), (1, 1), (0, 80), (4, 2)]
+# 	read.rnext = 0
+# 	read.pnext = 9994
+# 	read.tlen = -122
+# 	read.qual = "<7FFBB<7FBBFBBFFBBFFFFFBB<0FBBBB<FFFBB<FFFBB7IFFFB7IIFFF<IFFFFBIIIFFFIIIFFBIIFFFBIIIFFBFFFFFFFFFFBBB"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '....................................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OB1InsertionWithHardClip():
+# 	'''build an example read_1 aligned to OB-strand that contains a single insertion and 5' and 3' hard-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2316:15832:19438_1:N:0:hc"
+# 	read.seq = "CCTAACCCTAACCCTTACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCAACCCTAA"
+# 	read.flag = 83
+# 	read.pos = 10022
+# 	read.mapq = 255
+# 	read.cigar = [(5, 3), (0, 14), (1, 1), (0, 80), (5, 2)]
+# 	read.rnext = 0
+# 	read.pnext = 9994
+# 	read.tlen = -122
+# 	read.qual = "FBB<7FBBFBBFFBBFFFFFBB<0FBBBB<FFFBB<FFFBB7IFFFB7IIFFF<IFFFFBIIIFFFIIIFFBIIFFFBIIIFFBFFFFFFFFFFB"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...............................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OB1InsertionWithHardClipAndSoftClip():
+# 	'''build an example read_1 aligned to OB-strand that contains a single insertion and 5' and 3' hard-clipping and soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2316:15832:19438_1:N:0:hcsc"
+# 	read.seq = "CCTAACCCTAACCCTTACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCAACCCTAA"
+# 	read.flag = 83
+# 	read.pos = 10026
+# 	read.mapq = 255
+# 	read.cigar = [(5, 3), (4, 4), (0, 10), (1, 1), (0, 78), (4, 2), (5, 2)]
+# 	read.rnext = 0
+# 	read.pnext = 9994
+# 	read.tlen = -120
+# 	read.qual = "FBB<7FBBFBBFFBBFFFFFBB<0FBBBB<FFFBB<FFFBB7IFFFB7IIFFF<IFFFFBIIIFFFIIIFFBIIFFFBIIIFFBFFFFFFFFFFB"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...............................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OB1Deletion():
+# 	'''build an example read_1 aligned to OB-strand that contains a single deletion.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1307:10748:81180_1:N:0:"
+# 	read.seq = "AACCCTAACCCTAACCCTAACCCTAACCCTAACCCTACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCA"
+# 	read.flag = 83
+# 	read.pos =  10013
+# 	read.mapq = 255
+# 	read.cigar = [(0, 36), (2, 1), (0, 59)]
+# 	read.rnext = 0
+# 	read.pnext = 10012
+# 	read.tlen = -97
+# 	read.qual = "70B<70BB<0<770BB<70<BBB<7'FFBBB<FB<<7FFFBF<FFFF<0IIFBBFFIFFFFIFFFFBFFFFFFIIFFFFIIFFBFFFFFFBFBBB"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...............................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OB1DeletionWithSoftClip():
+# 	'''build an example read_1 aligned to OB-strand that contains a single deletion and 5' and 3' soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1307:10748:81180_1:N:0:sc"
+# 	read.seq = "AACCCTAACCCTAACCCTAACCCTAACCCTAACCCTACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCA"
+# 	read.flag = 83
+# 	read.pos =  10016
+# 	read.mapq = 255
+# 	read.cigar = [(4, 3), (0, 33), (2, 1), (0, 57), (4, 2)]
+# 	read.rnext = 0
+# 	read.pnext = 10012
+# 	read.tlen = -95
+# 	read.qual = "70B<70BB<0<770BB<70<BBB<7'FFBBB<FB<<7FFFBF<FFFF<0IIFBBFFIFFFFIFFFFBFFFFFFIIFFFFIIFFBFFFFFFBFBBB"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...............................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OB1DeletionWithHardClip():
+# 	'''build an example read_1 aligned to OB-strand that contains a single deletion and 5' and 3' hard-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1307:10748:81180_1:N:0:hc"
+# 	read.seq = "CCTAACCCTAACCCTAACCCTAACCCTAACCCTACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACC"
+# 	read.flag = 83
+# 	read.pos =  10016
+# 	read.mapq = 255
+# 	read.cigar = [(5, 3), (0, 33), (2, 1), (0, 57), (5, 2)]
+# 	read.rnext = 0
+# 	read.pnext = 10012
+# 	read.tlen = -95
+# 	read.qual = "<70BB<0<770BB<70<BBB<7'FFBBB<FB<<7FFFBF<FFFF<0IIFBBFFIFFFFIFFFFBFFFFFFIIFFFFIIFFBFFFFFFBFB"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '..........................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OB1DeletionWithHardClipAndSoftClip():
+# 	'''build an example read_1 aligned to OB-strand that contains a single deletion and 5' and 3' hard-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1307:10748:81180_1:N:0:hcsc"
+# 	read.seq = "CCTAACCCTAACCCTAACCCTAACCCTAACCCTACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACC"
+# 	read.flag = 83
+# 	read.pos =  10019
+# 	read.mapq = 255
+# 	read.cigar = [(5, 3), (4, 3), (0, 30), (2, 1), (0, 50), (4, 7), (5, 2)]
+# 	read.rnext = 0
+# 	read.pnext = 10012
+# 	read.tlen = -88
+# 	read.qual = "<70BB<0<770BB<70<BBB<7'FFBBB<FB<<7FFFBF<FFFF<0IIFBBFFIFFFFIFFFFBFFFFFFIIFFFFIIFFBFFFFFFBFB"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '..........................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OBMultipleInsertions():
+# 	'''build an example read_1 aligned to OB-strand that contains more than one insertion.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:1204:4767:23545_1:N:0:"
+# 	read.seq = "CCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAAC"
+# 	read.flag = 83
+# 	read.pos = 10081
+# 	read.mapq = 255
+# 	read.cigar = [(0, 27), (1, 1), (0, 2), (1, 1), (0, 68)]
+# 	read.rnext = 0
+# 	read.pnext = 10007
+# 	read.tlen = -171
+# 	read.qual = "BBB7<7B777BBBBBBBBFFFFBFBB<7<0BBB<7B7FFB<B0FFFB<0FFBBB<IIFFFFFFFFFFFFFFBFFIFFFFFFFFFFFFFFFFFFFFFBBB"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...................................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OBMultipleInsertionsWithSoftClip():
+# 	'''build an example read_1 aligned to OB-strand that contains more than one insertion and 5' and 3' soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:1204:4767:23545_1:N:0:sc"
+# 	read.seq = "CCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAAC"
+# 	read.flag = 83
+# 	read.pos = 10084
+# 	read.mapq = 255
+# 	read.cigar = [(4, 3), (0, 24), (1, 1), (0, 2), (1, 1), (0, 67), (4, 1)]
+# 	read.rnext = 0
+# 	read.pnext = 10007
+# 	read.tlen = -170
+# 	read.qual = "BBB7<7B777BBBBBBBBFFFFBFBB<7<0BBB<7B7FFB<B0FFFB<0FFBBB<IIFFFFFFFFFFFFFFBFFIFFFFFFFFFFFFFFFFFFFFFBBB"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...................................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OBMultipleInsertionsWithHardClip():
+# 	'''build an example read_1 aligned to OB-strand that contains more than one insertion and 5' and 3' hard-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:1204:4767:23545_1:N:0:hc"
+# 	read.seq = "TAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAA"
+# 	read.flag = 83
+# 	read.pos = 10084
+# 	read.mapq = 255
+# 	read.cigar = [(5, 3), (0, 24), (1, 1), (0, 2), (1, 1), (0, 67), (5, 1)]
+# 	read.rnext = 0
+# 	read.pnext = 10007
+# 	read.tlen = -170
+# 	read.qual = "7<7B777BBBBBBBBFFFFBFBB<7<0BBB<7B7FFB<B0FFFB<0FFBBB<IIFFFFFFFFFFFFFFBFFIFFFFFFFFFFFFFFFFFFFFFBB"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...............................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OBMultipleInsertionsWithHardClipAndSoftClip():
+# 	'''build an example read_1 aligned to OB-strand that contains more than one insertion and 5' and 3' hard-clipping and soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:1204:4767:23545_1:N:0:hcsc"
+# 	read.seq = "TAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAA"
+# 	read.flag = 83
+# 	read.pos = 10088
+# 	read.mapq = 255
+# 	read.cigar = [(5, 3), (4, 4), (0, 20), (1, 1), (0, 2), (1, 1), (0, 65), (4, 2), (5, 1)]
+# 	read.rnext = 0
+# 	read.pnext = 10007
+# 	read.tlen = -168
+# 	read.qual = "7<7B777BBBBBBBBFFFFBFBB<7<0BBB<7B7FFB<B0FFFB<0FFBBB<IIFFFFFFFFFFFFFFBFFIFFFFFFFFFFFFFFFFFFFFFBB"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...............................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OBMultipleDeletions():
+# 	'''build an example read_1 aligned to OB-strand that contains more than one deletion.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:2111:5724:55868_1:N:0:"
+# 	read.seq = "AACCCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCT"
+# 	read.flag = 83
+# 	read.pos = 10055
+# 	read.mapq = 255
+# 	read.cigar = [(0, 29), (2, 1), (0, 61), (2, 1), (0, 10)]
+# 	read.rnext = 0
+# 	read.pnext = 10041
+# 	read.tlen = -116
+# 	read.qual = "<0FFFBB7BBBB<7FFBBB7BFFB<7FFBBBFBBB<7FFB<<0FFFBB7IFFFBIFFFFBIFFFFBIFFFF<FFFFFBIIIFFBIFFFFBFFFFFBFBBB"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '....................................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OBMultipleDeletionsWithSoftClip():
+# 	'''build an example read_1 aligned to OB-strand that contains more than one deletion and 5' and 3' soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:2111:5724:55868_1:N:0:sc"
+# 	read.seq = "AACCCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCT"
+# 	read.flag = 83
+# 	read.pos = 10057
+# 	read.mapq = 255
+# 	read.cigar = [(4, 2), (0, 27), (2, 1), (0, 61), (2, 1), (0, 7), (4, 3)]
+# 	read.rnext = 0
+# 	read.pnext = 10041
+# 	read.tlen = -113
+# 	read.qual = "<0FFFBB7BBBB<7FFBBB7BFFB<7FFBBBFBBB<7FFB<<0FFFBB7IFFFBIFFFFBIFFFFBIFFFF<FFFFFBIIIFFBIFFFFBFFFFFBFBBB"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '....................................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OBMultipleDeletionsWithHardClip():
+# 	'''build an example read_1 aligned to OB-strand that contains more than one deletion and 5' and 3' hard-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:2111:5724:55868_1:N:0:hc"
+# 	read.seq = "CCCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC"
+# 	read.flag = 83
+# 	read.pos = 10057
+# 	read.mapq = 255
+# 	read.cigar = [(5, 2), (0, 27), (2, 1), (0, 61), (2, 1), (0, 7), (5, 3)]
+# 	read.rnext = 0
+# 	read.pnext = 10041
+# 	read.tlen = -113
+# 	read.qual = "FFFBB7BBBB<7FFBBB7BFFB<7FFBBBFBBB<7FFB<<0FFFBB7IFFFBIFFFFBIFFFFBIFFFF<FFFFFBIIIFFBIFFFFBFFFFFBF"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '....................................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OBMultipleDeletionsWithHardClipAndSoftClip():
+# 	'''build an example read_1 aligned to OB-strand that contains more than one deletion and 5' and 3' hard-clipping and soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:27:C22KTACXX:3:2111:5724:55868_1:N:0:hcsc"
+# 	read.seq = "CCCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC"
+# 	read.flag = 83
+# 	read.pos = 10063
+# 	read.mapq = 255
+# 	read.cigar = [(5, 2), (4, 6), (0, 21), (2, 1), (0, 61), (2, 1), (0, 6), (4, 1), (5, 3)]
+# 	read.rnext = 0
+# 	read.pnext = 10041
+# 	read.tlen = -112
+# 	read.qual = "FFFBB7BBBB<7FFBBB7BFFB<7FFBBBFBBB<7FFB<<0FFFBB7IFFFBIFFFFBIFFFFBIFFFF<FFFFFBIIIFFBIFFFFBFFFFFBF"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '....................................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OBInsertionAndDeletion():
+# 	'''build an example read_1 aligned to OB-strand that contains an insertion and a deletion.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:1302:14214:50765_1:N:0:"
+# 	read.seq = "CCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC"
+# 	read.flag = 83
+# 	read.pos = 10034
+# 	read.mapq = 255
+# 	read.cigar = [(0, 26), (2, 1), (0, 47), (1, 1), (0, 27)]
+# 	read.rnext = 0
+# 	read.pnext = 10012
+# 	read.tlen = -123
+# 	read.qual = "FFFBBFFFBB7FFBB<0FFBB<7BB<<7BBB<B<FFBBB<FFFB<0IFFBFBIFFFFBIFF<FBIIFFFFIIIFFFIIIIFFIIIFFFFFFFFFFFFFBBB"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '.....................................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OBInsertionAndDeletionWithSoftClip():
+# 	'''build an example read_1 aligned to OB-strand that contains an insertion and a deletion and 5' and 3' soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:1302:14214:50765_1:N:0:sc"
+# 	read.seq = "CCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC"
+# 	read.flag = 83
+# 	read.pos = 10036
+# 	read.mapq = 255
+# 	read.cigar = [(4, 2), (0, 24), (2, 1), (0, 47), (1, 1), (0, 23), (4, 4)]
+# 	read.rnext = 0
+# 	read.pnext = 10012
+# 	read.tlen = -119
+# 	read.qual = "FFFBBFFFBB7FFBB<0FFBB<7BB<<7BBB<B<FFBBB<FFFB<0IFFBFBIFFFFBIFF<FBIIFFFFIIIFFFIIIIFFIIIFFFFFFFFFFFFFBBB"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '.....................................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OBInsertionAndDeletionWithHardClip():
+# 	'''build an example read_1 aligned to OB-strand that contains an insertion and a deletion and 5' and 3' hard-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:1302:14214:50765_1:N:0:hc"
+# 	read.seq = "TAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCC"
+# 	read.flag = 83
+# 	read.pos = 10036
+# 	read.mapq = 255
+# 	read.cigar = [(5, 2), (0, 24), (2, 1), (0, 47), (1, 1), (0, 23), (5, 4)]
+# 	read.rnext = 0
+# 	read.pnext = 10012
+# 	read.tlen = -119
+# 	read.qual = "FBBFFFBB7FFBB<0FFBB<7BB<<7BBB<B<FFBBB<FFFB<0IFFBFBIFFFFBIFF<FBIIFFFFIIIFFFIIIIFFIIIFFFFFFFFFFFF"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...............................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# def buildRead1OBInsertionAndDeletionWithHardClipAndSoftClip():
+# 	'''build an example read_1 aligned to OB-strand that contains an insertion and a deletion and 5' and 3' hard-clipping and soft-clipping.
+# 	'''
+# 	read = pysam.AlignedRead()
+# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:1302:14214:50765_1:N:0:hcsc"
+# 	read.seq = "TAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCC"
+# 	read.flag = 83
+# 	read.pos = 10040
+# 	read.mapq = 255
+# 	read.cigar = [(5, 2), (4, 4), (0, 20), (2, 1), (0, 47), (1, 1), (0, 20), (4, 3), (5, 4)]
+# 	read.rnext = 0
+# 	read.pnext = 10012
+# 	read.tlen = -116
+# 	read.qual = "FBBFFFBB7FFBB<0FFBB<7BB<<7BBB<B<FFBBB<FFFB<0IFFBFBIFFFFBIFF<FBIIFFFFIIIFFFIIIIFFIIIFFFFFFFFFFFF"
+# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...............................................................................................')] + [('XR', 'CT')]
+# 	return read
+#
+# # A couple of helper functions used in the testing
+# def get_and_process_aligned_pairs(read):
+# 	return [y[1] for y in read.aligned_pairs if y[0] is not None]
+#
+# def trim_None(pos):
+# 	returnfilter(None, pos)
+
+############
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
