@@ -312,7 +312,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
               mt_strand = strand
           this_m_tuple_positions = (BAM.getrname(read.tid),) + (mt_strand, ) + tuple(positions[i:(i + m)])
           methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read, None)
-  return methylation_m_tuples, n_methylation_loci
+    return methylation_m_tuples, n_methylation_loci
 
 def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_read1_pos, ignore_read2_pos, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC):
     """Extracts m-tuples of methylation loci from a readpair and adds the comethylation m-tuple to the methylation_m_tuples object.
@@ -462,7 +462,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
               else:
                   mt_strand = strand_1
               this_m_tuple_positions = (BAM.getrname(read_1.tid),) + (mt_strand, ) + tuple(this_m_tuple_positions_2) + tuple(this_m_tuple_positions_1)
-                methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
+              methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read_1, read_2)
           # Finally, create all m-tuples of methylation loci where each locus is from read_2.
           if len(methylation_index_2) >= m:
               for i in range(0, len(methylation_index_2) - m + 1): # For a read containing m methylation loci there are (m - m-tuple + 1) m-tuples.:
@@ -477,7 +477,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
       else:
           exit_msg = ''.join(['ERROR: The informative strands for readpair ', read_1.qname, ',  do not agree between mates. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
           sys.exit(exit_msg)
-  return methylation_m_tuples, n_methylation_loci, n_fragment_skipped_due_to_bad_overlap
+    return methylation_m_tuples, n_methylation_loci, n_fragment_skipped_due_to_bad_overlap
 
 def write_methylation_m_tuples_to_file(methylation_m_tuples, OUT):
     """Write the methylation_m_tuples instance to a tab-separated file. The m-tuples are ordered by chromosome and genomic co-ordinates.
