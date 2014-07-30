@@ -590,7 +590,7 @@ def get_read_positions(read):
       read_positions = []
     # Add "internal" read-positions, which are only made up of positions with M/I/D CIGAR operations and so can be extracted from read.aligned_pairs.
     # TODO: read.aligned_pairs might not work as I expect for deletions
-    read_positions = read_positions + [y[1] for y in read.aligned_pairs if not y[0] is None]
+    read_positions = read_positions + [y[1] for y in read.aligned_pairs if y[0] is not None]
     # If last CIGAR operation is H (5), check whether second-last is S (4).
     if read.cigar[n - 1][0] == 5:
       if n > 1:
@@ -600,6 +600,11 @@ def get_read_positions(read):
     # Check if last CIGAR operation is S (4).
     elif read.cigar[n - 1][0] == 4:
       read_positions = read_positions + [None] * read.cigar[n - 1][1]
+
+    # Sanity check that length of read_positions is equal to length of read.seq
+    if (len(read.seq) != len(read_positions)):
+      exit_msg = ''.join(['Length of read_positions (', str(len(read_positions)), ') does not equal length of read.seq (', str(len(read.seq)), ') for read: ', read.qname, '\nThis should never happen. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com.'])
+      sys.exit(exit_msg)
   return read_positions
 
 __all__ = [
