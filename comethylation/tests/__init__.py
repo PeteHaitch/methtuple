@@ -360,9 +360,6 @@ class TestIsOverlappingSequenceIdentical(unittest.TestCase):
 			is_overlapping_sequence_identical(self.mod_read_1, self.read_2, 10, 'sequence')
 			self.assertEqual(cm.exception.code, 1)
 
-# TODO: SIMPLIFY. These are unit tests and should be as simple as possible. This simplification will be done in two parts.
-# Part 1: Move these more complex examples to elsewhere in this file - they may still be useful in another test case setting. DONE
-# Part 2: Use very simple alignments where I can write down the aligned bases of each read-position by hand. For example, all reads based on a perfect alignment to chr1:1-10. Then, vary these reads by adding soft-clipping, hard-clipping, insertions and deletions and compare the results of get_read_positions against a hand-crafted list of the true alignment. IN PROGRESS
 class TestGetReadPositions(unittest.TestCase):
 	'''Test the function get_read_positions.
 	'''
@@ -388,47 +385,45 @@ class TestGetReadPositions(unittest.TestCase):
 
 		def addInsertionAndDeletion(read, rpi, rpd, li, ld, f):
 			'''Add insertion at rpi of length li. Add deletion at rpd of length rpd. Insertion first if f = 'i', deletion first if f = 'd'.
+			WARNING: The read is updated in-place!
 			'''
-			# Make a copy so that we don't modify the original
-			r = read
 
-			if (rpi < 1 and li > 0) or (rpd < 1 and ld > 0) or rpi > len(r.seq) or rpd > len(r.seq):
+			if (rpi < 1 and li > 0) or (rpd < 1 and ld > 0) or rpi > len(read.seq) or rpd > len(read.seq):
 				sys.exit("Can only add 'internal' indels.")
 
 			if li > 0 and ld > 0 and f == 'i':
-				nc = [(0, rpi - 1), (1, li), (0, rpd - rpi - li + 1), (2, ld), (0, r.qlen - rpd)]
+				nc = [(0, rpi - 1), (1, li), (0, rpd - rpi - li + 1), (2, ld), (0, read.qlen - rpd)]
 			elif li > 0 and ld > 0 and f == 'd':
-				nc = [(0, rpd - 1), (2, ld), (0, rpi - rpd), (1, li), (0, r.qlen - rpi - li + 1)]
+				nc = [(0, rpd - 1), (2, ld), (0, rpi - rpd), (1, li), (0, read.qlen - rpi - li + 1)]
 			elif ld > 0:
-				nc = [(0, rpd - 1), (2, ld), (0, r.qlen - rpd + 1)]
+				nc = [(0, rpd - 1), (2, ld), (0, read.qlen - rpd + 1)]
 			elif li > 0:
-				nc = [(0, rpi - 1), (1, li), (0, r.qlen - rpi - li + 1)]
+				nc = [(0, rpi - 1), (1, li), (0, read.qlen - rpi - li + 1)]
+			elif li == 0 and ld == 0:
+				nc = read.cigar
 			else:
 				sys.exit("Incompatible parameter combination")
 
 			read.cigar = nc
-			return r
+			return read
 
 		def hardClipAndSoftClip(read, sh, eh, ss, es):
 			'''Hard clip sh bases from start and eh bases from end then soft clip ss bases from start and es bases from end.
+			WARNING: The read is updated in-place!
 			'''
-			# Make a copy so that we don't modify the original
-			r = read
 
-			if (sh + eh) > r.cigar[0][1] or (ss + es) > r.cigar[len(r.cigar) - 1][1]:
+			if (sh + ss) > read.cigar[0][1] or (eh + es) > read.cigar[len(read.cigar) - 1][1]:
 				sys.exit("Too much clipping; cannot clip across multiple CIGAR operations.")
-			if (sh + ss + eh + es) > r.qlen:
+			if (sh + ss + eh + es) > read.qlen:
 				sys.exit("Too much clipping; sum of clipping operations cannot exceed query length.")
-			# if sh == 0 or eh == 0 or ss == 0 or es == 0:
-			# 	sys.exit("All of sh, eh, ss and es must be non-zero")
 
-			q = r.qual
-			oc = r.cigar
-			r.seq = r.seq[sh:(len(r.seq) - eh)]
-			r.qual = q[sh:(len(q) - eh)]
+			q = read.qual
+			oc = read.cigar
+			read.seq = read.seq[sh:(len(read.seq) - eh)]
+			read.qual = q[sh:(len(q) - eh)]
 
 			n = len(oc)
-			if r.cigar[0][0] != 0 or r.cigar[len(r.cigar) - 1][0] != 0 or len(r.cigar) == 2:
+			if read.cigar[0][0] != 0 or read.cigar[len(read.cigar) - 1][0] != 0 or len(read.cigar) == 2:
 				sys.exit("Can only clip reads with match operations as first and last CIGAR operations.")
 
 			nc = []
@@ -445,53 +440,195 @@ class TestGetReadPositions(unittest.TestCase):
 			if eh > 0:
 				nc = nc + [(5, eh)]
 
-			r.cigar = nc
-			r.pos = r.pos + ss + sh
-			return r
+			read.cigar = nc
+			read.pos = read.pos + ss + sh
+			return read
 
 	# Basically, what we test test is that the output of get_read_positions(read) is identical to the output of read.positions with two exceptions:
 	# (1) If the read contains an insertion, then compare against read.aligned_pairs, which returns None for inserted bases
 	# (2) If the read contains soft-clipped bases then need to trim those "start/end Nones" from get_read_positions(read).
-		# No clipping
-		self.br = buildBasicRead(10)
-		self.I1 = addInsertionAndDeletion(buildBasicRead(10), 4, 0, 1, 0, 'i')
-		self.I3 = addInsertionAndDeletion(buildBasicRead(10), 4, 0, 3, 0, 'i')
-		self.D1 = addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 1, 'i')
-		self.D3 = addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 3, 'i')
-		self.I1D1 = addInsertionAndDeletion(buildBasicRead(10), 4, 7, 1, 1, 'i')
-		self.I2D3 = addInsertionAndDeletion(buildBasicRead(10), 4, 7, 2, 3, 'i')
-		self.D1I1 = addInsertionAndDeletion(buildBasicRead(10), 8, 2, 1, 1, 'd')
-		self.D2I3 = addInsertionAndDeletion(buildBasicRead(10), 7, 2, 3, 2, 'd')
 
-		# Hard clipping
+	# We test this by creating reads with a variety of indels (including no indels) and then soft-clipping and hard-clipping them in various combinations: (1) hc 2bp from start; (2) hc 1bp from end; (3) hc 2bp from start, 1bp from end; (4) sc 2bp from start; (5) sc 1bp from end; (6) sc 2bp from start, 1bp from end; (7) hc 1bp from start, hc 1bp from end, sc 1bp from start, sc 1bp from end.
+
+		# No indels
+		self.br = buildBasicRead(10)
 		self.br_hcs = hardClipAndSoftClip(buildBasicRead(10), 2, 0, 0, 0)
-		self.br_hce = hardClipAndSoftClip(buildBasicRead(10), 0, 3, 0, 0)
-		self.br_hcse = hardClipAndSoftClip(buildBasicRead(10), 2, 3, 0, 0)
+		self.br_hce = hardClipAndSoftClip(buildBasicRead(10), 0, 1, 0, 0)
+		self.br_hcse = hardClipAndSoftClip(buildBasicRead(10), 2, 1, 0, 0)
+		self.br_scs = hardClipAndSoftClip(buildBasicRead(10), 0, 0, 2, 0)
+		self.br_sce = hardClipAndSoftClip(buildBasicRead(10), 0, 0, 0, 1)
+		self.br_scse = hardClipAndSoftClip(buildBasicRead(10), 0, 0, 2, 1)
+		self.br_hcscse = hardClipAndSoftClip(buildBasicRead(10), 1, 1, 1, 1)
+
+		# 1bp insertion
+		self.I1 = addInsertionAndDeletion(buildBasicRead(10), 4, 0, 1, 0, 'i')
 		self.I1_hcs = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 0, 1, 0, 'i'), 2, 0, 0, 0)
 		self.I1_hce = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 0, 1, 0, 'i'), 0, 1, 0, 0)
 		self.I1_hcse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 0, 1, 0, 'i'), 2, 1, 0, 0)
+		self.I1_scs = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 0, 1, 0, 'i'), 0, 0, 2, 0)
+		self.I1_sce = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 0, 1, 0, 'i'), 0, 0, 0, 1)
+		self.I1_scse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 0, 1, 0, 'i'), 0, 0, 2, 1)
+		self.I1_hcscse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 0, 1, 0, 'i'), 1, 1, 1, 1)
 
-	def test_no_clipping(self):
-		self.assertEqual(get_read_positions(self.br), range(1, 11))
-		self.assertEqual(get_read_positions(self.I1), range(1, 4) + [None] + range(4, 10))
-		self.assertEqual(get_read_positions(self.I3), range(1, 4) + [None] * 3 + range(4, 8))
-		self.assertEqual(get_read_positions(self.D1), range(1, 4) + range(5, 12))
-		self.assertEqual(get_read_positions(self.D3), range(1, 4) + range(7, 14))
-		self.assertEqual(get_read_positions(self.I1D1), range(1, 4) + [None] + range(4, 7) + range(8, 11))
-		self.assertEqual(get_read_positions(self.I2D3), range(1, 4) + [None] * 2 + range(4, 6) + range(9, 12))
-		self.assertEqual(get_read_positions(self.D1I1), range(1, 2) + range(3, 9) + [None] + range(9, 11))
-		self.assertEqual(get_read_positions(self.D2I3), range(1, 2) + range(4, 9) + [None] * 3 + range(9, 10))
+		# 3bp insertion
+		self.I3 = addInsertionAndDeletion(buildBasicRead(10), 4, 0, 3, 0, 'i')
+		self.I3_hcs =  hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 0, 3, 0, 'i'), 2, 0, 0, 0)
+		self.I3_hce =  hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 0, 3, 0, 'i'), 0, 1, 0, 0)
+		self.I3_hcse =  hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 0, 3, 0, 'i'), 2, 1, 0, 0)
+		self.I3_scs =  hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 0, 3, 0, 'i'), 0, 0, 2, 0)
+		self.I3_sce =  hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 0, 3, 0, 'i'), 0, 0, 0, 1)
+		self.I3_scse =  hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 0, 3, 0, 'i'), 0, 0, 2, 1)
+		self.I3_hcscse =  hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 0, 3, 0, 'i'), 1, 1, 1, 1)
 
-	def test_soft_clipping(self):
-		self.assertEqual(get_read_positions(self.br_hcs), range(3, 11))
-		self.assertEqual(get_read_positions(self.br_hce), range(1, 8))
-		self.assertEqual(get_read_positions(self.br_hcse), range(3, 8))
-		self.assertEqual(get_read_positions(self.I1_hcs), range(3, 4) + [None] + range(4, 10))
-		self.assertEqual(get_read_positions(self.I1_hce), range(1, 4) + [None] + range(4, 9))
-		self.assertEqual(get_read_positions(self.I1_hcse), range(3, 4) + [None] + range(4, 9))
+		# 1bp deletion
+		self.D1 = addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 1, 'i')
+		self.D1_hcs = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 1, 'i'), 2, 0, 0, 0)
+		self.D1_hce = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 1, 'i'), 0, 1, 0, 0)
+		self.D1_hcse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 1, 'i'), 2, 1, 0, 0)
+		self.D1_scs = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 1, 'i'), 0, 0, 2, 0)
+		self.D1_sce = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 1, 'i'), 0, 0, 0, 1)
+		self.D1_scse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 1, 'i'), 0, 0, 2, 1)
+		self.D1_hcscse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 1, 'i'), 1, 1, 1, 1)
 
-		# UP TO HERE: Continue writing test cases
+		# 3bp deletion
+		self.D3 = addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 3, 'i')
+		self.D3_hcs = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 3, 'i'), 2, 0, 0, 0)
+		self.D3_hce = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 3, 'i'), 0, 1, 0, 0)
+		self.D3_hcse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 3, 'i'), 2, 1, 0, 0)
+		self.D3_scs = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 3, 'i'), 0, 0, 2, 0)
+		self.D3_sce = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 3, 'i'), 0, 0, 0, 1)
+		self.D3_scse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 3, 'i'), 0, 0, 2, 1)
+		self.D3_hcscse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 0, 4, 0, 3, 'i'), 1, 1, 1, 1)
 
+		# 1bp insertion and 1bp deletion
+		self.I1D1 = addInsertionAndDeletion(buildBasicRead(10), 4, 7, 1, 1, 'i')
+		self.I1D1_hcs = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 7, 1, 1, 'i'), 2, 0, 0, 0)
+		self.I1D1_hce = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 7, 1, 1, 'i'), 0, 1, 0, 0)
+		self.I1D1_hcse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 7, 1, 1, 'i'), 2, 1, 0, 0)
+		self.I1D1_scs = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 7, 1, 1, 'i'), 0, 0, 2, 0)
+		self.I1D1_sce = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 7, 1, 1, 'i'), 0, 0, 0, 1)
+		self.I1D1_scse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 7, 1, 1, 'i'), 0, 0, 2, 1)
+		self.I1D1_hcscse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 7, 1, 1, 'i'), 1, 1, 1, 1)
+
+		# 2bp insertion and 3bp deletion
+		self.I2D3 = addInsertionAndDeletion(buildBasicRead(10), 4, 7, 2, 3, 'i')
+		self.I2D3_hcs = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 7, 2, 3, 'i'), 2, 0, 0, 0)
+		self.I2D3_hce = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 7, 2, 3, 'i'), 0, 1, 0, 0)
+		self.I2D3_hcse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 7, 2, 3, 'i'), 2, 1, 0, 0)
+		self.I2D3_scs = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 7, 2, 3, 'i'), 0, 0, 2, 0)
+		self.I2D3_sce = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 7, 2, 3, 'i'), 0, 0, 0, 1)
+		self.I2D3_scse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 7, 2, 3, 'i'), 0, 0, 2, 1)
+		self.I2D3_hcscse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 4, 7, 2, 3, 'i'), 1, 1, 1, 1)
+
+		# 1bp deletion and 1bp insertion
+		self.D1I1 = addInsertionAndDeletion(buildBasicRead(10), 6, 4, 1, 1, 'd')
+		self.D1I1_hcs = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 6, 4, 1, 1, 'd'), 2, 0, 0, 0)
+		self.D1I1_hce = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 6, 4, 1, 1, 'd'), 0, 1, 0, 0)
+		self.D1I1_hcse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 6, 4, 1, 1, 'd'), 2, 1, 0, 0)
+		self.D1I1_scs = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 6, 4, 1, 1, 'd'), 0, 0, 2, 0)
+		self.D1I1_sce = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 6, 4, 1, 1, 'd'), 0, 0, 0, 1)
+		self.D1I1_scse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 6, 4, 1, 1, 'd'), 0, 0, 2, 1)
+		self.D1I1_hcscse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 6, 4, 1, 1, 'd'), 1, 1, 1, 1)
+
+		# 2bp deletion and 3bp insertion
+		self.D2I3 = addInsertionAndDeletion(buildBasicRead(10), 5, 4, 3, 2, 'd')
+		self.D2I3_hcs = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 5, 4, 3, 2, 'd'), 2, 0, 0, 0)
+		self.D2I3_hce = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 5, 4, 3, 2, 'd'), 0, 1, 0, 0)
+		self.D2I3_hcse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 5, 4, 3, 2, 'd'), 2, 1, 0, 0)
+		self.D2I3_scs = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 5, 4, 3, 2, 'd'), 0, 0, 2, 0)
+		self.D2I3_sce = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 5, 4, 3, 2, 'd'), 0, 0, 0, 1)
+		self.D2I3_scse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 5, 4, 3, 2, 'd'), 0, 0, 2, 1)
+		self.D2I3_hcscse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 5, 4, 3, 2, 'd'), 1, 1, 1, 1)
+
+	def test_no_indel(self):
+		self.assertEqual(get_read_positions(self.br), list(range(1, 11)))
+		self.assertEqual(get_read_positions(self.br_hcs), list(range(3, 11)))
+		self.assertEqual(get_read_positions(self.br_hce), list(range(1, 10)))
+		self.assertEqual(get_read_positions(self.br_hcse), list(range(3, 10)))
+		self.assertEqual(get_read_positions(self.br_scs), [None] * 2 + list(range(3, 11)))
+		self.assertEqual(get_read_positions(self.br_sce), list(range(1, 10)) + [None] * 1)
+		self.assertEqual(get_read_positions(self.br_scse), [None] * 2 + list(range(3, 10)) + [None] * 1)
+		self.assertEqual(get_read_positions(self.br_hcscse), [None] * 1 + list(range(3, 9)) + [None] * 1)
+
+	def test_1bp_insertion(self):
+		self.assertEqual(get_read_positions(self.I1), list(range(1, 4)) + [None] + list(range(4, 10)))
+		self.assertEqual(get_read_positions(self.I1_hcs), list(range(3, 4)) + [None] + list(range(4, 10)))
+		self.assertEqual(get_read_positions(self.I1_hce), list(range(1, 4)) + [None] + list(range(4, 9)))
+		self.assertEqual(get_read_positions(self.I1_hcse), list(range(3, 4)) + [None] + list(range(4, 9)))
+		self.assertEqual(get_read_positions(self.I1_scs), [None] * 2 + list(range(3, 4)) + [None] + list(range(4, 10)))
+		self.assertEqual(get_read_positions(self.I1_sce), list(range(1, 4)) + [None] + list(range(4, 9)) + [None] * 1)
+		self.assertEqual(get_read_positions(self.I1_scse), [None] * 2 + list(range(3, 4)) + [None] + list(range(4, 9)) + [None] * 1)
+		self.assertEqual(get_read_positions(self.I1_hcscse), [None] * 1 + list(range(3, 4)) + [None] + list(range(4, 8)) + [None] * 1)
+
+	def test_3bp_insertion(self):
+		self.assertEqual(get_read_positions(self.I3), list(range(1, 4)) + [None] * 3 + list(range(4, 8)))
+		self.assertEqual(get_read_positions(self.I3_hcs), list(range(3, 4)) + [None] * 3 + list(range(4, 8)))
+		self.assertEqual(get_read_positions(self.I3_hce), list(range(1, 4)) + [None] * 3 + list(range(4, 7)))
+		self.assertEqual(get_read_positions(self.I3_hcse), list(range(3, 4)) + [None] * 3 + list(range(4, 7)))
+		self.assertEqual(get_read_positions(self.I3_scs), [None] * 2 + list(range(3, 4)) + [None] * 3 + list(range(4, 8)))
+		self.assertEqual(get_read_positions(self.I3_sce), list(range(1, 4)) + [None] * 3 + list(range(4, 7)) + [None] * 1)
+		self.assertEqual(get_read_positions(self.I3_scse), [None] * 2 + list(range(3, 4)) + [None] * 3 + list(range(4, 7)) + [None] * 1)
+		self.assertEqual(get_read_positions(self.I3_hcscse), [None] * 1 + list(range(3, 4)) + [None] * 3 + list(range(4, 6)) + [None] * 1)
+
+	def test_1bp_deletion(self):
+		self.assertEqual(get_read_positions(self.D1), list(range(1, 4)) + list(range(5, 12)))
+		self.assertEqual(get_read_positions(self.D1_hcs), list(range(3, 4)) + list(range(5, 12)))
+		self.assertEqual(get_read_positions(self.D1_hce), list(range(1, 4)) + list(range(5, 11)))
+		self.assertEqual(get_read_positions(self.D1_hcse), list(range(3, 4)) + list(range(5, 11)))
+		self.assertEqual(get_read_positions(self.D1_scs), [None] * 2 + list(range(3, 4)) + list(range(5, 12)))
+		self.assertEqual(get_read_positions(self.D1_sce), list(range(1, 4)) + list(range(5, 11)) + [None] * 1)
+		self.assertEqual(get_read_positions(self.D1_scse), [None] * 2 + list(range(3, 4)) + list(range(5, 11)) + [None] * 1)
+		self.assertEqual(get_read_positions(self.D1_hcscse), [None] * 1 + list(range(3, 4)) + list(range(5, 10)) + [None] * 1)
+
+	def test_3bp_deletion(self):
+		self.assertEqual(get_read_positions(self.D3), list(range(1, 4)) + list(range(7, 14)))
+		self.assertEqual(get_read_positions(self.D3_hcs), list(range(3, 4)) + list(range(7, 14)))
+		self.assertEqual(get_read_positions(self.D3_hce), list(range(1, 4)) + list(range(7, 13)))
+		self.assertEqual(get_read_positions(self.D3_hcse), list(range(3, 4)) + list(range(7, 13)))
+		self.assertEqual(get_read_positions(self.D3_scs), [None] * 2 + list(range(3, 4)) + list(range(7, 14)))
+		self.assertEqual(get_read_positions(self.D3_sce), list(range(1, 4)) + list(range(7, 13)) + [None] * 1)
+		self.assertEqual(get_read_positions(self.D3_scse), [None] * 2 + list(range(3, 4)) + list(range(7, 13)) + [None] * 1)
+		self.assertEqual(get_read_positions(self.D3_hcscse), [None] * 1 + list(range(3, 4)) + list(range(7, 12)) + [None] * 1)
+
+	def test_1bp_insertion_and_1bp_deletion(self):
+		self.assertEqual(get_read_positions(self.I1D1), list(range(1, 4)) + [None] + list(range(4, 7)) + list(range(8, 11)))
+		self.assertEqual(get_read_positions(self.I1D1_hcs), list(range(3, 4)) + [None] + list(range(4, 7)) + list(range(8, 11)))
+		self.assertEqual(get_read_positions(self.I1D1_hce), list(range(1, 4)) + [None] + list(range(4, 7)) + list(range(8, 10)))
+		self.assertEqual(get_read_positions(self.I1D1_hcse), list(range(3, 4)) + [None] + list(range(4, 7)) + list(range(8, 10)))
+		self.assertEqual(get_read_positions(self.I1D1_scs), [None] * 2 + list(range(3, 4)) + [None] + list(range(4, 7)) + list(range(8, 11)))
+		self.assertEqual(get_read_positions(self.I1D1_sce), list(range(1, 4)) + [None] + list(range(4, 7)) + list(range(8, 10)) + [None] * 1)
+		self.assertEqual(get_read_positions(self.I1D1_scse), [None] * 2 + list(range(3, 4)) + [None] + list(range(4, 7)) + list(range(8, 10)) + [None] * 1)
+		self.assertEqual(get_read_positions(self.I1D1_hcscse), [None] * 1 + list(range(3, 4)) + [None] + list(range(4, 7)) + list(range(8, 9)) + [None] * 1)
+
+	def test_2bp_insertion_and_3bp_deletion(self):
+		self.assertEqual(get_read_positions(self.I2D3), list(range(1, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 12)))
+		self.assertEqual(get_read_positions(self.I2D3_hcs), list(range(3, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 12)))
+		self.assertEqual(get_read_positions(self.I2D3_hce), list(range(1, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 11)))
+		self.assertEqual(get_read_positions(self.I2D3_hcse), list(range(3, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 11)))
+		self.assertEqual(get_read_positions(self.I2D3_scs), [None] * 2 + list(range(3, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 12)))
+		self.assertEqual(get_read_positions(self.I2D3_sce), list(range(1, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 11)) + [None] * 1)
+		self.assertEqual(get_read_positions(self.I2D3_scse), [None] * 2 + list(range(3, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 11)) + [None] * 1)
+		self.assertEqual(get_read_positions(self.I2D3_hcscse), [None] * 1 + list(range(3, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 10)) + [None] * 1)
+
+	def test_1bp_deletion_and_1bp_insertion(self):
+		self.assertEqual(get_read_positions(self.D1I1), list(range(1, 4)) + list(range(5, 7)) + [None] + list(range(7, 11)))
+		self.assertEqual(get_read_positions(self.D1I1_hcs), list(range(3, 4)) + list(range(5, 7)) + [None] + list(range(7, 11)))
+		self.assertEqual(get_read_positions(self.D1I1_hce), list(range(1, 4)) + list(range(5, 7)) + [None] + list(range(7, 10)))
+		self.assertEqual(get_read_positions(self.D1I1_hcse), list(range(3, 4)) + list(range(5, 7)) + [None] + list(range(7, 10)))
+		self.assertEqual(get_read_positions(self.D1I1_scs), [None] * 2 + list(range(3, 4)) + list(range(5, 7)) + [None] + list(range(7, 11)))
+		self.assertEqual(get_read_positions(self.D1I1_sce), list(range(1, 4)) + list(range(5, 7)) + [None] + list(range(7, 10)) + [None] * 1)
+		self.assertEqual(get_read_positions(self.D1I1_scse), [None] * 2 + list(range(3, 4)) + list(range(5, 7)) + [None] + list(range(7, 10)) + [None] * 1)
+		self.assertEqual(get_read_positions(self.D1I1_hcscse), [None] * 1 + list(range(3, 4)) + list(range(5, 7)) + [None] + list(range(7, 9)) + [None] * 1)
+
+	def test_2bp_deletion_and_3bp_insertion(self):
+		self.assertEqual(get_read_positions(self.D2I3), list(range(1, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 10)))
+		self.assertEqual(get_read_positions(self.D2I3_hcs), list(range(3, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 10)))
+		self.assertEqual(get_read_positions(self.D2I3_hce), list(range(1, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 9)))
+		self.assertEqual(get_read_positions(self.D2I3_hcse), list(range(3, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 9)))
+		self.assertEqual(get_read_positions(self.D2I3_scs), [None] * 2 + list(range(3, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 10)))
+		self.assertEqual(get_read_positions(self.D2I3_sce), list(range(1, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 9)) + [None] * 1)
+		self.assertEqual(get_read_positions(self.D2I3_scse), [None] * 2 + list(range(3, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 9)) + [None] * 1)
+		self.assertEqual(get_read_positions(self.D2I3_hcscse), [None] * 1 + list(range(3, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 8)) + [None] * 1)
 
 # TODO: Re-write this test in light of changes to does_read_contain_compliated_cigar.
 class TestDoesReadContainComplicatedCigar(unittest.TestCase):
