@@ -294,7 +294,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
     strand = get_strand(read)
     # Case A: >= m methylation loci in the read
     if n_methylation_loci >= m:
-      positions = [get_read_positions(read)[x] + 1 for x in methylation_index] # +1 to transform from 0-based to 1-based co-ordinates. This will break if get_read_positions(read)[x] includes None, but this is intended (although it will lead to a cryptic error message).
+      positions = [get_positions(read)[x] + 1 for x in methylation_index] # +1 to transform from 0-based to 1-based co-ordinates. This will break if get_positions(read)[x] includes None, but this is intended (although it will lead to a cryptic error message).
       # If read is informative for the OB-strand then translate co-ordinate "ob_strand_offset" bases to the left so that it points to the C on the OT-strand of the methylation locus (will only have an effect if collapsing by strand, in which case ob_strand_offset != 0).
       if strand == '-':
           positions = [x - ob_strand_offset for x in positions]
@@ -355,11 +355,10 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
     # If reads overlap check whether the overlapping sequence passes the filter given by overlap_check.
     # If the overlapping sequence does not pass the filter report a warning, increment a counter and skip the readpair (by setting methylation_index_1 and methylation_index_2 to be the empty list).
     # TODO: Check that the n_overlap calculation is correct for soft-clipped reads and those with indels
-    overlap = set(get_read_positions(read_1)) & set(get_read_positions(read_2))
-    #n_overlap = len(set(get_read_positions(read_1)) & set(get_read_positions(read_2)))
+    overlap = set(get_positions(read_1)) & set(get_positions(read_2))
+    #n_overlap = len(set(get_positions(read_1)) & set(get_positions(read_2)))
     if len(overlap) > 0:
-      # TODO: Write process_overlap() function
-      methylation_index_1, methylation_index_2 = process_overlap(read_1, read_2, overlap, overlap_check)
+      methylation_index_1, methylation_index_2 = process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, overlap_check, FAILED_QC)
         if is_overlapping_sequence_identical(read_1, read_2, n_overlap, overlap_check):
             methylation_index_1, methylation_index_2 = ignore_overlapping_sequence(read_1, read_2, methylation_index_1, methylation_index_2, n_overlap, overlap_check)
         else:
@@ -371,8 +370,8 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
     n_methylation_loci = len(methylation_index_1) + len(methylation_index_2)
     # Only process readpair if there are at least enough CpGs to form one m-tuple.
     if n_methylation_loci >= m:
-      positions_1 = [get_read_positions(read_1)[x] + 1 for x in methylation_index_1] # +1 to transform from 0-based to 1-based co-ordinates. This will break if get_read_positions(read_1)[x] includes None, but this is intended (although it will lead to a cryptic error message).
-      positions_2 = [get_read_positions(read_2)[x] + 1 for x in methylation_index_2] # +1 to transform from 0-based to 1-based co-ordinates. This will break if get_read_positions(read_2)[x] includes None, but this is intended (although it will lead to a cryptic error message).
+      positions_1 = [get_positions(read_1)[x] + 1 for x in methylation_index_1] # +1 to transform from 0-based to 1-based co-ordinates. This will break if get_positions(read_1)[x] includes None, but this is intended (although it will lead to a cryptic error message).
+      positions_2 = [get_positions(read_2)[x] + 1 for x in methylation_index_2] # +1 to transform from 0-based to 1-based co-ordinates. This will break if get_positions(read_2)[x] includes None, but this is intended (although it will lead to a cryptic error message).
       if any(x in positions_1 for x in positions_2):
           exit_msg = ''.join(['ERROR: For readpair ', read_1.qname, ', position_1 and position_2 contain a common position. This should not happen.\nPlease log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
           # print(positions_1) # DEBUGGING
@@ -559,24 +558,23 @@ def get_strand(read):
         exit_msg = ''.join(['ERROR: Read ', read.qname, ' is neither a single-end read nor part of a paired-end read. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com'])
     return strand
 
-# TODO: Extend to allow for soft-clipped reads. If this function handles soft-clipped reads correctly then comethylation can process soft-clipped reads (provided the XM-tag is has '.' for soft-clipped positions and read.seq, read.qual, read.opt('XM') and get_read_positions(read) are all of the same length and equal to the sequence length)!
-# TODO: It should be possible to write a faster version of this using C-level operations, e.g., see how aligned_pairs is defined.
+# TODO: Check that get_positions() works with soft-clipped reads. If this function handles soft-clipped reads correctly then comethylation can process soft-clipped reads (provided the XM-tag is has '.' for soft-clipped positions and read.seq, read.qual, read.opt('XM') and get_positions(read) are all of the same length and equal to the sequence length).
+# TODO: It should be possible to write a faster version of this using C-level (via Cython?) operations, e.g., see how aligned_pairs is defined.
 # TODO: Awaiting reply to issue posted to pysam GitHub issue tracker (16/07/2014).
 # TODO: See what read.inferred_length returns for reads with indels and/or soft-clips (requires pysam v >= 0.7.6)
-# TODO: Rename since read-positions are 1, ..., readLength. These are really mapped/aligned positions (or similar).
-def get_read_positions(read):
-  """Get read positions while allowing for inserted and soft-clipped bases.
+def get_positions(read):
+  """Get reference-based positions of all bases in a read, whether aligned or not, and allowing for inserted and soft-clipped bases.
 
   Args:
       read: A pysam.AlignedRead instance.
 
   Returns:
-      A list of read positions equal in length to read.seq. The result is identical to read.positions if the read does not contain any insertions or soft-clips. Read-positions that are insertions or soft-clips have None as the corresponding entry in the returned list.
+      A list of positions equal in length to read.seq. The result is identical to read.positions if the read does not contain any insertions or soft-clips. Read-positions that are insertions or soft-clips have None as the corresponding entry in the returned list.
   """
   # Check read actually has CIGAR
   if read.cigar is None:
     # No CIGAR string so positions must be [] because there is no alignment.
-    read_positions = []
+    positions = []
   else:
     # From the SAM spec (http://samtools.github.io/hts-specs/SAMv1.pdf), "S may only have H operations between them and the ends of the CIGAR string".
     n = len(read.cigar)
@@ -584,41 +582,40 @@ def get_read_positions(read):
     if read.cigar[0][0] == 5:
       if n > 1:
         if read.cigar[1][0] == 4:
-          read_positions = [None] * read.cigar[1][1]
+          positions = [None] * read.cigar[1][1]
         else:
-          read_positions = []
+          positions = []
     # Check if first CIGAR operation is S (4).
     elif read.cigar[0][0] == 4:
-      read_positions = [None] * read.cigar[0][1]
+      positions = [None] * read.cigar[0][1]
     # Otherwise there can't be any leftmost soft-clipping.
     else:
-      read_positions = []
+      positions = []
     # Add "internal" read-positions, which are only made up of positions with M/I/D CIGAR operations and so can be extracted from read.aligned_pairs.
     # TODO: read.aligned_pairs might not work as I expect for deletions
-    read_positions = read_positions + [y[1] for y in read.aligned_pairs if y[0] is not None]
+    positions = positions + [y[1] for y in read.aligned_pairs if y[0] is not None]
     # If last CIGAR operation is H (5), check whether second-last is S (4).
     if read.cigar[n - 1][0] == 5:
       if n > 1:
         # If second-last positions is S (4), then need to pad but otherwise nothing to do (and also no need for "closing" else).
         if read.cigar[n - 2][0] == 4:
-          read_positions = read_positions + [None] * read.cigar[n - 2][1]
+          positions = positions + [None] * read.cigar[n - 2][1]
     # Check if last CIGAR operation is S (4).
     elif read.cigar[n - 1][0] == 4:
-      read_positions = read_positions + [None] * read.cigar[n - 1][1]
+      positions = positions + [None] * read.cigar[n - 1][1]
 
-    # Sanity check that length of read_positions is equal to length of read.seq
-    if (len(read.seq) != len(read_positions)):
-      exit_msg = ''.join(['Length of read_positions (', str(len(read_positions)), ') does not equal length of read.seq (', str(len(read.seq)), ') for read: ', read.qname, '\nThis should never happen. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com.'])
+    # Sanity check that length of positions is equal to length of read.seq
+    if (len(read.seq) != len(positions)):
+      exit_msg = ''.join(['Length of positions (', str(len(positions)), ') does not equal length of read.seq (', str(len(read.seq)), ') for read: ', read.qname, '\nThis should never happen. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com.'])
       sys.exit(exit_msg)
-  return read_positions
+  return positions
 
-# TODO: Check works with soft-clipped reads, particularly that "overlapping" soft-clips are properly handled.
-# TODO: Test cases read-pair SRR400564.6320_HAL:1133:C010EABXX:8:1101:16132:8722_length=101; SRR400564.114373_HAL:1133:C010EABXX:8:1101:5235:120801_length=101; SRR400564.193785_HAL:1133:C010EABXX:8:1102:9076:4709_length=101 in SRR400564_1.fastq.gz_bismark_bt2_pe.bam.
+# TODO: Check that process_overlap() works with soft-clipped reads, particularly that "overlapping" soft-clips are properly handled. Can't check this until I have some data aligned with an aligner that allows soft-clips, e.g. bwa-meth, as Bismark does not allow them.
+# TODO: Test cases read-pair SRR400564.6320_HAL:1133:C010EABXX:8:1101:16132:8722_length=101; SRR400564.114373_HAL:1133:C010EABXX:8:1101:5235:120801_length=101; SRR400564.193785_HAL:1133:C010EABXX:8:1102:9076:4709_length=101; SRR400564.27878_HAL:1133:C010EABXX:8:1101:11664:31023_length=101 (multiple None in overlap); SRR400564.41106_HAL:1133:C010EABXX:8:1101:16059:44833_length=101 (None at end of overlap); SRR400564.671_HAL:1133:C010EABXX:8:1101:10776:2987_length=101 (a nasty example where the two reads completely disagree about the methylation loci in the overlap); SRR400564.5403_HAL:1133:C010EABXX:8:1101:1870:7806_length=101 (a nice example that it doesn't matter if the overlapping sequence are of different length because process_overlap does the right thing!); all in SRR400564_1.fastq.gz_bismark_bt2_pe.bam.
 # TODO: Write test cases and re-write extract_and_update_methylation_index_from_paired_end_reads to use this function rather than is_overlapping_sequence_identical and ignore_overlapping_sequence functions.
-# TODO: If overlaps don't agree should I exclude the overlap entirely or just those positions that don't agree? This should be a separate option, e.g. overlap_check = {seq, seq_match, seq_strict, XM, XM_match, XM_strict, quality, Bismark}. If seq agree then XM agree but the converse is not true. However, if XM agree at all non '.' characters, then seq agree at all methylation loci. Therefore, if XM tags agree in overlap then the results of XM_match and seq_match will be identical since the only additional positions we might exclude with seq_match are not methylation loci to begin with. In contrast, the results of XM (resp. XM_strict) and seq (resp. seq_strict) may differ. So I need only implement overlap_check = {seq, seq_strict, XM, XM_match, XM_strict, quality, Bismark}.
 # TODO: Finalise the names of options available to overlap_check. In particular, keep them short and sharp, and probably don't want underscores in them.
 
-# See http://stackoverflow.com/a/1208792 for an explanation how items are deleted in place
+# See http://stackoverflow.com/a/1208792 for an explanation how items are safely deleted in place (e.g. methylation_index_1[:] = [i for i in methylation_index_1 if i not in rpob_1])
 def process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, overlap_check, FAILED_QC):
   """Identify any overlapping bases between read_1 and read_2 and remove these from methylation_index_1 or methylation_index_2 according to the option specified by overlap_check.
 
@@ -644,97 +641,97 @@ def process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, ov
       Updated versions of methylation_index_1 and methylation_index_2.
   """
   # Get read positions
-  read_positions_1 = get_read_positions(read_1)
-  read_positions_2 = get_read_positions(read_2)
+  positions_1 = get_positions(read_1)
+  positions_2 = get_positions(read_2)
 
-  # Creating the overlap is a two-step process. (1) Find the intersection of the read_positions; (2) Define the overlap as all positions between the smallest element and largest element of the overlap set. The second step is necessary because there may be bases in the overlap where one of the reads has a deletion. For example, consider the following overlap (ol) of read_1 (r1) and read_2 (r2) using "+" to represent aligned bases and "x" to represent deletions:
-  # ol: |----|
-  # r1: +xx+++
-  # r2: ++++++
+  # Creating the overlap is a two-step process. (1) Find the intersection of positions_1 and positions_2 (excluding None positions); (2) Define the overlap as all positions between the smallest element and largest element of the overlap set.
+  # The second step is necessary because there may be bases in the overlap where one of the reads has a deletion. For example, consider the following overlap (ol) of read_1 (r1) and read_2 (r2) using "=" to represent aligned bases, "x" to represent deletions and "+" to represent insertions and soft-clips:
+  # ol:  |----|
+  # r1: ==xx===
+  # r2:  =========
   # The overlap is 6bp long but r1 has a deletion of 2bp. While this is arguably a bad alignment, it does occur in practice and so needs to be appropriately dealt with.
-  overlap = set(read_positions_1) & set(read_positions_2)
-  # Only need to do anything if there is an overlap
+  # It is very difficult to identify the boundary of an overlap if there are insertions or soft-clipped bases near the ends. For example:
+  # ol:      |-|
+  # r1: ==+++===
+  # r2:    ++======
+  # The start of this overlap (leftmost position) doesn't map to this position in the reference genome. Furthermore, the leftmost base of r2 might be soft-clipped
+  # I don't know whether this can actually occur in practice. And perhaps it can be resolved with CIGAR operations but it's going to be very fiddly and, quite frankly, I've spent enough time on what I believe to be a very rare problem.
+  # Therefore, for simplicity, I define the overlap by the leftmost and rightmost positions that have a position in the reference genome. So, if the overlap is an insertion (resp. soft-clip) then there is, not quite correctly (resp. correctly), no overlap by this method.
+
+  overlap = set(positions_1) & set(positions_2) - set([None])
+  # Check whether there is any overlap.
+  # There's either (1a) no overlap,(1b) the overlap is an insertion or (2) an overlap. In the case of (1a) there is nothing to do and in the case of (1b) I have decided it's too hard and rare to be worth dealing with.
   if len(overlap) != 0:
-    overlap = list(range(min(overlap), max(overlap) + 1))
+    # Get the leftmost (start) and rightmost (end) positions of the overlap with respect to the reference genome co-ordinates.
+    start_ol = min(overlap)
+    end_ol = max(overlap)
 
-    # Get read-positions of overlapping bases
-    rpob_1 = [i for i, x in enumerate(read_positions_1) if x in overlap]
-    rpob_2 = [i for i, x in enumerate(read_positions_2) if x in overlap]
+    # Get the read-positions (indices of the positions in each read) that are in the overlap. These are used for slicing out the overlap from read elements such as seq, qual and XM-tag.
+    start_ol_1 = [idx for idx, value in enumerate(positions_1) if value >= start_ol and value is not None][0]
+    end_ol_1 = [idx for idx, value in enumerate(positions_1) if value <= end_ol and value is not None][-1]
+    start_ol_2 = [idx for idx, value in enumerate(positions_2) if value >= start_ol and value is not None][0]
+    end_ol_2 = [idx for idx, value in enumerate(positions_2) if value <= end_ol and value is not None][-1]
 
-    # Trim based on overlap_check
+    # DEBUGGING: Don't know if this is a problem but want to find an example for use as a test case.
+    if (end_ol_1 - start_ol_1) != (end_ol_2 - start_ol_2):
+      print(''.join([read_1.qname, " has unequal overlaps"]))
+
+    # The choice of which method to use for removing positions in the overlap is determined by overlap_check
     if overlap_check == "seq_strict":
       # Check overlapping sequence is identical
-      if [read_1.seq[i] for i in rpob_1] != [read_2.seq[i] for i in rpob_2]:
+      if read_1.seq[start_ol_1:(end_ol_1 + 1)] != read_2.seq[start_ol_2:(end_ol_2 + 1)]:
         # Kill the read-pair
         methylation_index_1 = []
         methylation_index_2 = []
         failed_read_msg = '\t'.join([read_1.qname, ''.join(['failed the --overlap-filter ', overlap_check, '\n'])])
         FAILED_QC.write(failed_read_msg)
       else:
-        # Trim methylation_index_2. Choice of trimming methylation_index_1 or methylation_index_2 is arbitrary in the sense that if the XM-tags are identical in the overlap then there is no reason to choose read_1 over read_2 and vice versa.
-        methylation_index_2[:] = [i for i in methylation_index_2 if i not in rpob_2]
+        # Retain only those elements of methylation_index_2 that are outside the overlap. Choice of trimming methylation_index_1 or methylation_index_2 is arbitrary because if the seq are identical in the overlap then there is no reason to choose read_1 over read_2 and vice versa.
+        methylation_index_2[:] = [i for i in methylation_index_2 if i < start_ol_2 or i > end_ol_2]
     elif overlap_check == "seq":
       # Check overlapping sequence is identical
-      if [read_1.seq[i] for i in rpob_1] != [read_2.seq[i] for i in rpob_2]:
-        # Trim both methylation indexes of the overlapping positions.
-        methylation_index_1[:] = [i for i in methylation_index_1 if i not in rpob_1]
-        methylation_index_2[:] = [i for i in methylation_index_2 if i not in rpob_2]
-        # TODO: Alternatively, just remove those bases that disagree between reads.
-        # (Option 1) Zip together sequences in overlap and then check seq at each position is identical.
-        # FAILS: Only zips to the length of the shortest list and doesn't handle indels
-        #mismatch_1 = [zip([read_1.seq[i] for i in rpob_1], [read_2.seq[i] for i in rpob_2])]
-        # (Option 2) Use a dictionary to store sequence at each position and then check seq at each position is identical.
-        ol_dict_1 = dict(zip([x for i, x in enumerate(read_positions_1) if x in overlap], [read_1.seq[i] for i in rpob_1]))
-        ol_dict_2 = dict(zip([x for i, x in enumerate(read_positions_2) if x in overlap], [read_2.seq[i] for i in rpob_2]))
-        ol_dict = set(ol_dict_1) | set(ol_dict_2)
-        exclude_pos = []
-        for i in ol_dict:
-          if ol_dict_1.get(i) != ol_dict_2.get(i):
-            exclude_pos.append(i)
-
-        ## Idea (A)
-        # Remove any "excluded" positions from both indexes
-        methylation_index_1 = [x for x in methylation_index_1 if read_positions_1[x] not in exclude_pos]
-        methylation_index_2 = [x for x in methylation_index_2 if x not in exclude_pos]
-        # Remove any "non-excluded" positions from one of the indexes.
-        # TODO
-
-        ## Idea (B)
-        # Remove any overlaps from one of the index and then remove any "excluded" positions from the other index. Will this work?
-        # TODO
+      if read_1.seq[start_ol_1:(end_ol_1 + 1)] != read_2.seq[start_ol_2:(end_ol_2 + 1)]:
+        # Retain only those elements of methylation_index_1 and methylation_index_2 that are outside the overlap.
+        methylation_index_1[:] = [i for i in methylation_index_1 if i < start_ol_1 or i > end_ol_1]
+        methylation_index_2[:] = [i for i in methylation_index_2 if i < start_ol_2 or i > end_ol_2]
       else:
-        # Trim methylation_index_2. Choice of trimming methylation_index_1 or methylation_index_2 is arbitrary in the sense that if the XM-tags are identical in the overlap then there is no reason to choose read_1 over read_2 and vice versa.
-        methylation_index_2[:] = [i for i in methylation_index_2 if i not in rpob_2]
+        # Retain only those elements of methylation_index_2 that are outside the overlap. Choice of trimming methylation_index_1 or methylation_index_2 is arbitrary because if the seq are identical in the overlap then there is no reason to choose read_1 over read_2 and vice versa.
+        methylation_index_2[:] = [i for i in methylation_index_2 if i < start_ol_2 or i > end_ol_2]
     elif overlap_check == "XM_strict":
-      if [read_1.opt('XM')[i] for i in rpob_1] != [read_2.opt('XM')[i] for i in rpob_2]:
+      if read_1.opt('XM')[start_ol_1:(end_ol_1 + 1)] != read_2.opt('XM')[start_ol_2:(end_ol_2 + 1)]:
         # Kill the read-pair
         methylation_index_1 = []
         methylation_index_2 = []
         failed_read_msg = '\t'.join([read_1.qname, ''.join(['failed the --overlap-filter ', overlap_check, '\n'])])
         FAILED_QC.write(failed_read_msg)
       else:
-        # Trim methylation_index_2. Choice of trimming methylation_index_1 or methylation_index_2 is arbitrary in the sense that if the XM-tags are identical in the overlap then there is no reason to choose read_1 over read_2 and vice versa.
-        methylation_index_2[:] = [i for i in methylation_index_2 if i not in rpob_2]
+        # Retain only those elements of methylation_index_2 that are outside the overlap. Choice of trimming methylation_index_1 or methylation_index_2 is arbitrary because if the XM-tags are identical in the overlap then there is no reason to choose read_1 over read_2 and vice versa.
+        methylation_index_2[:] = [i for i in methylation_index_2 if i < start_ol_2 or i > end_ol_2]
     elif overlap_check == "XM":
-      if [read_1.opt('XM')[i] for i in rpob_1] != [read_2.opt('XM')[i] for i in rpob_2]:
-        # Trim both methylation indexes of the overlapping positions.
-        methylation_index_1[:] = [i for i in methylation_index_1 if i not in rpob_1]
-        methylation_index_2[:] = [i for i in methylation_index_2 if i not in rpob_2]
+      if read_1.opt('XM')[start_ol_1:(end_ol_1 + 1)] != read_2.opt('XM')[start_ol_2:(end_ol_2 + 1)]:
+        # Retain only those elements of methylation_index_1 and methylation_index_2 that are outside the overlap.
+        methylation_index_1[:] = [i for i in methylation_index_1 if i < start_ol_1 or i > end_ol_1]
+        methylation_index_2[:] = [i for i in methylation_index_2 if i < start_ol_2 or i > end_ol_2]
       else:
-        # Trim methylation_index_2. Choice of trimming methylation_index_1 or methylation_index_2 is arbitrary in the sense that if the XM-tags are identical in the overlap then there is no reason to choose read_1 over read_2 and vice versa.
-        methylation_index_2[:] = [i for i in methylation_index_2 if i not in rpob_2]
+        # Retain only those elements of methylation_index_2 that are outside the overlap. Choice of trimming methylation_index_1 or methylation_index_2 is arbitrary because if the XM-tags are identical in the overlap then there is no reason to choose read_1 over read_2 and vice versa.
+        methylation_index_2[:] = [i for i in methylation_index_2 if i < start_ol_2 or i > end_ol_2]
+    elif overlap_check == 'XM_ol':
+      # Make every methylation call in the overlap a single copy by (1) only retaining those elements of methylation_index_2 that are outside the overlap and (2) only retaining those elements of methylation_index_1 where the XM-tag value agree for read_1 and read_2.
+      methylation_index_2[:] = [i for i in methylation_index_2 if i < start_ol_2 or i > end_ol_2]
+      methylation_index_1[:] = [i for i in methylation_index_1 if i < start_ol_1 or i > end_ol_1 or read_1.opt('XM')[i] == read_2.opt('XM')[positions_2.index(positions_1[i])]]
     elif overlap_check == "quality":
-      bqual_1 = bytearray(read_1.qual)
-      bqual_2 = bytearray(read_2.qual)
+      bqual_1 = bytearray(read_1.qual[start_ol_1:(end_ol_1 + 1)])
+      bqual_2 = bytearray(read_2.qual[start_ol_2:(end_ol_2 + 1)])
       # Compute the average base quality in the overlap. Can't simply compare sums because one read may have more bases in the overlapping region than the other (e.g. see above example when computing the overlap)
-      if sum([bqual_1[i] for i in rpob_1]) / float(len(rpob_1)) >= sum([bqual_2[i] for i in rpob_2]) / float(len(rpob_2)):
-        # Trim methylation_index_2
-        methylation_index_2[:] = [i for i in methylation_index_2 if i not in rpob_2]
+      if (sum(bqual_1) / float(len(bqual_1))) >= (sum(bqual_2) / float(len(bqual_2))):
+        # Retain only those elements of methylation_index_2 that are outside the overlap.
+        methylation_index_2[:] = [i for i in methylation_index_2 if i < start_ol_2 or i > end_ol_2]
+
       else:
-        # Trim methylation_index_1
-        methylation_index_1[:] = [i for i in methylation_index_1 if i not in rpob_1]
+        # Retain only those elements of methylation_index_1 that are outside the overlap.
+        methylation_index_1[:] = [i for i in methylation_index_1 if i < start_ol_1 or i > end_ol_1]
     elif overlap_check == "Bismark":
-      # Trim methylation_index_2; Bismark always uses read_1 over read_2.
+      #  Retain only those elements of methylation_index_2 that are outside the overlap; bismark_methylation_extractor always uses read_1 instead of read_2 when there is an overlap.
       methylation_index_2 = []
     else:
       raise ValueError("ignore_overlapping_sequence: 'overlap_check' must be one of 'seq_strict', 'seq', 'XM_strict', 'XM', 'quality' or 'Bismark'")
@@ -752,5 +749,5 @@ __all__ = [
     'extract_and_update_methylation_index_from_paired_end_reads',
     'write_methylation_m_tuples_to_file',
     'get_strand',
-    'get_read_positions'
+    'get_positions'
 ]
