@@ -6,7 +6,7 @@
 
 # Installation and dependencies
 
-Simply running 
+Simply running
 
 ```
 python setup.py install
@@ -19,17 +19,17 @@ I have only used `comethylation` with Python 2.7 and `pysam` version >= 0.6. How
 
 # Usage
 ## Method
-`comethylation` extracts _m-tuples_ of methylation loci that co-occur on the same read. The simplest _m-tuple_ is the 1-tuple (m = 1), which corresponds to counting the number of reads that are methylated (_M_) and unmethylated (_U_) for each cytosine in the genome; 1-tuples are the type of methylation calling performed by most methylation calling software such as Bismark's `bismark_methylation_extractor`. 
+`comethylation` extracts _m-tuples_ of methylation loci that co-occur on the same read. The simplest _m-tuple_ is the 1-tuple (m = 1), which corresponds to counting the number of reads that are methylated (_M_) and unmethylated (_U_) for each cytosine in the genome; 1-tuples are the type of methylation calling performed by most methylation calling software such as Bismark's `bismark_methylation_extractor`.
 
-A 2-tuple (m = 2) is a pair of methylation loci; `comethylation` tabulates the number of reads that methylated at each locus in the pair (_MM_), both unmethylated (_UU_) or methylated at one locus but not the other (_MU_ or _UM_). This idea extends to 3-tuples, 4-tuples, etc. 
+A 2-tuple (m = 2) is a pair of methylation loci; `comethylation` tabulates the number of reads that methylated at each locus in the pair (_MM_), both unmethylated (_UU_) or methylated at one locus but not the other (_MU_ or _UM_). This idea extends to 3-tuples, 4-tuples, etc.
 
 For a chosen value of _m_, all _m-tuples_ are extracted and tabulated across the genome. The key point is that _m-tuples_ are only constructed if all _m_ loci are within a single read, so we can investigate the co-occurence of methylation events at the level of a single cell.
 
 ## Basic usage
 
-`comethylation` processes a single `BAM` file and works for both single-end and paired-end sequencing data. Example `BAM` files from single-end directional and paired-end directional bisulfite-sequencing experiments are available in the `data/` directory. 
+`comethylation` processes a single `BAM` file and works for both single-end and paired-end sequencing data. Example `BAM` files from single-end directional and paired-end directional bisulfite-sequencing experiments are available in the `data/` directory.
 
-Methylation measurements may be filtered by base quality or other criteria such as the mapping quality of the read or whether the read is marked as a PCR duplicate. For a full list of filtering options, please run `comethylation --help` or see the __Advanced Usage__ section below. 
+Methylation measurements may be filtered by base quality or other criteria such as the mapping quality of the read or whether the read is marked as a PCR duplicate. For a full list of filtering options, please run `comethylation --help` or see the __Advanced Usage__ section below.
 
 Currently, the BAM file must have been created with [Bismark](http://www.bioinformatics.bbsrc.ac.uk/projects/download.html#bismark). If the data were aligned with Bismark version < 0.8.3 please use the `--aligner Bismark_old` flag. A future version of this software will support the use of BAM files created with other popular bisulfite aligners such as [BSMAP](https://code.google.com/p/bsmap/), [BSmooth](https://github.com/BenLangmead/bsmooth-align), [bwa-meth](https://github.com/brentp/bwa-meth/), [gsnap](http://research-pub.gene.com/gmap/), [last](http://last.cbrc.jp/) and [Novoalign](http://www.novocraft.com/). Support will either be provided natively in `comethylation` or via an pre-processing script `bismarkify`.
 
@@ -102,7 +102,7 @@ The following command will extract all CpG 2-tuples from the file `data/se_direc
 comethylation -m 2 --methylation-type CG data/se_directional.fq.gz_bismark_bt2.bam
 ```
 
-This results in 3 files: 
+This results in 3 files:
 
 * `data/se_directional.fq.gz_bismark_bt2.CG.2.tsv`
 * `data/se_directional.fq.gz_bismark_bt2.CG_per_read.hist`
@@ -116,10 +116,10 @@ Paired-end data must firstly be sorted by queryname prior to running `comethylat
 comethylation -m 3 --methylation-type CG --methylation-type CHH data/pe_directional_1.fq.gz_bismark_bt2_pe.bam
 ```
 
-This results in 3 files: 
+This results in 3 files:
 
 * `data/pe_directional_1.fq.gz_bismark_bt2_pe.CG_CHH.3.tsv`
-* `data/pe_directional_1.fq.gz_bismark_bt2_pe.CG_CHH_per_read.hist` 
+* `data/pe_directional_1.fq.gz_bismark_bt2_pe.CG_CHH_per_read.hist`
 * `data/pe_directional_1.fq.gz_bismark_bt2_pe.reads_that_failed_QC.txt`
 
 #### Note on sort-order of paired-end BAM files
@@ -144,7 +144,7 @@ Memory usage is dependent upon the number of methylation loci on the chromosome 
 I will include more detailed performance benchmarks in future releases. For a rough indication of performance, here are the results for processing approximately 41,000,000 100bp paired-end reads from chr1 of a 20-30x coverage whole-genome methylC-seq experiment of human data. This analysis used a single AMD Opteron 6276 CPU (2.3GHz) on a shared memory system.
 
 ### `-m 2`
-Memory usage peaked at 2.9GB and the running time was approximately 1.5 hours. 
+Memory usage peaked at 2.9GB and the running time was approximately 1.5 hours.
 
 ### `-m 5`
 Memory usage peaked at 8.8GB and the running time was approximately 1.5 hours.
@@ -267,7 +267,7 @@ https://github.com/PeteHaitch/comethylation/)
 
 These are current limitations and their statuses:
 
-## Only works with data aligned with the __Bismark__ mapping software 
+## Only works with data aligned with the __Bismark__ mapping software
 
 `comethylation` makes use of Bismark's custom SAM tags `XM`, `XR` and `XG`. The `XM` tag is used to infer the methylation state of each sequenced cytosine while the `XR` and `XG` tags are used to infer the orientation and strand of the alignment. If the data were aligned with Bismark version < 0.8.3 please use the `--oldBismark` flag.
 
@@ -279,7 +279,7 @@ This is required in order to avoid lookups when finding the mate of a paired-end
 
 The `BAM` file created by Bismark is natively in queryname order so this is not a problem. If the file is not in queryname order then use `samtools sort` with the `-n` option to sort you `BAM` by queryname. The helper script `helper_scripts/run_comethylation.sh` works with a coordinate-sorted `BAM` file and so includes a step to sort the chromosome-level `BAM` files by queryname.
 
-## `comethylation` will skip any read containing an indel 
+## `comethylation` will skip any read containing an indel
 
 It is difficult, although not impossible, to assign coordinates to a cytosine within an indel. To avoid this complication, `comethylation` currently skips any reads containing an indel. I aim to improve the handling of indels in the next release.
 
@@ -293,7 +293,7 @@ For instance, 5-20Gb per chromosome for a typical 20-30x coverage whole-genome m
 
 ## Other notes
 
-* Bismark always sets the mapping quality (`mapQ`) as the value 255, which means unavailable in the SAM format specification. Thus the `--min-mapq` option will not have any effect for Bismark data.
+* Bismark-Bowtie1 always sets the mapping quality (`mapQ`) as the value 255, which means unavailable in the SAM format specification. Thus the `--min-mapq` option will not have any effect for Bismark-Bowtie1 data.
 * `comethylation` skips paired-end reads where either mate is unmapped.
 
 # Acknowledgements
@@ -304,4 +304,4 @@ Thanks also to Tobias Sargeant ([@folded](https://github.com/folded)) for his he
 
 # Questions and comments
 
-Please use the GitHub Issue Tracker (available at [www.github.com/PeteHaitch/comethylation](www.github.com/PeteHaitch/comethylation)) to file bug reports or request new functionality. I welcome questions and comments; you can email me at <peter.hickey@gmail.com>. 
+Please use the GitHub Issue Tracker (available at [www.github.com/PeteHaitch/comethylation](www.github.com/PeteHaitch/comethylation)) to file bug reports or request new functionality. I welcome questions and comments; you can email me at <peter.hickey@gmail.com>.

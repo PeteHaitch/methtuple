@@ -264,104 +264,8 @@ class TestFixOldBismark(unittest.TestCase):
 			fix_old_bismark(self.read)
 			self.assertEqual(cm.exception.code, 1)
 
-class TestIsOverlappingSequenceIdentical(unittest.TestCase):
-	'''Test the function is_overlapping_sequence_identical
-	'''
-
-	def setUp(self):
-
-		def buildRead1():
-			'''build an example read_1 aligned to OT-strand.
-			'''
-			read = pysam.AlignedRead()
-			read.qname = "tr"
-			read.seq = "TTTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTG"
-			read.flag = 99
-			read.tid = 0
-			read.pos = 853
-			read.mapq = 255
-			read.cigar = [(0,100)]
-			read.rnext = 0
-			read.pnext = 854
-			read.tlen = 100
-			read.qual = "BBCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@"
-			read.tags = read.tags + [("XG", "CT")] + [("XM", "hh..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z.")] + [("XR", "CT")]
-			return read
-
-		def buildRead2():
-			'''build an example read_2 aligned to OT-strand.
-			'''
-			read = pysam.AlignedRead()
-			read.qname = "tr"
-			read.seq = "TTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTGA"
-			read.flag = 147
-			read.tid = 0
-			read.pos = 854
-			read.mapq = 255
-			read.cigar = [(0,100)]
-			read.rnext = 0
-			read.pnext = 853
-			read.tlen = 100
-			read.qual = "BCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@:"
-			read.tags = read.tags + [("XG", "CT")] + [("XM", "h..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z..")] + [("XR", "GA")]
-			return read
-
-		# Create the reads
-		self.read_1 = buildRead1()
-		self.read_2 = buildRead2()
-
-	def test_sequence(self):
-		self.assertTrue(is_overlapping_sequence_identical(self.read_1, self.read_2, 99, 'sequence'))
-		self.mod_read_1 = self.read_1
-		self.mod_read_1.seq = str(''.join([self.read_1.seq[:59].decode("utf-8"), 'T', self.read_1.seq[60:].decode("utf-8")])) # Change a 'C' to a 'T'
-		self.assertFalse(is_overlapping_sequence_identical(self.mod_read_1, self.read_2, 99, 'sequence'))
-
-	def test_XM(self):
-		self.assertTrue(is_overlapping_sequence_identical(self.read_1, self.read_2, 99, 'XM'))
-		self.mod_read_1 = pysam.AlignedRead()
-		self.mod_read_1.qname = self.read_1.qname
-		self.mod_read_1.seq = self.read_1.seq
-		self.mod_read_1.flag = self.read_1.flag
-		self.mod_read_1.tid = self.read_1.tid
-		self.mod_read_1.pos = self.read_1.pos
-		self.mod_read_1.mapq = self.read_1.mapq
-		self.mod_read_1.cigar = self.read_1.cigar
-		self.mod_read_1.rnext = self.read_1.rnext
-		self.mod_read_1.pnext = self.read_1.pnext
-		self.mod_read_1.tlen = self.read_1.tlen
-		self.mod_read_1.qual = self.read_1.qual
-		self.mod_read_1.tags = self.mod_read_1.tags + [("XG", "CT")] + [("XM", "hh..h.....x........x....hh.h....h......x.....h..x...x..x..xz....h.h.....h.....x.......h.........h.z.")] + [("XR", "CT")] # Change a 'Z' to a 'z' at cycle 60
-		self.assertFalse(is_overlapping_sequence_identical(self.mod_read_1, self.read_2, 99, 'XM'))
-
-	def test_quality(self):
-		self.assertTrue(is_overlapping_sequence_identical(self.read_1, self.read_2, 99, 'quality'))
-
-	def test_bismark(self):
-		self.assertTrue(is_overlapping_sequence_identical(self.read_1, self.read_2, 99, 'Bismark'))
-
-	def test_n_overlap(self):
-		n_overlap = self.read_1.alen + self.read_2.alen - abs(self.read_1.tlen)
-		self.assertEqual(n_overlap, self.read_1.tlen)
-		self.assertEqual(n_overlap, self.read_2.tlen)
-
-	def test_bad_n_overlap(self):
-		self.assertRaises(ValueError, is_overlapping_sequence_identical, self.read_1, self.read_2, -10, 'sequence')
-		self.assertRaises(ValueError, is_overlapping_sequence_identical, self.read_1, self.read_2, 3.4, 'sequence')
-
-	def test_bad_overlap_check(self):
-		self.assertRaises(ValueError, is_overlapping_sequence_identical, self.read_1, self.read_2, 10, 'apples')
-		self.assertRaises(ValueError, is_overlapping_sequence_identical, self.read_1, self.read_2, 10, 'bismark') # Should be 'Bismark'
-
-	def test_invalid_strands(self):
-		self.mod_read_1 = self.read_1
-		self.mod_read_1.tags = []
-		self.mod_read_1.tags = 	self.mod_read_1.tags + [("XG", "GA")] + [("XM", "hh..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z.")] + [("XR", "CT")]
-		with self.assertRaises(SystemExit) as cm:
-			is_overlapping_sequence_identical(self.mod_read_1, self.read_2, 10, 'sequence')
-			self.assertEqual(cm.exception.code, 1)
-
-class TestGetReadPositions(unittest.TestCase):
-	'''Test the function get_read_positions.
+class TestGetPositions(unittest.TestCase):
+	'''Test the function get_positions.
 	'''
 
 	def setUp(self):
@@ -444,9 +348,9 @@ class TestGetReadPositions(unittest.TestCase):
 			read.pos = read.pos + ss + sh
 			return read
 
-	# Basically, what we test test is that the output of get_read_positions(read) is identical to the output of read.positions with two exceptions:
+	# Basically, what we test test is that the output of get_positions(read) is identical to the output of read.positions with two exceptions:
 	# (1) If the read contains an insertion, then compare against read.aligned_pairs, which returns None for inserted bases
-	# (2) If the read contains soft-clipped bases then need to trim those "start/end Nones" from get_read_positions(read).
+	# (2) If the read contains soft-clipped bases then need to trim those "start/end Nones" from get_positions(read).
 
 	# We test this by creating reads with a variety of indels (including no indels) and then soft-clipping and hard-clipping them in various combinations: (1) hc 2bp from start; (2) hc 1bp from end; (3) hc 2bp from start, 1bp from end; (4) sc 2bp from start; (5) sc 1bp from end; (6) sc 2bp from start, 1bp from end; (7) hc 1bp from start, hc 1bp from end, sc 1bp from start, sc 1bp from end.
 
@@ -541,96 +445,95 @@ class TestGetReadPositions(unittest.TestCase):
 		self.D2I3_hcscse = hardClipAndSoftClip(addInsertionAndDeletion(buildBasicRead(10), 5, 4, 3, 2, 'd'), 1, 1, 1, 1)
 
 	def test_no_indel(self):
-		self.assertEqual(get_read_positions(self.br), list(range(1, 11)))
-		self.assertEqual(get_read_positions(self.br_hcs), list(range(3, 11)))
-		self.assertEqual(get_read_positions(self.br_hce), list(range(1, 10)))
-		self.assertEqual(get_read_positions(self.br_hcse), list(range(3, 10)))
-		self.assertEqual(get_read_positions(self.br_scs), [None] * 2 + list(range(3, 11)))
-		self.assertEqual(get_read_positions(self.br_sce), list(range(1, 10)) + [None] * 1)
-		self.assertEqual(get_read_positions(self.br_scse), [None] * 2 + list(range(3, 10)) + [None] * 1)
-		self.assertEqual(get_read_positions(self.br_hcscse), [None] * 1 + list(range(3, 9)) + [None] * 1)
+		self.assertEqual(get_positions(self.br), list(range(1, 11)))
+		self.assertEqual(get_positions(self.br_hcs), list(range(3, 11)))
+		self.assertEqual(get_positions(self.br_hce), list(range(1, 10)))
+		self.assertEqual(get_positions(self.br_hcse), list(range(3, 10)))
+		self.assertEqual(get_positions(self.br_scs), [None] * 2 + list(range(3, 11)))
+		self.assertEqual(get_positions(self.br_sce), list(range(1, 10)) + [None] * 1)
+		self.assertEqual(get_positions(self.br_scse), [None] * 2 + list(range(3, 10)) + [None] * 1)
+		self.assertEqual(get_positions(self.br_hcscse), [None] * 1 + list(range(3, 9)) + [None] * 1)
 
 	def test_1bp_insertion(self):
-		self.assertEqual(get_read_positions(self.I1), list(range(1, 4)) + [None] + list(range(4, 10)))
-		self.assertEqual(get_read_positions(self.I1_hcs), list(range(3, 4)) + [None] + list(range(4, 10)))
-		self.assertEqual(get_read_positions(self.I1_hce), list(range(1, 4)) + [None] + list(range(4, 9)))
-		self.assertEqual(get_read_positions(self.I1_hcse), list(range(3, 4)) + [None] + list(range(4, 9)))
-		self.assertEqual(get_read_positions(self.I1_scs), [None] * 2 + list(range(3, 4)) + [None] + list(range(4, 10)))
-		self.assertEqual(get_read_positions(self.I1_sce), list(range(1, 4)) + [None] + list(range(4, 9)) + [None] * 1)
-		self.assertEqual(get_read_positions(self.I1_scse), [None] * 2 + list(range(3, 4)) + [None] + list(range(4, 9)) + [None] * 1)
-		self.assertEqual(get_read_positions(self.I1_hcscse), [None] * 1 + list(range(3, 4)) + [None] + list(range(4, 8)) + [None] * 1)
+		self.assertEqual(get_positions(self.I1), list(range(1, 4)) + [None] + list(range(4, 10)))
+		self.assertEqual(get_positions(self.I1_hcs), list(range(3, 4)) + [None] + list(range(4, 10)))
+		self.assertEqual(get_positions(self.I1_hce), list(range(1, 4)) + [None] + list(range(4, 9)))
+		self.assertEqual(get_positions(self.I1_hcse), list(range(3, 4)) + [None] + list(range(4, 9)))
+		self.assertEqual(get_positions(self.I1_scs), [None] * 2 + list(range(3, 4)) + [None] + list(range(4, 10)))
+		self.assertEqual(get_positions(self.I1_sce), list(range(1, 4)) + [None] + list(range(4, 9)) + [None] * 1)
+		self.assertEqual(get_positions(self.I1_scse), [None] * 2 + list(range(3, 4)) + [None] + list(range(4, 9)) + [None] * 1)
+		self.assertEqual(get_positions(self.I1_hcscse), [None] * 1 + list(range(3, 4)) + [None] + list(range(4, 8)) + [None] * 1)
 
 	def test_3bp_insertion(self):
-		self.assertEqual(get_read_positions(self.I3), list(range(1, 4)) + [None] * 3 + list(range(4, 8)))
-		self.assertEqual(get_read_positions(self.I3_hcs), list(range(3, 4)) + [None] * 3 + list(range(4, 8)))
-		self.assertEqual(get_read_positions(self.I3_hce), list(range(1, 4)) + [None] * 3 + list(range(4, 7)))
-		self.assertEqual(get_read_positions(self.I3_hcse), list(range(3, 4)) + [None] * 3 + list(range(4, 7)))
-		self.assertEqual(get_read_positions(self.I3_scs), [None] * 2 + list(range(3, 4)) + [None] * 3 + list(range(4, 8)))
-		self.assertEqual(get_read_positions(self.I3_sce), list(range(1, 4)) + [None] * 3 + list(range(4, 7)) + [None] * 1)
-		self.assertEqual(get_read_positions(self.I3_scse), [None] * 2 + list(range(3, 4)) + [None] * 3 + list(range(4, 7)) + [None] * 1)
-		self.assertEqual(get_read_positions(self.I3_hcscse), [None] * 1 + list(range(3, 4)) + [None] * 3 + list(range(4, 6)) + [None] * 1)
+		self.assertEqual(get_positions(self.I3), list(range(1, 4)) + [None] * 3 + list(range(4, 8)))
+		self.assertEqual(get_positions(self.I3_hcs), list(range(3, 4)) + [None] * 3 + list(range(4, 8)))
+		self.assertEqual(get_positions(self.I3_hce), list(range(1, 4)) + [None] * 3 + list(range(4, 7)))
+		self.assertEqual(get_positions(self.I3_hcse), list(range(3, 4)) + [None] * 3 + list(range(4, 7)))
+		self.assertEqual(get_positions(self.I3_scs), [None] * 2 + list(range(3, 4)) + [None] * 3 + list(range(4, 8)))
+		self.assertEqual(get_positions(self.I3_sce), list(range(1, 4)) + [None] * 3 + list(range(4, 7)) + [None] * 1)
+		self.assertEqual(get_positions(self.I3_scse), [None] * 2 + list(range(3, 4)) + [None] * 3 + list(range(4, 7)) + [None] * 1)
+		self.assertEqual(get_positions(self.I3_hcscse), [None] * 1 + list(range(3, 4)) + [None] * 3 + list(range(4, 6)) + [None] * 1)
 
 	def test_1bp_deletion(self):
-		self.assertEqual(get_read_positions(self.D1), list(range(1, 4)) + list(range(5, 12)))
-		self.assertEqual(get_read_positions(self.D1_hcs), list(range(3, 4)) + list(range(5, 12)))
-		self.assertEqual(get_read_positions(self.D1_hce), list(range(1, 4)) + list(range(5, 11)))
-		self.assertEqual(get_read_positions(self.D1_hcse), list(range(3, 4)) + list(range(5, 11)))
-		self.assertEqual(get_read_positions(self.D1_scs), [None] * 2 + list(range(3, 4)) + list(range(5, 12)))
-		self.assertEqual(get_read_positions(self.D1_sce), list(range(1, 4)) + list(range(5, 11)) + [None] * 1)
-		self.assertEqual(get_read_positions(self.D1_scse), [None] * 2 + list(range(3, 4)) + list(range(5, 11)) + [None] * 1)
-		self.assertEqual(get_read_positions(self.D1_hcscse), [None] * 1 + list(range(3, 4)) + list(range(5, 10)) + [None] * 1)
+		self.assertEqual(get_positions(self.D1), list(range(1, 4)) + list(range(5, 12)))
+		self.assertEqual(get_positions(self.D1_hcs), list(range(3, 4)) + list(range(5, 12)))
+		self.assertEqual(get_positions(self.D1_hce), list(range(1, 4)) + list(range(5, 11)))
+		self.assertEqual(get_positions(self.D1_hcse), list(range(3, 4)) + list(range(5, 11)))
+		self.assertEqual(get_positions(self.D1_scs), [None] * 2 + list(range(3, 4)) + list(range(5, 12)))
+		self.assertEqual(get_positions(self.D1_sce), list(range(1, 4)) + list(range(5, 11)) + [None] * 1)
+		self.assertEqual(get_positions(self.D1_scse), [None] * 2 + list(range(3, 4)) + list(range(5, 11)) + [None] * 1)
+		self.assertEqual(get_positions(self.D1_hcscse), [None] * 1 + list(range(3, 4)) + list(range(5, 10)) + [None] * 1)
 
 	def test_3bp_deletion(self):
-		self.assertEqual(get_read_positions(self.D3), list(range(1, 4)) + list(range(7, 14)))
-		self.assertEqual(get_read_positions(self.D3_hcs), list(range(3, 4)) + list(range(7, 14)))
-		self.assertEqual(get_read_positions(self.D3_hce), list(range(1, 4)) + list(range(7, 13)))
-		self.assertEqual(get_read_positions(self.D3_hcse), list(range(3, 4)) + list(range(7, 13)))
-		self.assertEqual(get_read_positions(self.D3_scs), [None] * 2 + list(range(3, 4)) + list(range(7, 14)))
-		self.assertEqual(get_read_positions(self.D3_sce), list(range(1, 4)) + list(range(7, 13)) + [None] * 1)
-		self.assertEqual(get_read_positions(self.D3_scse), [None] * 2 + list(range(3, 4)) + list(range(7, 13)) + [None] * 1)
-		self.assertEqual(get_read_positions(self.D3_hcscse), [None] * 1 + list(range(3, 4)) + list(range(7, 12)) + [None] * 1)
+		self.assertEqual(get_positions(self.D3), list(range(1, 4)) + list(range(7, 14)))
+		self.assertEqual(get_positions(self.D3_hcs), list(range(3, 4)) + list(range(7, 14)))
+		self.assertEqual(get_positions(self.D3_hce), list(range(1, 4)) + list(range(7, 13)))
+		self.assertEqual(get_positions(self.D3_hcse), list(range(3, 4)) + list(range(7, 13)))
+		self.assertEqual(get_positions(self.D3_scs), [None] * 2 + list(range(3, 4)) + list(range(7, 14)))
+		self.assertEqual(get_positions(self.D3_sce), list(range(1, 4)) + list(range(7, 13)) + [None] * 1)
+		self.assertEqual(get_positions(self.D3_scse), [None] * 2 + list(range(3, 4)) + list(range(7, 13)) + [None] * 1)
+		self.assertEqual(get_positions(self.D3_hcscse), [None] * 1 + list(range(3, 4)) + list(range(7, 12)) + [None] * 1)
 
 	def test_1bp_insertion_and_1bp_deletion(self):
-		self.assertEqual(get_read_positions(self.I1D1), list(range(1, 4)) + [None] + list(range(4, 7)) + list(range(8, 11)))
-		self.assertEqual(get_read_positions(self.I1D1_hcs), list(range(3, 4)) + [None] + list(range(4, 7)) + list(range(8, 11)))
-		self.assertEqual(get_read_positions(self.I1D1_hce), list(range(1, 4)) + [None] + list(range(4, 7)) + list(range(8, 10)))
-		self.assertEqual(get_read_positions(self.I1D1_hcse), list(range(3, 4)) + [None] + list(range(4, 7)) + list(range(8, 10)))
-		self.assertEqual(get_read_positions(self.I1D1_scs), [None] * 2 + list(range(3, 4)) + [None] + list(range(4, 7)) + list(range(8, 11)))
-		self.assertEqual(get_read_positions(self.I1D1_sce), list(range(1, 4)) + [None] + list(range(4, 7)) + list(range(8, 10)) + [None] * 1)
-		self.assertEqual(get_read_positions(self.I1D1_scse), [None] * 2 + list(range(3, 4)) + [None] + list(range(4, 7)) + list(range(8, 10)) + [None] * 1)
-		self.assertEqual(get_read_positions(self.I1D1_hcscse), [None] * 1 + list(range(3, 4)) + [None] + list(range(4, 7)) + list(range(8, 9)) + [None] * 1)
+		self.assertEqual(get_positions(self.I1D1), list(range(1, 4)) + [None] + list(range(4, 7)) + list(range(8, 11)))
+		self.assertEqual(get_positions(self.I1D1_hcs), list(range(3, 4)) + [None] + list(range(4, 7)) + list(range(8, 11)))
+		self.assertEqual(get_positions(self.I1D1_hce), list(range(1, 4)) + [None] + list(range(4, 7)) + list(range(8, 10)))
+		self.assertEqual(get_positions(self.I1D1_hcse), list(range(3, 4)) + [None] + list(range(4, 7)) + list(range(8, 10)))
+		self.assertEqual(get_positions(self.I1D1_scs), [None] * 2 + list(range(3, 4)) + [None] + list(range(4, 7)) + list(range(8, 11)))
+		self.assertEqual(get_positions(self.I1D1_sce), list(range(1, 4)) + [None] + list(range(4, 7)) + list(range(8, 10)) + [None] * 1)
+		self.assertEqual(get_positions(self.I1D1_scse), [None] * 2 + list(range(3, 4)) + [None] + list(range(4, 7)) + list(range(8, 10)) + [None] * 1)
+		self.assertEqual(get_positions(self.I1D1_hcscse), [None] * 1 + list(range(3, 4)) + [None] + list(range(4, 7)) + list(range(8, 9)) + [None] * 1)
 
 	def test_2bp_insertion_and_3bp_deletion(self):
-		self.assertEqual(get_read_positions(self.I2D3), list(range(1, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 12)))
-		self.assertEqual(get_read_positions(self.I2D3_hcs), list(range(3, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 12)))
-		self.assertEqual(get_read_positions(self.I2D3_hce), list(range(1, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 11)))
-		self.assertEqual(get_read_positions(self.I2D3_hcse), list(range(3, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 11)))
-		self.assertEqual(get_read_positions(self.I2D3_scs), [None] * 2 + list(range(3, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 12)))
-		self.assertEqual(get_read_positions(self.I2D3_sce), list(range(1, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 11)) + [None] * 1)
-		self.assertEqual(get_read_positions(self.I2D3_scse), [None] * 2 + list(range(3, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 11)) + [None] * 1)
-		self.assertEqual(get_read_positions(self.I2D3_hcscse), [None] * 1 + list(range(3, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 10)) + [None] * 1)
+		self.assertEqual(get_positions(self.I2D3), list(range(1, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 12)))
+		self.assertEqual(get_positions(self.I2D3_hcs), list(range(3, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 12)))
+		self.assertEqual(get_positions(self.I2D3_hce), list(range(1, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 11)))
+		self.assertEqual(get_positions(self.I2D3_hcse), list(range(3, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 11)))
+		self.assertEqual(get_positions(self.I2D3_scs), [None] * 2 + list(range(3, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 12)))
+		self.assertEqual(get_positions(self.I2D3_sce), list(range(1, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 11)) + [None] * 1)
+		self.assertEqual(get_positions(self.I2D3_scse), [None] * 2 + list(range(3, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 11)) + [None] * 1)
+		self.assertEqual(get_positions(self.I2D3_hcscse), [None] * 1 + list(range(3, 4)) + [None] * 2 + list(range(4, 6)) + list(range(9, 10)) + [None] * 1)
 
 	def test_1bp_deletion_and_1bp_insertion(self):
-		self.assertEqual(get_read_positions(self.D1I1), list(range(1, 4)) + list(range(5, 7)) + [None] + list(range(7, 11)))
-		self.assertEqual(get_read_positions(self.D1I1_hcs), list(range(3, 4)) + list(range(5, 7)) + [None] + list(range(7, 11)))
-		self.assertEqual(get_read_positions(self.D1I1_hce), list(range(1, 4)) + list(range(5, 7)) + [None] + list(range(7, 10)))
-		self.assertEqual(get_read_positions(self.D1I1_hcse), list(range(3, 4)) + list(range(5, 7)) + [None] + list(range(7, 10)))
-		self.assertEqual(get_read_positions(self.D1I1_scs), [None] * 2 + list(range(3, 4)) + list(range(5, 7)) + [None] + list(range(7, 11)))
-		self.assertEqual(get_read_positions(self.D1I1_sce), list(range(1, 4)) + list(range(5, 7)) + [None] + list(range(7, 10)) + [None] * 1)
-		self.assertEqual(get_read_positions(self.D1I1_scse), [None] * 2 + list(range(3, 4)) + list(range(5, 7)) + [None] + list(range(7, 10)) + [None] * 1)
-		self.assertEqual(get_read_positions(self.D1I1_hcscse), [None] * 1 + list(range(3, 4)) + list(range(5, 7)) + [None] + list(range(7, 9)) + [None] * 1)
+		self.assertEqual(get_positions(self.D1I1), list(range(1, 4)) + list(range(5, 7)) + [None] + list(range(7, 11)))
+		self.assertEqual(get_positions(self.D1I1_hcs), list(range(3, 4)) + list(range(5, 7)) + [None] + list(range(7, 11)))
+		self.assertEqual(get_positions(self.D1I1_hce), list(range(1, 4)) + list(range(5, 7)) + [None] + list(range(7, 10)))
+		self.assertEqual(get_positions(self.D1I1_hcse), list(range(3, 4)) + list(range(5, 7)) + [None] + list(range(7, 10)))
+		self.assertEqual(get_positions(self.D1I1_scs), [None] * 2 + list(range(3, 4)) + list(range(5, 7)) + [None] + list(range(7, 11)))
+		self.assertEqual(get_positions(self.D1I1_sce), list(range(1, 4)) + list(range(5, 7)) + [None] + list(range(7, 10)) + [None] * 1)
+		self.assertEqual(get_positions(self.D1I1_scse), [None] * 2 + list(range(3, 4)) + list(range(5, 7)) + [None] + list(range(7, 10)) + [None] * 1)
+		self.assertEqual(get_positions(self.D1I1_hcscse), [None] * 1 + list(range(3, 4)) + list(range(5, 7)) + [None] + list(range(7, 9)) + [None] * 1)
 
 	def test_2bp_deletion_and_3bp_insertion(self):
-		self.assertEqual(get_read_positions(self.D2I3), list(range(1, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 10)))
-		self.assertEqual(get_read_positions(self.D2I3_hcs), list(range(3, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 10)))
-		self.assertEqual(get_read_positions(self.D2I3_hce), list(range(1, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 9)))
-		self.assertEqual(get_read_positions(self.D2I3_hcse), list(range(3, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 9)))
-		self.assertEqual(get_read_positions(self.D2I3_scs), [None] * 2 + list(range(3, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 10)))
-		self.assertEqual(get_read_positions(self.D2I3_sce), list(range(1, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 9)) + [None] * 1)
-		self.assertEqual(get_read_positions(self.D2I3_scse), [None] * 2 + list(range(3, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 9)) + [None] * 1)
-		self.assertEqual(get_read_positions(self.D2I3_hcscse), [None] * 1 + list(range(3, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 8)) + [None] * 1)
+		self.assertEqual(get_positions(self.D2I3), list(range(1, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 10)))
+		self.assertEqual(get_positions(self.D2I3_hcs), list(range(3, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 10)))
+		self.assertEqual(get_positions(self.D2I3_hce), list(range(1, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 9)))
+		self.assertEqual(get_positions(self.D2I3_hcse), list(range(3, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 9)))
+		self.assertEqual(get_positions(self.D2I3_scs), [None] * 2 + list(range(3, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 10)))
+		self.assertEqual(get_positions(self.D2I3_sce), list(range(1, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 9)) + [None] * 1)
+		self.assertEqual(get_positions(self.D2I3_scse), [None] * 2 + list(range(3, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 9)) + [None] * 1)
+		self.assertEqual(get_positions(self.D2I3_hcscse), [None] * 1 + list(range(3, 4)) + list(range(6, 7)) + [None] * 3 + list(range(7, 8)) + [None] * 1)
 
-# TODO: Re-write this test in light of changes to does_read_contain_compliated_cigar.
 class TestDoesReadContainComplicatedCigar(unittest.TestCase):
 	'''Test the function does_read_contain_complicated_cigar
 	'''
@@ -693,150 +596,363 @@ class TestDoesReadContainComplicatedCigar(unittest.TestCase):
 		self.read_1.cigar = [(0, 50), (8, 50)]
 		self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
 
-class TestIgnoreOverlappingSequence(unittest.TestCase):
-	'''Test the function ignore_overlapping_sequence
+class TestProcessOverlap(unittest.TestCase):
+	'''Test the function process_overlap
 	'''
 
 	def setUp(self):
 
-		def buildOTRead1():
-			'''build an example read_1 aligned to OT-strand.
+		def buildNoOverlapRead():
+			'''build an example read-pair with methylation calls but no overlap.
 			'''
-			read = pysam.AlignedRead()
-			read.qname = "otr"
-			read.seq = "TTTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTG"
-			read.flag = 99
-			read.tid = 0
-			read.pos = 853
-			read.mapq = 255
-			read.cigar = [(0,100)]
-			read.rnext = 0
-			read.pnext = 854
-			read.tlen = 100
-			read.qual = "BBCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@"
-			read.tags = read.tags + [("XG", "CT")] + [("XM", "hh..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z.")] + [("XR", "CT")]
-			return read
+			read_1 = pysam.AlignedRead()
+			read_1.qname = "SRR400564.3818005_HAL:1133:C010EABXX:8:2102:8721:119200_length=101"
+			read_1.seq = "TATGGGTTTGGTTTGTAGGGATTTTGTTATAAAGGTGAAATTTAGGAGAGTGTGGAGTTTAGAGTGTTGTTAGGATTTAGGTATAGGTATTAGTGTTCGTT"
+			read_1.flag = 99
+			read_1.tid = 0
+			read_1.pos = 13546
+			read_1.mapq = 30
+			read_1.cigar = [(0, 101)]
+			read_1.rnext = 0
+			read_1.pnext = 13766
+			read_1.tlen = 321
+			read_1.qual = "11=BA2242323<EFGGHJJFHHIJIHIHIIJJJI?FHIIJIJIJJHIHHFHGHIDHCFHHICFCEHHIHHEHHA;?D@BCAAA>>CACADBCC#######"
+			read_1.tags = read_1.tags + [('NM', 24), ('MD', '0C5C0C4C2C6C0C2C2C10C0C0C15C0C9C0C4C0C0C3C1C3C7C0C4'), ('XM', 'h.....hx....x..x......hx..h..h..........hhx...............hx.........hx....hhx...h.x...h.......hxZ...'), ('XR', 'CT'), ('XG', 'CT')]
+			read_2 = pysam.AlignedRead()
+			read_2.qname = "SRR400564.3818005_HAL:1133:C010EABXX:8:2102:8721:119200_length=101"
+			read_2.seq = "TTTTTTATTGGGTTTTTGTAGGAGGTTGTTATTTGTTTTGTTTATTTTTTTAGAAGCGAGACGGAGTAGATTTATTTGTTATTGTTTTTTTTATAATAATT"
+			read_2.flag = 147
+			read_2.tid = 0
+			read_2.pos = 13766
+			read_2.mapq = 30
+			read_2.cigar = [(0, 101)]
+			read_2.rnext = 0
+			read_2.pnext = 13546
+			read_2.tlen = -321
+			read_2.qual = "DDDDDDDDDDBDDDDDDDDDDCCDDDDDDC@9,,,,,,..C>6.,-.JJGIJJJJJJJJJJIHHHD?20001001JJJJJJJJJJJJJHHHHHFFFFFCCC"
+			read_2.tags = read_2.tags + [('NM', 31), ('MD', '0C2C1C1C4C0C1C2C6C2C0C6C0C2C0C0C1C0C2C17C3C0C0C2C2C2C2C0C0C3C8C1'), ('XM', 'h..h.h.x....hh.x..x......x..hh......hx..hhh.hh..h.......Z....Z....x...hhh..x..h..x..hhh...h........h.'), ('XR', 'GA'), ('XG', 'CT')]
+			return read_1, read_2
 
-		def buildOTRead2():
-			'''build an example read_2 aligned to OT-strand.
-			'''
-			read = pysam.AlignedRead()
-			read.qname = "otr"
-			read.seq = "TTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTGA"
-			read.flag = 147
-			read.tid = 0
-			read.pos = 854
-			read.mapq = 255
-			read.cigar = [(0,100)]
-			read.rnext = 0
-			read.pnext = 853
-			read.tlen = 100
-			read.qual = "BCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@:"
-			read.tags = read.tags + [("XG", "CT")] + [("XM", "h..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z..")] + [("XR", "GA")]
-			return read
+			def buildIdenticalSeqOverlap():
+				'''build an example read-pair with meth calls in overlap and identical sequence in overlap.
+				'''
+				read_1 = pysam.AlignedRead()
+				read_1.qname = "SRR400564.5201451_HAL:1133:C010EABXX:8:2108:13902:150428_length=101"
+				read_1.seq = "ATAGATGTGAAGTTGAGGTTGAAGGAGATTGATGTGGTTTTTTTTTAGTTTTTTTGTGTGGTATTAGGTGGTAGTAGAGGTTAGTAAGGTAAATTTGAGTT"
+				read_1.flag = 99
+				read_1.tid = 0
+				read_1.pos = 521475
+				read_1.mapq = 11
+				read_1.cigar = [(0, 101)]
+				read_1.rnext = 0
+				read_1.pnext = 521538
+				read_1.tlen = 164
+				read_1.qual = "@BCFDFFDHFFHHIJGGIHIJJJHIFGCFHIEHHEGHFHIJJJJJJIIJJIIHFDD>A5=@;ACEAC>>AB=ACC>A(+2:<AA>DCCDA@C:@A>CCBDE"
+				read_1.tags = read_1.tags + [('NM', 24), ('MD', '1C10C5C9C11C1C0C1C5C1C4C2C1C0C6C2C6C2C4C3C0C0C3C0C0'), ('XM', '.x..........x.....x.........x...........h.hh.x.....h.x....z..h.hx......x..x......x..h....h...hxz...hx'), ('XR', 'CT'), ('XG', 'CT')]
+				read_2 = pysam.AlignedRead()
+				read_2.qname = "SRR400564.5201451_HAL:1133:C010EABXX:8:2108:13902:150428_length=101"
+				read_2.seq = "TTAGGTGGTAGTAGAGGTTAGTAAGGTAAATTTGAGTTTGGGGATGTGGGGTGGGGGTAGTTATATTTTTTTTTGAGTTATAGTAGATTTATTTTGTTTTG"
+				read_2.flag = 147
+				read_2.tid = 0
+				read_2.pos = 521538
+				read_2.mapq = 11
+				read_2.cigar = [(0, 101)]
+				read_2.rnext = 0
+				read_2.pnext = 521475
+				read_2.tlen = -164
+				read_2.qual = "@CDDDDDDDCCCCDD@CCACCDDDDEDDDDDDDCDDDDDDDEEEDDFFHHEJJIHIJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJHHHHHFFFFFCCC"
+				read_2.tags = read_2.tags + [('NM', 29), ('MD', '0C0C6C2C6C2C4C3C0C0C3C0C0C7C10C2C2C0G1C0C1C1C5C2C2C5C1C1C4C2'), ('XM', 'hx......x..x......x..h....h...hxz...hxz.......z..........x..h..z..hh.h.h.....h..x..x.....h.h.x....x..'), ('XR', 'GA'), ('XG', 'CT')]
+				return read_1, read_2
 
-		def buildOBRead1():
-			'''build an example read_1 aligned to OB-strand
-			'''
-			read = pysam.AlignedRead()
-			read.qname = "otb"
-			read.seq = "ACGCAACTCCGCCCTCGCGATACTCTCCGAATCTATACTAAAAAAAACGCAACTCCGCCGAC"
-			read.flag = 83
-			read.tid = 1
-			read.pos = 493
-			read.mapq = 255
-			read.cigar = [(0,62)]
-			read.rnext = 1
-			read.pnext = 492
-			read.tlen = 63
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
-			read.tags = read.tags + [("XG", "GA")] + [("XM", "..Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx.")] + [("XR", "CT")]
-			return read
+			def buildIdenticalXMDifferentSeqOverlap():
+				'''build an example read-pair with meth calls in overlap and identical XM but different sequence in overlap.
+				'''
+				read_1 = pysam.AlignedRead()
+				read_1.qname = "SRR400564.71_HAL:1133:C010EABXX:8:1101:1825:2253_length=101"
+				read_1.seq = "CCCCCACTAAACGCATAACCTCTATACCTAAACTCACACCTAAAAAACAACGTCTCTCCTCTCNCTACACAATACTACGAAATTACTATTACAAANNATAA"
+				read_1.flag = 83
+				read_1.tid = 9
+				read_1.pos = 91057649
+				read_1.mapq = 24
+				read_1.cigar = [(0, 101)]
+				read_1.rnext = 9
+				read_1.pnext = 91057589
+				read_1.tlen = -161
+				read_1.qual = "66<<;<:9:<<<==<=<??>=>==>??>=>?>?=?????;>???????????<???=??<?<1#>>?>?:@@>?@?@@@@@???@?>@??@?@<2##@<<<"
+				read_1.tags = read_1.tags + [('NM', 23), ('MD', '8G0G6G0G5G1G4G0G12G4G13T2G4G1G2G2G0G0G2G8G1G0A2G1'), ('XM', '........xh..Z...hh.....x.h....hh............h....x.Z..............x....x.h..x.Zxhh..h........x.....h.'), ('XR', 'CT'), ('XG', 'GA')]
+				read_2 = pysam.AlignedRead()
+				read_2.qname = "SRR400564.71_HAL:1133:C010EABXX:8:1101:1825:2253_length=101"
+				read_2.seq = "NAAAAGCTAAAACAAAAAAACNAAATNNNNGCCTATCTAATACTATAAATAATAACTNNNCNCCCACTAAACGCATAACCTCTATACCTAAACTNNCACCT"
+				read_2.flag = 163
+				read_2.tid = 9
+				read_2.pos = 91057589
+				read_2.mapq = 24
+				read_2.cigar = [(0, 101)]
+				read_2.rnext = 9
+				read_2.pnext = 91057649
+				read_2.tlen = 161
+				read_2.qual = "#1=DFFFFHGHHHJJIJJJJJ#1?FH####00?FHIJJIJJJJJJJJJJJHJJJJJI###-#,,?BDEEEDCDDDDBDDDDDDDDEDDDDDDDD##++8??"
+				read_2.tags = read_2.tags + [('NM', 41), ('MD', '0C1G1G3G0G0G0G2G0G0G2G1C1G2G0G0C0C4G3G0G1G2G1G1G1G0G1G3G0C0A1C6G0G6G0G5G1G4G0G2C0A5'), ('XM', '..x.hH..xhhh..xhh..h...x......Z...x...xh.h..x.h.h.hh.h..............xh..Z...hh.....x.h....hh.........'), ('XR', 'GA'), ('XG', 'GA')]
+				return read_1, read_2
 
-		def buildOBRead2():
-			'''build an example read_2 aligned to OB-strand.
-			'''
-			read = pysam.AlignedRead()
-			read.qname = "otb"
-			read.seq = "AACGCAACTCCGCCCTCGCGATACTCTCCGAATCTATACTAAAAAAAACGCAACTCCGCCGA"
-			read.flag = 163
-			read.tid = 0
-			read.pos = 492
-			read.mapq = 255
-			read.cigar = [(0,62)]
-			read.rnext = 1
-			read.pnext = 493
-			read.tlen = 63
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
-			read.tags = read.tags + [("XG", "GA")] + [("XM", "...Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx")] + [("XR", "GA")]
-			return read
+			def buildSmallXMDifferenceOverlap():
+				'''build an example read-pair with meth calls in overlap but slightly different XM-tags in overlap.
+				'''
+				read_1 = pysam.AlignedRead()
+				read_1.qname = "SRR400564.9511_HAL:1133:C010EABXX:8:1101:20403:11881_length=101"
+				read_1.seq = "ATAATTTTTACATCTTTTATAAAAAAAATAATCTCGAAAAACTAAAATTACAAACGACTACCACCACGCCCGACTAATTTTTACATTTTTAATAAAAACGA"
+				read_1.flag = 83
+				read_1.tid = 8
+				read_1.pos = 131548740
+				read_1.mapq = 40
+				read_1.cigar = [(0, 101)]
+				read_1.rnext = 8
+				read_1.pnext = 131548707
+				read_1.tlen = -134
+				read_1.qual = "##################@?@B@@@;;((>1551=6=;)..);7;;=7.(;@5-')))=@168?:@AAFC2FA3HCCEH@AC<<EEIIFFFHDDDA44111"
+				read_1.tags = read_1.tags + [('NM', 22), ('MD', '0C17G4G2G0G9G0G1G2G0G0G6G0G2C2G12G9G7G0G2G1G3G0'), ('XM', '..................h....h..hh.......Z.hh.h..xhh......xh.Z...x.......Z...Zx.........h.......hh..h.h..Zx'), ('XR', 'CT'), ('XG', 'GA')]
+				read_2 = pysam.AlignedRead()
+				read_2.qname = "SRR400564.9511_HAL:1133:C010EABXX:8:1101:20403:11881_length=101"
+				read_2.seq = "ACAAACGTAAACCACCACGCCCGACCTACTCAACTAATTTTTACATCTTTTATAAAAAAAATAATCTCGAAAAACTAAAATTACAAACGCCTACCACCACA"
+				read_2.flag = 163
+				read_2.tid = 8
+				read_2.pos = 131548707
+				read_2.mapq = 40
+				read_2.cigar = [(0, 101)]
+				read_2.rnext = 8
+				read_2.pnext = 131548740
+				read_2.tlen = 134
+				read_2.qual = "@B@FFFFDFHHHHJJJJJGJJJIIJJIJJJJJJJJIJJJJJJIJJJJJIHCFIGHIGIHFDDDDEDCDDDDDDDDDDDDDDCCCCCDA>>@?>?AACBA<2"
+				read_2.tags = read_2.tags + [('NM', 19), ('MD', '3G0G3G1G12G27G4G2G0G9G0G1G2G0G0G6G0G5G7G0'), ('XM', '...xh.Z.h.h.......Z...Zx...........................h....h..hh.......Z.hh.h..xhh......xh.Z...x.......z'), ('XR', 'GA'), ('XG', 'GA')]
+				return read_1, read_2
 
-		# Create the reads
-		self.read_1 = buildOTRead1()
-		self.read_2 = buildOTRead2()
+			def buildLargeXMDifferenceOverlap():
+				'''build an example read-pair with meth calls in overlap but very different XM-tags in overlap.
+				'''
+				read_1 = pysam.AlignedRead()
+				read_1.qname = "SRR400564.671_HAL:1133:C010EABXX:8:1101:10776:2987_length=101"
+				read_1.seq = "TTGGTTTGTGTGGGAGGATTTTGTTATGGTAAGTAAGAGAGAGGTCGCGTGTGCGTGTGCGTGTGTAGGTGTTTTTGTGTGTGGAAGTAGTGTGGATTATT"
+				read_1.flag = 99
+				read_1.tid = 8
+				read_1.pos = 37918311
+				read_1.mapq = 23
+				read_1.cigar = [(0, 101)]
+				read_1.rnext = 8
+				read_1.pnext = 37918347
+				read_1.tlen = 136
+				read_1.qual = "=@?=ABDAACFDFHGGHFGIIJJJJIIIIDGGGFHGGDGHGGGHBFHIIFHGHHHEBBDC<AA;?A@CC:@A@CDBBBCCBAB@>:>44>>?:@B3>A###"
+				read_1.tags = read_1.tags + [('NM', 14), ('MD', '0C3C0C12C0C0C2C5C3C39C13C8C0C1C1'), ('XM', 'x...hx............hhx..h.....h...h...........Z.Z.....Z.....Z.............h.............x........hh.x.'), ('XR', 'CT'), ('XG', 'CT')]
+				read_2 = pysam.AlignedRead()
+				read_2.qname = "SRR400564.671_HAL:1133:C010EABXX:8:1101:10776:2987_length=101"
+				read_2.seq = "GAGGAGAGGGTGTGTGTGTGTGTGTGTGTGTAGGTGTTTTTGTGTGTGGAAGTAGTGTGGATTATTGAGGGTTGTGTGTGTGTGTGTGTGTGTGTGTAGGT"
+				read_2.flag = 147
+				read_2.tid = 8
+				read_2.pos = 37918347
+				read_2.mapq = 23
+				read_2.cigar = [(0, 4), (1, 1), (0, 96)]
+				read_2.rnext = 8
+				read_2.pnext = 37918311
+				read_2.tlen = -136
+				read_2.qual = "###########@8DDDDB?DDDB@8DDDDC>;?B?BDADDFFFHHHHC@@@GDGHGHGGAGFFEHAAEIHGDEGIIGJJJJJJJJJJJHHGHHFFFFFCCC"
+				read_2.tags = read_2.tags + [('NM', 13), ('MD', '3A4T0C1C5C5C13C13C8C0C1C6C29'), ('XM', '..........z.z.....z.....z.............h.............x........hh.x......x.............................'), ('XR', 'GA'), ('XG', 'CT')]
+				return read_1, read_2
 
-		# Create the reads and methylation indexes (using CpGs)
-		self.otr_1 = buildOTRead1()
-		self.otr_2 = buildOTRead2()
-		self.obr_1 = buildOBRead1()
-		self.obr_2 = buildOBRead2()
-		self.otm_1 = [59, 98]
-		self.otm_2 = [58, 97]
-		self.obm_1 = [2, 10, 16, 18, 28, 48, 56, 59]
-		self.obm_2 = [3, 11, 17, 19, 29, 49, 57, 60]
+			def buildInsertionOutsideOfOverlap():
+				'''build an example read-pair with meth calls in overlap and an insertion outside of the overlap in both reads. Note the sequence is identical in the overlap.
+				'''
+				read_1 = pysam.AlignedRead()
+				read_1.qname = "SRR400564.41106_HAL:1133:C010EABXX:8:1101:16059:44833_length=101"
+				read_1.seq = "AAAAAACTCAACAAAACACCAACAACTCACAAAACAATACATTTTCTTAACTTTCTAACAATACAAAATCATTGTTCAATAAAATTTACATATACACCTTA"
+				read_1.flag = 83
+				read_1.tid = 13
+				read_1.pos = 65347555
+				read_1.mapq = 0
+				read_1.cigar = [(0, 62), (1, 1), (0, 38)]
+				read_1.rnext = 13
+				read_1.pnext = 65347514
+				read_1.tlen = -141
+				read_1.qual = "DDDECCA@AFDBFFHFEDHGHHGFF@@GHGIIIIIIGIGGIIHIGGIIIHIIIIIIIIIIHHF?IIHHBAIIIIIIIIIIIIIIIIIHHHFHHDAA1D@??"
+				read_1.tags = read_1.tags + [('NM', 24), ('MD', '0G1G8T1G6G0G2G2T0G3G0G2G11G10G5G0G10G3G0G5G1G3G4G0'), ('XM', 'h.h..........h......zx..x...h...hh..x...........h..........z......hh.....H....x...hh.....z.h...z....h'), ('XR', 'CT'), ('XG', 'GA')]
+				read_2 = pysam.AlignedRead()
+				read_2.qname = "SRR400564.41106_HAL:1133:C010EABXX:8:1101:16059:44833_length=101"
+				read_2.seq = "AACCAATAATACCAAAAAAACATCTCCAAATTACCCCCAAAAAAAAAACTCAACAAAACACCAACAACTCACAAAACAATACATTTTCTTAACTTTCTAAC"
+				read_2.flag = 163
+				read_2.tid = 13
+				read_2.pos = 65347514
+				read_2.mapq = 0
+				read_2.cigar = [(0, 38), (1, 1), (0, 62)]
+				read_2.rnext = 13
+				read_2.pnext = 65347555
+				read_2.tlen = 141
+				read_2.qual = "CCCFFFFFHHHHHJJJIJJJJJJJJJJIJJJJJJJJJJJJJJJJJHFDDC@CDCDDDDABABDD@BDBDCC?CDDDBDDCCCDEEEE@CDCE@CCCCDDE>"
+				read_2.tags = read_2.tags + [('NM', 25), ('MD', '4G2G0G1G7G0G7G1G2G5G0G1G1G8T1G6G0G2G2T0G3G0G2G11G10'), ('XM', '....z..hh.h.......hh.......z.h..h......xh.h.h..........h......zx..x...h...hh..x...........h..........'), ('XR', 'GA'), ('XG', 'GA')]
+				return read_1, read_2
 
-	def test_bismark(self):
-		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'Bismark'), ([59, 98], []))
-		self.assertEqual(ignore_overlapping_sequence(self.obr_1, self.obr_2, self.obm_1, self.obm_2, 99, 'Bismark'), ([2, 10, 16, 18, 28, 48, 56, 59], []))
-		# Make read_2 have higher quality bases than read_1
-		self.otr_1.qual = 'B' * len(self.otr_1.seq)
-		self.otr_2.qual = 'K' * len(self.otr_2.seq)
-		self.obr_1.qual = 'B' * len(self.obr_1.seq)
-		self.obr_2.qual = 'K' * len(self.obr_2.seq)
-		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'Bismark'), ([59, 98], []))
-		self.assertEqual(ignore_overlapping_sequence(self.obr_1, self.obr_2, self.obm_1, self.obm_2, 99, 'Bismark'), ([2, 10, 16, 18, 28, 48, 56, 59], []))
+			def buildIndelicious():
+				'''build an example read-pair with meth calls in overlap, where an insertion means that seq (and XM) aren't identical between reads but they are at positions in common.
+				'''
+				read_1 = pysam.AlignedRead()
+				read_1.qname = "SRR400564.5403_HAL:1133:C010EABXX:8:1101:1870:7806_length=101"
+				read_1.seq = "AAACATATTCTTAATCTTCATAATTCCCTCATCCTCCCTAAAATCAAATCCGAATCAACCACCTTCGATATATTCCAACAAAAACCTCTCCCTCTACCCTA"
+				read_1.flag = 83
+				read_1.tid = 4
+				read_1.pos = 3090709
+				read_1.mapq = 3
+				read_1.cigar = [(0, 101)]
+				read_1.rnext = 4
+				read_1.pnext = 3090675
+				read_1.tlen = -135
+				read_1.qual = "ADDCC@C@CCCCCCAAACCC@CA??BCC@CA;A=;6?>AHHHEADGHHCJJJIHCGIHFB?IIGGGIIGHDHHGJIJIJJIIHGIHFHDFFDFA=2AD@=="
+				read_1.tags = read_1.tags + [('NM', 16), ('MD', '0C5G6G7G17G0G0G10G4G9G1G1G5G2G0G18G0'), ('XM', '......h......h.......h.................xhh.........Zx....x........Zx.h.h.....x..xh..................x'), ('XR', 'CT'), ('XG', 'GA')]
+				read_2 = pysam.AlignedRead()
+				read_2.qname = "SRR400564.5403_HAL:1133:C010EABXX:8:1101:1870:7806_length=101"
+				read_2.seq = "CTTCCGATATTATCTAAAAAAATCTCTCACATACCAACTAAACATATTCTTAATCTTCATAATTCCCTCATCCTCCCTAAAATCAAATCCGAATCAACCAC"
+				read_2.flag = 163
+				read_2.tid = 4
+				read_2.pos = 3090675
+				read_2.mapq = 3
+				read_2.cigar = [(0, 35), (1, 5), (0, 61)]
+				read_2.rnext = 4
+				read_2.pnext = 3090709
+				read_2.tlen = 135
+				read_2.qual = "CCCFFFFFHHHGHIJIJJIJJJJJJJJJJJJJIJJJIJJIIIJJJJJJHJFHIJHIJJIJIDHH?CHHHFFFFFFEDEEDCDEDDDDDDCDDDDBCDDABD"
+				read_2.tags = read_2.tags + [('NM', 21), ('MD', '6G1G2G3G0G0G2G11G7G6G7G17G0G0G10G4G4'), ('XM', '.....Zx.h..h...xhh..h...........h............h......h.......h.................xhh.........Zx....x....'), ('XR', 'GA'), ('XG', 'GA')]
+				return read_1, read_2
 
-	def test_quality(self):
-		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'quality'), ([59, 98], []))
-		self.assertEqual(ignore_overlapping_sequence(self.obr_1, self.obr_2, self.obm_1, self.obm_2, 99, 'quality'), ([2, 10, 16, 18, 28, 48, 56, 59], []))
-		# Make read_2 have higher quality bases than read_1
-		self.otr_1.qual = 'B' * len(self.otr_1.seq)
-		self.otr_2.qual = 'K' * len(self.otr_2.seq)
-		self.obr_1.qual = 'B' * len(self.obr_1.seq)
-		self.obr_2.qual = 'K' * len(self.obr_2.seq)
-		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'quality'), ([], [58, 97]))
-		self.assertEqual(ignore_overlapping_sequence(self.obr_1, self.obr_2, self.obm_1, self.obm_2, 99, 'quality'), ([], [3, 11, 17, 19, 29, 49, 57, 60]))
+			# Create the reads, methylation indexes and FAILED_QC file
+			# There are the methylation indexes, where x indicates those in an overlap
+			# nor: ([97], [56, 61])
+			# iso: ([58, 95x], [32x, 38, 46, 63])
+			# ixmdso: ([12x, 51, 78], [30x, 72])
+			# sxmdo: ([35x, 55x, 67x, 71, 99], [6, 18, 22, 68x, 88x, 100x])
+			# lxmdo: ([45x, 47x, 53x, 59x], [10x, 12x, 18x, 24x])
+			# iooo: ([20x, 59, 89, 95], [4, 27, 62x])
+			# i: ([51x, 66], [5, 90x])
+			self.methylation = re.compile(r'[Zz]')
+			self.nor_1, self.nor_2 = buildNoOverlapRead()
+			self.nor_mi_1 = [midx.start() for midx in re.finditer(methylation_pattern, self.nor_1.opt('XM'))]
+			self.nor_mi_2 = [midx.start() for midx in re.finditer(methylation_pattern, self.nor_2.opt('XM'))]
+			self.iso_1, self.iso_2 = buildIdenticalSeqOverlap()
+			self.iso_mi_1 = [midx.start() for midx in re.finditer(methylation_pattern, self.iso_1.opt('XM'))]
+			self.iso_mi_2 = [midx.start() for midx in re.finditer(methylation_pattern, self.iso_2.opt('XM'))]
+			self.ixmdso_1, self.ixmdso_2 = buildIdenticalXMDifferentSeqOverlap()
+			self.ixmdso_mi_1 = [midx.start() for midx in re.finditer(methylation_pattern, self.ixmdso_1.opt('XM'))]
+			self.ixmdso_mi_2 = [midx.start() for midx in re.finditer(methylation_pattern, self.ixmdso_2.opt('XM'))]
+			self.sxmdo_1, self.sxmdo_2 = buildSmallXMDifferenceOverlap()
+			self.sxmdo_mi_1 = [midx.start() for midx in re.finditer(methylation_pattern, self.sxmdo_1.opt('XM'))]
+			self.sxmdo_mi_2 = [midx.start() for midx in re.finditer(methylation_pattern, self.sxmdo_2.opt('XM'))]
+			self.lxmdo_1, self.lxmdo_2 = buildLargeXMDifferenceOverlap()
+			self.lxmdo_mi_1 = [midx.start() for midx in re.finditer(methylation_pattern, self.lxmdo_1.opt('XM'))]
+			self.lxmdo_mi_2 = [midx.start() for midx in re.finditer(methylation_pattern, self.lxmdo_2.opt('XM'))]
+			self.iooo_1, self.iooo_2 = buildInsertionOutsideOfOverlap()
+			self.iooo_mi_1 = [midx.start() for midx in re.finditer(methylation_pattern, self.iooo_1.opt('XM'))]
+			self.iooo_mi_2 = [midx.start() for midx in re.finditer(methylation_pattern, self.iooo_2.opt('XM'))]
+			self.i_1, self.i_2 = buildIndelicious()
+			self.i_mi_1 = [midx.start() for midx in re.finditer(methylation_pattern, self.i_1.opt('XM'))]
+			self.i_mi_2 = [midx.start() for midx in re.finditer(methylation_pattern, self.i_2.opt('XM'))]
+			self.FAILED_QC = open(tempfile.mkstemp()[1], 'w')
 
-	def test_XM(self):
-		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'XM'), ([59, 98], []))
-		self.assertEqual(ignore_overlapping_sequence(self.obr_1, self.obr_2, self.obm_1, self.obm_2, 99, 'XM'), ([2, 10, 16, 18, 28, 48, 56, 59], []))
-		# Make read_2 have higher quality bases than read_1
-		self.otr_1.qual = 'B' * len(self.otr_1.seq)
-		self.otr_2.qual = 'K' * len(self.otr_2.seq)
-		self.obr_1.qual = 'B' * len(self.obr_1.seq)
-		self.obr_2.qual = 'K' * len(self.obr_2.seq)
-		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'XM'), ([], [58, 97]))
-		self.assertEqual(ignore_overlapping_sequence(self.obr_1, self.obr_2, self.obm_1, self.obm_2, 99, 'XM'), ([], [3, 11, 17, 19, 29, 49, 57, 60]))
+		def test_sequence_strict_overlap_check(self):
+			overlap_check = "sequence_strict"
+			self.assertEqual(process_overlap(self.nor_1, self.nor_2, self.nor_mi_1, self.nor_mi_2, overlap_check, self.FAILED_QC), ([97], [56, 61], 0))
+			self.assertEqual(process_overlap(self.iso_1, self.iso_2, self.iso_mi_1, self.iso_mi_2, overlap_check, self.FAILED_QC), ([58, 95], [38, 46, 63], 0))
+			self.assertEqual(process_overlap(self.ixmdso_1, self.ixmdso_2, ixmdso_mi_1, ixmdso_mi_2, overlap_check, self.FAILED_QC), ([], [], 1))
+			self.assertEqual(process_overlap(self.sxmdo_1, self.sxmdo_2, self.sxmdo_mi_1, self.sxmdo_mi_2, overlap_check, self.FAILED_QC), ([], [], 1))
+			self.assertEqual(process_overlap(self.lxmdo_1, self.lxmdo_2, self.lxmdo_mi_1, self.lxmdo_mi_2, overlap_check, self.FAILED_QC), ([], [], 1))
+			self.assertEqual(process_overlap(self.iooo_1, self.iooo_2, self.iooo_mi_1, self.iooo_mi_2, overlap_check, self.FAILED_QC), ([20, 59, 89, 95], [4, 27], 0))
+			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.i_mi_2, overlap_check, self.FAILED_QC), ([], [], 1))
 
-	def test_sequence(self):
-		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'sequence'), ([59, 98], []))
-		# Make read_2 have higher quality bases than read_1
-		self.otr_1.qual = 'B' * len(self.otr_1.seq)
-		self.otr_2.qual = 'K' * len(self.otr_2.seq)
-		self.obr_1.qual = 'B' * len(self.obr_1.seq)
-		self.obr_2.qual = 'K' * len(self.obr_2.seq)
-		self.assertEqual(ignore_overlapping_sequence(self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'sequence'), ([], [58, 97]))
-		self.assertEqual(ignore_overlapping_sequence(self.obr_1, self.obr_2, self.obm_1, self.obm_2, 99, 'sequence'), ([], [3, 11, 17, 19, 29, 49, 57, 60]))
+		def test_sequence_overlap_check(self):
+			overlap_check = "sequence"
+			self.assertEqual(process_overlap(self.nor_1, self.nor_2, self.nor_mi_1, self.nor_mi_2, overlap_check, self.FAILED_QC), ([97], [56, 61], 0))
+			self.assertEqual(process_overlap(self.iso_1, self.iso_2, self.iso_mi_1, self.iso_mi_2, overlap_check, self.FAILED_QC), ([58, 95], [38, 46, 63], 0))
+			self.assertEqual(process_overlap(self.ixmdso_1, self.ixmdso_2, ixmdso_mi_1, ixmdso_mi_2, overlap_check, self.FAILED_QC), ([51, 78], [72], 0))
+			self.assertEqual(process_overlap(self.sxmdo_1, self.sxmdo_2, self.sxmdo_mi_1, self.sxmdo_mi_2, overlap_check, self.FAILED_QC), ([71, 99], [6, 18, 22], 0))
+			self.assertEqual(process_overlap(self.lxmdo_1, self.lxmdo_2, self.lxmdo_mi_1, self.lxmdo_mi_2, overlap_check, self.FAILED_QC), ([], [], 0))
+			self.assertEqual(process_overlap(self.iooo_1, self.iooo_2, self.iooo_mi_1, self.iooo_mi_2, overlap_check, self.FAILED_QC), ([20, 59, 89, 95], [4, 27], 0))
+			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.i_mi_2, overlap_check, self.FAILED_QC), ([66], [5], 0))
 
-	def test_bad_n_overlap(self):
-		# Should raise an exception
-		self.assertRaises(ValueError, ignore_overlapping_sequence, self.otr_1, self.otr_2, self.otm_1, self.otm_2, -10, 'sequence')
-		self.assertRaises(ValueError, ignore_overlapping_sequence, self.otr_1, self.otr_2, self.otm_1, self.otm_2, 3.4, 'sequence')
+		def test_XM_strict_overlap_check(self):
+			overlap_check = "XM_strict"
+			self.assertEqual(process_overlap(self.nor_1, self.nor_2, self.nor_mi_1, self.nor_mi_2, overlap_check, self.FAILED_QC), ([97], [56, 61], 0))
+			self.assertEqual(process_overlap(self.iso_1, self.iso_2, self.iso_mi_1, self.iso_mi_2, overlap_check, self.FAILED_QC), ([58, 95], [38, 46, 63], 0))
+			self.assertEqual(process_overlap(self.ixmdso_1, self.ixmdso_2, ixmdso_mi_1, ixmdso_mi_2, overlap_check, self.FAILED_QC), ([12, 51, 78], [72], 0))
+			self.assertEqual(process_overlap(self.sxmdo_1, self.sxmdo_2, self.sxmdo_mi_1, self.sxmdo_mi_2, overlap_check, self.FAILED_QC), ([], [], 1))
+			self.assertEqual(process_overlap(self.lxmdo_1, self.lxmdo_2, self.lxmdo_mi_1, self.lxmdo_mi_2, overlap_check, self.FAILED_QC), ([], [], 1))
+			self.assertEqual(process_overlap(self.iooo_1, self.iooo_2, self.iooo_mi_1, self.iooo_mi_2, overlap_check, self.FAILED_QC), ([20, 59, 89, 95], [4, 27], 0))
+			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.i_mi_2, overlap_check, self.FAILED_QC), ([51, 66], [5], 0))
 
-	def test_bad_overlap_check(self):
-		# Should raise an exception
-		self.assertRaises(ValueError, ignore_overlapping_sequence, self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'apples')
-		self.assertRaises(ValueError, ignore_overlapping_sequence, self.otr_1, self.otr_2, self.otm_1, self.otm_2, 99, 'bismark') # Should be 'Bismark'
+		def test_XM_overlap_check(self):
+			overlap_check = "XM"
+			self.assertEqual(process_overlap(self.nor_1, self.nor_2, self.nor_mi_1, self.nor_mi_2, overlap_check, self.FAILED_QC), ([97], [56, 61], 0))
+			self.assertEqual(process_overlap(self.iso_1, self.iso_2, self.iso_mi_1, self.iso_mi_2, overlap_check, self.FAILED_QC), ([58, 95], [38, 46, 63], 0))
+			self.assertEqual(process_overlap(self.ixmdso_1, self.ixmdso_2, ixmdso_mi_1, ixmdso_mi_2, overlap_check, self.FAILED_QC), ([12, 51, 78], [72], 0))
+			self.assertEqual(process_overlap(self.sxmdo_1, self.sxmdo_2, self.sxmdo_mi_1, self.sxmdo_mi_2, overlap_check, self.FAILED_QC), ([71, 99], [6, 18, 22], 0))
+			self.assertEqual(process_overlap(self.lxmdo_1, self.lxmdo_2, self.lxmdo_mi_1, self.lxmdo_mi_2, overlap_check, self.FAILED_QC), ([], [], 0))
+			self.assertEqual(process_overlap(self.iooo_1, self.iooo_2, self.iooo_mi_1, self.iooo_mi_2, overlap_check, self.FAILED_QC), ([20, 59, 89, 95], [4, 27], 0))
+			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.i_mi_2, overlap_check, self.FAILED_QC), ([51, 66], [5], 0))
+
+		def test_XM_ol_overlap_check(self):
+			overlap_check = "XM_ol"
+			self.assertEqual(process_overlap(self.nor_1, self.nor_2, self.nor_mi_1, self.nor_mi_2, overlap_check, self.FAILED_QC), ([97], [56, 61], 0))
+			self.assertEqual(process_overlap(self.iso_1, self.iso_2, self.iso_mi_1, self.iso_mi_2, overlap_check, self.FAILED_QC), ([58, 95], [38, 46, 63], 0))
+			self.assertEqual(process_overlap(self.ixmdso_1, self.ixmdso_2, ixmdso_mi_1, ixmdso_mi_2, overlap_check, self.FAILED_QC), ([12, 51, 78], [72], 0))
+			self.assertEqual(process_overlap(self.sxmdo_1, self.sxmdo_2, self.sxmdo_mi_1, self.sxmdo_mi_2, overlap_check, self.FAILED_QC), ([35, 55, 71, 99], [6, 18, 22], 0))
+			self.assertEqual(process_overlap(self.lxmdo_1, self.lxmdo_2, self.lxmdo_mi_1, self.lxmdo_mi_2, overlap_check, self.FAILED_QC), ([], [], 0))
+			self.assertEqual(process_overlap(self.iooo_1, self.iooo_2, self.iooo_mi_1, self.iooo_mi_2, overlap_check, self.FAILED_QC), ([20, 59, 89, 95], [4, 27], 0))
+			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.i_mi_2, overlap_check, self.FAILED_QC), ([51, 66], [5], 0))
+
+		def test_quality_overlap_check(self):
+			# Fudge quality scores to test overlap_check = 'quality'.
+			self.nor_1.qual = 'G' * len(self.nor_1.seq)
+			self.nor_2.qual = 'F' * len(self.nor_2.seq)
+			self.assertEqual(process_overlap(self.nor_1, self.nor_2, self.nor_mi_1, self.nor_mi_2, overlap_check, self.FAILED_QC), ([97], [56, 61], 0))
+			self.nor_1.qual = 'E' * len(self.nor_1.seq)
+			self.assertEqual(process_overlap(self.nor_1, self.nor_2, self.nor_mi_1, self.nor_mi_2, overlap_check, self.FAILED_QC), ([97], [56, 61], 0))
+			self.iso_1.qual = 'G' * len(self.iso_1.seq)
+			self.iso_2.qual = 'F' * len(self.iso_2.seq)
+			self.assertEqual(process_overlap(self.iso_1, self.iso_2, self.iso_mi_1, self.iso_mi_2, overlap_check, self.FAILED_QC), ([58, 95], [38, 46, 63], 0))
+			self.iso_1.qual = 'E' * len(self.iso_1.seq)
+			self.assertEqual(process_overlap(self.iso_1, self.iso_2, self.iso_mi_1, self.iso_mi_2, overlap_check, self.FAILED_QC), ([58], [32, 38, 46, 63], 0))
+			self.ixmdso_1.qual = 'G' * len(self.ixmdso_1.seq)
+			self.ixmdso_2.qual = 'F' * len(self.ixmdso_2.seq)
+			self.assertEqual(process_overlap(self.ixmdso_1, self.ixmdso_2, self.ixmdso_mi_1, self.ixmdso_mi_2, overlap_check, self.FAILED_QC), ([12, 51, 78], [72], 0))
+			self.ixmdso_1.qual = 'E' * len(self.ixmdso_1.seq)
+			self.assertEqual(process_overlap(self.ixmdso_1, self.ixmdso_2, self.ixmdso_mi_1, self.ixmdso_mi_2, overlap_check, self.FAILED_QC), ([51, 78], [30, 72], 0))
+			self.sxmdo_1.qual = 'G' * len(self.sxmdo_1.seq)
+			self.sxmdo_2.qual = 'F' * len(self.sxmdo_2.seq)
+			self.assertEqual(process_overlap(self.sxmdo_1, self.sxmdo_2, self.sxmdo_mi_1, self.sxmdo_mi_2, overlap_check, self.FAILED_QC), ([35, 55, 67, 71, 99], [6, 18, 22], 0))
+			self.sxmdo_1.qual = 'E' * len(self.sxmdo_1.seq)
+			self.assertEqual(process_overlap(self.sxmdo_1, self.sxmdo_2, self.sxmdo_mi_1, self.sxmdo_mi_2, overlap_check, self.FAILED_QC), ([71, 99], [6, 18, 22, 68, 88, 100], 0))
+			self.lxmdo_1.qual = 'G' * len(self.lxmdo_1.seq)
+			self.lxmdo_2.qual = 'F' * len(self.lxmdo_2.seq)
+			self.assertEqual(process_overlap(self.lxmdo_1, self.lxmdo_2, self.lxmdo_mi_1, self.lxmdo_mi_2, overlap_check, self.FAILED_QC), ([45, 47, 53, 59], [], 0))
+			self.lxmdo_1.qual = 'E' * len(self.lxmdo_1.seq)
+			self.assertEqual(process_overlap(self.lxmdo_1, self.lxmdo_2, self.lxmdo_mi_1, self.lxmdo_mi_2, overlap_check, self.FAILED_QC), ([], [10, 12, 18, 24], 0))
+			self.iooo_1.qual = 'G' * len(self.iooo_1.seq)
+			self.iooo_2.qual = 'F' * len(self.iooo_2.seq)
+			self.assertEqual(process_overlap(self.iooo_1, self.iooo_2, self.iooo_mi_1, self.iooo_mi_2, overlap_check, self.FAILED_QC), ([20, 59, 89, 95], [4, 27], 0))
+			self.iooo_1.qual = 'E' * len(self.iooo_1.seq)
+			self.assertEqual(process_overlap(self.iooo_1, self.iooo_2, self.iooo_mi_1, self.iooo_mi_2, overlap_check, self.FAILED_QC), ([59, 89, 95], [4, 27, 62], 0))
+			self.i_1.qual = 'G' * len(self.i_1.seq)
+			self.i_2.qual = 'F' * len(self.i_2.seq)
+			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.iooo_mi_2, overlap_check, self.FAILED_QC), ([51, 66], [5], 0))
+			self.i_1.qual = 'E' * len(self.i_1.seq)
+			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.i_mi_2, overlap_check, self.FAILED_QC), ([66], [5, 90], 0))
+
+		def test_Bismark_overlap_check(self):
+			overlap_check = "Bismark"
+			self.assertEqual(process_overlap(self.nor_1, self.nor_2, self.nor_mi_1, self.nor_mi_2, overlap_check, self.FAILED_QC), ([97], [56, 61], 0))
+			self.assertEqual(process_overlap(self.iso_1, self.iso_2, self.iso_mi_1, self.iso_mi_2, overlap_check, self.FAILED_QC), ([58, 95], [38, 46, 63], 0))
+			self.assertEqual(process_overlap(self.ixmdso_1, self.ixmdso_2, ixmdso_mi_1, ixmdso_mi_2, overlap_check, self.FAILED_QC), ([12, 51, 78], [72], 0))
+			self.assertEqual(process_overlap(self.sxmdo_1, self.sxmdo_2, self.sxmdo_mi_1, self.sxmdo_mi_2, overlap_check, self.FAILED_QC), ([35, 55, 67, 71, 99], [6, 18, 22], 0))
+			self.assertEqual(process_overlap(self.lxmdo_1, self.lxmdo_2, self.lxmdo_mi_1, self.lxmdo_mi_2, overlap_check, self.FAILED_QC), ([45, 47, 53, 59x], [], 0))
+			self.assertEqual(process_overlap(self.iooo_1, self.iooo_2, self.iooo_mi_1, self.iooo_mi_2, overlap_check, self.FAILED_QC), ([20, 59, 89, 95], [4, 27], 0))
+			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.i_mi_2, overlap_check, self.FAILED_QC), ([51, 66], [5], 0))
+
+			def test_bad_overlap_check(self):
+				self.assertRaises(ValueError, process_overlap, self.nor_1, self.nor_2, self.nor_mi_1, self.nor_mi_2, "bismark", self.FAILED_QC)
+				self.assertRaises(ValueError, process_overlap, self.nor_1, self.nor_2, self.nor_mi_1, self.nor_mi_2, "seq", self.FAILED_QC)
 
 class TestExtractAndUpdateMethylationIndexFromSingleEndRead(unittest.TestCase):
 	'''Test the function extract_and_update_methylation_index_from_single_end_read
@@ -1708,7 +1824,7 @@ class TestGetStrand(unittest.TestCase):
 		self.assertEqual(get_strand(self.ctobpe_2), '-')
 
 #############
-# Everything in this commented chunk was previously used in testing get_read_positions(). However, these examples were too complicated to be used to unit tests here. They may still be useful in another context, which is why they haven't been deleted.
+# Everything in this commented chunk was previously used in testing get_positions(). However, these examples were too complicated to be used to unit tests here. They may still be useful in another context, which is why they haven't been deleted.
 #
 # def buildRead1OTNoINDELs():
 # 	'''build an example read_1 aligned to OT-strand that contains no INDELs
