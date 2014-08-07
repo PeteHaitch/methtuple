@@ -201,7 +201,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
           methylation_m_tuples.increment_count(this_m_tuple_positions, this_comethylation_pattern, read, None)
     return methylation_m_tuples, n_methylation_loci
 
-def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read2_pos, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC):
+def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC):
     """Extracts m-tuples of methylation loci from a readpair and adds the comethylation m-tuple to the methylation_m_tuples object.
 
     Args:
@@ -213,7 +213,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         methylation_type: A string of the methylation type, e.g. CG for CpG methylation. Must be a valid option for the MTuple class.
         methylation_pattern: A regular expression of the methylation loci, e.g. '[Zz]' for CpG-methylation
         ignore_read_1_pos: Ignore this list of positions from each read_1.
-        ignore_read2_pos: Ignore this list of positions from each read_2.
+        ignore_read_2_pos: Ignore this list of positions from each read_2.
         min_qual: Ignore bases with quality-score less than this value.
         phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
         ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
@@ -230,7 +230,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
 
     # Ignore any read positions specified in ignore_read_1_pos or ignore_read_1_pos
     methylation_index_1 = ignore_read_pos(read_1, methylation_index_1, ignore_read_1_pos)
-    methylation_index_2 = ignore_read_pos(read_2, methylation_index_2, ignore_read2_pos)
+    methylation_index_2 = ignore_read_pos(read_2, methylation_index_2, ignore_read_2_pos)
     # Ignore any positions with a base quality less than min_qual
     methylation_index_1 = ignore_low_quality_bases(read_1, methylation_index_1, min_qual, phred_offset)
     methylation_index_2 = ignore_low_quality_bases(read_2, methylation_index_2, min_qual, phred_offset)
