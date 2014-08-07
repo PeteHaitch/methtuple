@@ -243,8 +243,8 @@ else:
 
 # Reformat the variable methylation_type to be a single string
 methylation_type = '/'.join(sorted(methylation_type))
-ignore_read1_pos = make_ignores_list(args.ir1p)
-ignore_read2_pos = make_ignores_list(args.ir2p)
+ignore_read_1_pos = make_ignores_list(args.ir1p)
+ignore_read_2_pos = make_ignores_list(args.ir2p)
 overlap_check = args.of
 min_qual = args.mbq
 min_mapq = args.mmq
@@ -307,27 +307,33 @@ if not args.uip:
     print('Ignoring improper readpairs')
 else:
     print('Not filtering out readpairs that are marked as improperly paired. The definition of a proper readpair is aligner-specific and the value is set with the 0x2 bit in the SAM flag')
-if ignore_read1_pos:
-    print("Ignoring positions ", ignore_read1_pos, "of each read (if data are single-end) or of each read_1 (if data are paired-end).")
+if ignore_read_1_pos:
+    print("Ignoring positions ", ignore_read_1_pos, "of each read (if data are single-end) or of each read_1 (if data are paired-end).")
 else:
     print("Using all positions of each read (if data are single-end) or of each read_1 (if data are paired-end).")
-if ignore_read2_pos:
-    print("Ignoring positions ", ignore_read2_pos, "of each read_2 (if data are paired-end).")
+if ignore_read_2_pos:
+    print("Ignoring positions ", ignore_read_2_pos, "of each read_2 (if data are paired-end).")
 else:
     print("Using all positions of each read_2 (if data are paired-end).")
 print('Ignoring methylation calls with base-quality less than', min_qual)
 print('Ignoring reads with mapQ less than', min_mapq)
 
-if overlap_check == 'sequence':
-    print('Ignoring paired-end reads that have overlapping mates if the overlapping sequences are not identical\n')
+if overlap_check == 'sequence_strict':
+    print('Ignoring paired-end reads that have overlapping mates if the overlapping sequences are not identical.\n')
+elif overlap_check == 'sequence':
+    print('Ignoring any overlapping portion of paired-end reads if the sequences in the overlap are not identical.\n')
+elif overlap_check == 'XM_strict':
+    print('Ignoring paired-end reads that have overlapping mates if the XM-tags in the overlap are not identical.\n')
 elif overlap_check == 'XM':
-    print('Ignoring paired-end reads that have overlapping mates if the XM-tags for the overlapping sequences are not identical\n')
+    print('Ignoring any overlapping portion of paired-end reads if the XM-tags in the overlap are not identical.\n')
+elif overlap_check == 'XM_ol':
+    print('Ignoring any overlapping positions of paired-end reads where the XM-tags disagree and counting once the remaining overlapping positions.\n')
 elif overlap_check == 'quality':
-    print('Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only the mate with the higher quality scores in the overlapping region shall be used\n')
+    print('Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only the mate with the higher quality scores in the overlapping region shall be used.\n')
 elif overlap_check == 'Bismark':
-    print("Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only read_1 shall be used (a la bismark_methylation_extractor)\n")
+    print("Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only read_1 shall be used (as done by bismark_methylation_extractor).\n")
 else:
-    exit_msg = "ERROR: --overlap-filter must be one of 'sequence', 'XM', 'quality' or 'Bismark'"
+    exit_msg = "ERROR: --overlap-filter must be one of 'sequence_strict', 'sequence', 'XM_strict', 'XM', 'XM_ol, 'quality' or 'Bismark'"
     sys.exit(exit_msg)
 
 print(''.join(['Creating ', methylation_type, ' ', str(m), '-tuples']))
@@ -431,7 +437,7 @@ for read in BAM:
           continue
         # Check that read_1 and read_2 have identical read-names. If not, skip the readpair.
         if read_1.qname == read_2.qname:
-            methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_read1_pos, ignore_read2_pos, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC)
+            methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC)
             # Update the n_methylation_loci_per_read dictionary
             if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
                 n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
@@ -481,7 +487,7 @@ for read in BAM:
             read_1 = None
             read_2 = None
             continue
-        methylation_m_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_read1_pos, min_qual, phred_offset, ob_strand_offset)
+        methylation_m_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_read_1_pos, min_qual, phred_offset, ob_strand_offset)
         if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
             n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
 
@@ -499,6 +505,7 @@ write_methylation_m_tuples_to_file(methylation_m_tuples, OUT)
 # Print some summary information to STDOUT
 print('Summary of the number of DNA fragments processed by comethylation')
 print(''.join(['Number of DNA fragments in file = ', str(n_fragment)]))
+# TODO: List these by the order the filters are applied
 print(''.join(['Number of DNA fragments skipped due to failing the --overlap-filter ', overlap_check, ' filter = ', str(n_fragment_skipped_due_to_bad_overlap)]))
 print(''.join(['Number of DNA fragments skipped due to failing the --min-mapq filter = ', str(n_fragment_skipped_due_to_low_mapq)]))
 print(''.join(['Number of DNA fragments skipped due to being marked as PCR duplicates = ', str(n_fragment_skipped_due_to_duplicate)]))
