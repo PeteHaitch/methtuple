@@ -819,6 +819,37 @@ class TestProcessOverlap(unittest.TestCase):
 				read_2.tags = read_2.tags + [('NM', 21), ('MD', '6G1G2G3G0G0G2G11G7G6G7G17G0G0G10G4G4'), ('XM', '.....Zx.h..h...xhh..h...........h............h......h.......h.................xhh.........Zx....x....'), ('XR', 'GA'), ('XG', 'GA')]
 				return read_1, read_2
 
+			def buildDelAtEndOfOverlap():
+				'''build an example read-pair with meth calls in overlap, where a deletion at the end of the overlap coincides with a CpG, which means the overlap is particularly difficult to calculate.
+				'''
+				read_1 = pysam.AlignedRead()
+				read_1.qname = "SRR400564.2497275_HAL:1133:C010EABXX:8:1204:20661:123404_length=101"
+				read_1.seq = "CATCAACACCACCCATCTAAAACCCAAAAAAAAAAACTTTCCCTCTATCCCCCAACCTTTAAACTATCACCAAACAAACCATTCATTCATCAAATACTTTT"
+				read_1.flag = 83
+				read_1.tid = 7
+				read_1.pos = 12294957
+				read_1.mapq = 7
+				read_1.cigar = [(0, 25), (2, 1), (0, 76)]
+				read_1.rnext = 7
+				read_1.pnext = 12294882
+				read_1.tlen = -177
+				read_1.qual = "###########?@::43<DB??<5-@DDDDDFFED@FFFDHIIEGIGFJJJJIIFIIIJIIIFF??@F?JJIHHGJJJJJIJJIJIJJHGHHHDB=4FCBB"
+				read_1.tags = read_1.tags + [('NM', 21), ('MD', '5G1G6G3G0G0G0G3^G3G0G1G0G0G1G10G7G5G0G3G11G6G16'), ('XM', '.....x.z......z...xhhh......hh.hhh.h..........x.......x.....hh...x...........h......z................'), ('XR', 'CT'), ('XG', 'GA')]
+				read_2 = pysam.AlignedRead()
+				read_2.qname = "SRR400564.2497275_HAL:1133:C010EABXX:8:1204:20661:123404_length=101"
+				read_2.seq = "TTCAAAAAAATCTTTTCAACAAAAACCTTACAAATACATACTTCAATCCTAAAAACCTTATCCTAACCTCCTCTCCATCAACACCACCCATCTAAAACCCA"
+				read_2.flag = 163
+				read_2.tid = 7
+				read_2.pos = 12294882
+				read_2.mapq = 7
+				read_2.cigar = [(0, 101)]
+				read_2.rnext = 7
+				read_2.pnext = 12294957
+				read_2.tlen = 177
+				read_2.qual = "BBCFFFFFHGHFHJJJJJJJIJIJJJIJIHGHGHGHJIIJJJJJIIIJJJCGIIJIGHIIJJIHHHHGHFFFFEEEEEEDDDDDDBDDDDDDDDDDDDDD?"
+				read_2.tags = read_2.tags + [('NM', 29), ('MD', '4G0G2G0G8G2G0G0G0G6G0G0G1G3G4G0G4G0G1G0G10G14G1G6G3G0G0G0G3G0'), ('XM', '....xh..hh........x..xhhh......zxh.h...h....zx....xh.hh..........h..............x.z......z...xhhh...z'), ('XR', 'GA'), ('XG', 'GA')]
+				return read_1, read_2
+
 			# Create the reads, methylation indexes and FAILED_QC file
 			# There are the methylation indexes, where x indicates those in an overlap
 			# nor: ([97], [56, 61])
@@ -850,6 +881,9 @@ class TestProcessOverlap(unittest.TestCase):
 			self.i_1, self.i_2 = buildIndelicious()
 			self.i_mi_1 = [midx.start() for midx in re.finditer(methylation_pattern, self.i_1.opt('XM'))]
 			self.i_mi_2 = [midx.start() for midx in re.finditer(methylation_pattern, self.i_2.opt('XM'))]
+			self.daeoo_1, self.daeoo_2 = buildDelAtEndOfOverlap()
+			self.daeoo_mi_1 = [midx.start() for midx in re.finditer(methylation_pattern, self.daeoo_1.opt('XM'))]
+			self.daeoo_mi_2 = [midx.start() for midx in re.finditer(methylation_pattern, self.daeoo_2.opt('XM'))]
 			self.FAILED_QC = open(tempfile.mkstemp()[1], 'w')
 
 		def test_sequence_strict_overlap_check(self):
@@ -861,6 +895,7 @@ class TestProcessOverlap(unittest.TestCase):
 			self.assertEqual(process_overlap(self.lxmdo_1, self.lxmdo_2, self.lxmdo_mi_1, self.lxmdo_mi_2, overlap_check, self.FAILED_QC), ([], [], 1))
 			self.assertEqual(process_overlap(self.iooo_1, self.iooo_2, self.iooo_mi_1, self.iooo_mi_2, overlap_check, self.FAILED_QC), ([20, 59, 89, 95], [4, 27], 0))
 			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.i_mi_2, overlap_check, self.FAILED_QC), ([], [], 1))
+			self.assertEqual(process_overlap(self.daeoo_1, self.daeoo_2, self.daeoo_mi_1, self.daeoo_mi_2, overlap_check, self.FAILED_QC), ([], [], 1))
 
 		def test_sequence_overlap_check(self):
 			overlap_check = "sequence"
@@ -871,6 +906,7 @@ class TestProcessOverlap(unittest.TestCase):
 			self.assertEqual(process_overlap(self.lxmdo_1, self.lxmdo_2, self.lxmdo_mi_1, self.lxmdo_mi_2, overlap_check, self.FAILED_QC), ([], [], 0))
 			self.assertEqual(process_overlap(self.iooo_1, self.iooo_2, self.iooo_mi_1, self.iooo_mi_2, overlap_check, self.FAILED_QC), ([20, 59, 89, 95], [4, 27], 0))
 			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.i_mi_2, overlap_check, self.FAILED_QC), ([66], [5], 0))
+			self.assertEqual(process_overlap(self.daeoo_1, self.daeoo_2, self.daeoo_mi_1, self.daeoo_mi_2, overlap_check, self.FAILED_QC), ([84], [31, 44], 0))
 
 		def test_XM_strict_overlap_check(self):
 			overlap_check = "XM_strict"
@@ -881,6 +917,7 @@ class TestProcessOverlap(unittest.TestCase):
 			self.assertEqual(process_overlap(self.lxmdo_1, self.lxmdo_2, self.lxmdo_mi_1, self.lxmdo_mi_2, overlap_check, self.FAILED_QC), ([], [], 1))
 			self.assertEqual(process_overlap(self.iooo_1, self.iooo_2, self.iooo_mi_1, self.iooo_mi_2, overlap_check, self.FAILED_QC), ([20, 59, 89, 95], [4, 27], 0))
 			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.i_mi_2, overlap_check, self.FAILED_QC), ([51, 66], [5], 0))
+			self.assertEqual(process_overlap(self.daeoo_1, self.daeoo_2, self.daeoo_mi_1, self.daeoo_mi_2, overlap_check, self.FAILED_QC), ([], [], 1))
 
 		def test_XM_overlap_check(self):
 			overlap_check = "XM"
@@ -891,6 +928,7 @@ class TestProcessOverlap(unittest.TestCase):
 			self.assertEqual(process_overlap(self.lxmdo_1, self.lxmdo_2, self.lxmdo_mi_1, self.lxmdo_mi_2, overlap_check, self.FAILED_QC), ([], [], 0))
 			self.assertEqual(process_overlap(self.iooo_1, self.iooo_2, self.iooo_mi_1, self.iooo_mi_2, overlap_check, self.FAILED_QC), ([20, 59, 89, 95], [4, 27], 0))
 			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.i_mi_2, overlap_check, self.FAILED_QC), ([51, 66], [5], 0))
+			self.assertEqual(process_overlap(self.daeoo_1, self.daeoo_2, self.daeoo_mi_1, self.daeoo_mi_2, overlap_check, self.FAILED_QC), ([84], [31, 44], 0))
 
 		def test_XM_ol_overlap_check(self):
 			overlap_check = "XM_ol"
@@ -901,6 +939,7 @@ class TestProcessOverlap(unittest.TestCase):
 			self.assertEqual(process_overlap(self.lxmdo_1, self.lxmdo_2, self.lxmdo_mi_1, self.lxmdo_mi_2, overlap_check, self.FAILED_QC), ([], [], 0))
 			self.assertEqual(process_overlap(self.iooo_1, self.iooo_2, self.iooo_mi_1, self.iooo_mi_2, overlap_check, self.FAILED_QC), ([20, 59, 89, 95], [4, 27], 0))
 			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.i_mi_2, overlap_check, self.FAILED_QC), ([51, 66], [5], 0))
+			self.assertEqual(process_overlap(self.daeoo_1, self.daeoo_2, self.daeoo_mi_1, self.daeoo_mi_2, overlap_check, self.FAILED_QC), ([7, 14, 84], [31, 44, 82, 89], 0))
 
 		def test_quality_overlap_check(self):
 			# Fudge quality scores to test overlap_check = 'quality'.
@@ -939,6 +978,11 @@ class TestProcessOverlap(unittest.TestCase):
 			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.iooo_mi_2, overlap_check, self.FAILED_QC), ([51, 66], [5], 0))
 			self.i_1.qual = 'E' * len(self.i_1.seq)
 			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.i_mi_2, overlap_check, self.FAILED_QC), ([66], [5, 90], 0))
+			self.daeoo_1.qual = 'G' * len(self.daeoo_1.seq)
+			self.daeoo_2.qual = 'F' * len(self.daeoo_2.seq)
+			self.assertEqual(process_overlap(self.daeoo_1, self.daeoo_2, self.daeoo_mi_1, self.daeoo_mi_2, overlap_check, self.FAILED_QC), ([7, 14, 84], [31, 44], 0))
+			self.daeoo_1.qual = 'E' * len(self.daeoo_1.seq)
+			self.assertEqual(process_overlap(self.daeoo_1, self.daeoo_2, self.daeoo_mi_1, self.daeoo_mi_2, overlap_check, self.FAILED_QC), ([84], [31, 44, 82, 89], 0))
 
 		def test_Bismark_overlap_check(self):
 			overlap_check = "Bismark"
@@ -949,6 +993,7 @@ class TestProcessOverlap(unittest.TestCase):
 			self.assertEqual(process_overlap(self.lxmdo_1, self.lxmdo_2, self.lxmdo_mi_1, self.lxmdo_mi_2, overlap_check, self.FAILED_QC), ([45, 47, 53, 59], [], 0))
 			self.assertEqual(process_overlap(self.iooo_1, self.iooo_2, self.iooo_mi_1, self.iooo_mi_2, overlap_check, self.FAILED_QC), ([20, 59, 89, 95], [4, 27], 0))
 			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.i_mi_2, overlap_check, self.FAILED_QC), ([51, 66], [5], 0))
+			self.assertEqual(process_overlap(self.daeoo_1, self.daeoo_2, self.daeoo_mi_1, self.daeoo_mi_2, overlap_check, self.FAILED_QC), ([7, 14, 84], [31, 44], 0))
 
 			def test_bad_overlap_check(self):
 				self.assertRaises(ValueError, process_overlap, self.nor_1, self.nor_2, self.nor_mi_1, self.nor_mi_2, "bismark", self.FAILED_QC)
