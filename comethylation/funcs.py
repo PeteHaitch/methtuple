@@ -185,15 +185,15 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
       positions = get_positions(read)
       if strand == '-':
         positions = [x - ob_strand_offset for x in positions]
-      XM_1 = read.opt('XM')
-      meth_calls = sorted(zip([positions_1[i] + 1 for i in methylation_index_1], [XM_1[i] for i in methylation_index_1]), key = lambda x: x[0])
+      XM = read.opt('XM')
+      meth_calls = sorted(zip([positions[i] + 1 for i in methylation_index], [XM[i] for i in methylation_index]), key = lambda x: x[0])
       this_chr = BAM.getrname(read.tid)
       if ob_strand_offset != 0:
           mt_strand = '*'
       else:
           mt_strand = strand
-      for i in itertools.combinations(meth_calls, m):
-        methylation_m_tuples.increment_count((this_chr, ) + (mt_strand, ) + tuple(x[0] for x in i), ''.join(x[1] for x in i), read_1, None)
+      for i in [meth_calls[j:(j + m)] for j in range(0, len(meth_calls) - m + 1)]:
+        methylation_m_tuples.increment_count((this_chr, ) + (mt_strand, ) + tuple(x[0] for x in i), ''.join(x[1] for x in i), read, None)
 
     return methylation_m_tuples, n_methylation_loci
 
@@ -260,7 +260,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
           mt_strand = '*'
       else:
           mt_strand = strand_1
-      for i in itertools.combinations(meth_calls, m):
+      for i in [meth_calls[j:(j + m)] for j in range(0, len(meth_calls) - m + 1)]:
         methylation_m_tuples.increment_count((this_chr, ) + (mt_strand, ) + tuple(x[0] for x in i), ''.join(x[1] for x in i), read_1, read_2)
 
     return methylation_m_tuples, n_methylation_loci, n_fragment_skipped_due_to_bad_overlap
