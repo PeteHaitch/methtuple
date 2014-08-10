@@ -439,7 +439,8 @@ def process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, ov
 
   # Have to compute the overlap using the second, more-complicated method because if there is a deletion at the end of the overlap then the first method will miss it.
   #overlap = set(positions_1) & set(positions_2) - set([None])
-  overlap = set(list(range(min(positions_1), max(positions_1) + 1))) & set(list(range(min(positions_2), max(positions_2) + 1)))
+  overlap = set(range(min((x for x in positions_1 if x is not None)), max((x for x in positions_1 if x is not None)) + 1)) & set(range(min((x for x in positions_2 if x is not None)), max((x for x in positions_2 if x is not None)) + 1))
+
 
   # Check whether there is any overlap.
   # There's either (1a) no overlap,(1b) the overlap is an insertion or (2) an overlap. In the case of (1a) there is nothing to do and in the case of (1b) I have decided it's too hard and rare to be worth dealing with.
