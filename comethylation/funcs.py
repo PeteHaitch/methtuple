@@ -184,7 +184,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
       # (3) Iterate through the list constructing m-tuples.
       positions = get_positions(read)
       if strand == '-':
-        positions = [x - ob_strand_offset for x in positions]
+        positions = [x if x is None else x - ob_strand_offset for x in positions]
       XM = read.opt('XM')
       meth_calls = sorted(zip([positions[i] + 1 for i in methylation_index], [XM[i] for i in methylation_index]), key = lambda x: x[0])
       this_chr = BAM.getrname(read.tid)
@@ -250,8 +250,8 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
       positions_1 = get_positions(read_1)
       positions_2 = get_positions(read_2)
       if strand_1 == '-':
-        positions_1 = [x - ob_strand_offset for x in positions_1]
-        positions_2 = [x - ob_strand_offset for x in positions_2]
+        positions_1 = [x if x is None else x - ob_strand_offset for x in positions_1]
+        positions_2 = [x if x is None else x - ob_strand_offset for x in positions_2]
       XM_1 = read_1.opt('XM')
       XM_2 = read_2.opt('XM')
       meth_calls = sorted(zip([positions_1[i] + 1 for i in methylation_index_1] + [positions_2[i] + 1 for i in methylation_index_2], [XM_1[i] for i in methylation_index_1] + [XM_2[i] for i in methylation_index_2]), key = lambda x: x[0])
