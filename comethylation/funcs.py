@@ -213,7 +213,14 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         min_qual: Ignore bases with quality-score less than this value.
         phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
         ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
-        overlap_check: The type of check to be performed (listed by most-to-least stringent): check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (quality), or simply use the overlapping bases from read_1 ala bismark_methylation_extractor (Bismark)
+        overlap_check: The type of check to be performed (listed from most-to-least stringent):
+        1. Check that the entire overlapping sequence is identical; if not identical then do not use any methylation calls from the entire read-pair (sequence_strict).
+        2. Check that the entire overlapping sequence is identical; if not identical then do not use any methylation calls from the overlap (sequence).
+        3. Check that the XM-tag is identical for the overlapping region; if not identical then do not use any methylation calls from the entire read-pair (XM_strict).
+        4. Check that the XM-tag is identical for the overlapping region; if not identical then do not use any methylation calls from the overlap (XM).
+        5. Check that the XM-tag is identifal for the overlapping region; if not identical then exclude those positions of disagreement and count once the remaining positions in the overlap (XM_ol).
+        6. No check of the overlapping bases; simply use the read with the higher average quality basecalls in the overlapping region (quality).
+        7. No check of the overlapping bases; simply use the overlapping bases from read_1, i.e., the method used by bismark_methylation_extractor (Bismark).
         n_fragment_skipped_due_to_bad_overlap: The total number of fragments (readpairs) skipped due to the overlapping sequencing not passing the filter.
         FAILED_QC: The file object where the QNAME of readpairs that fail the overlap check are written, along with the reason the readpairs failed.
     Returns:

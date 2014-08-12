@@ -68,6 +68,7 @@ from comethylation.mtuple import *
 from comethylation.funcs import *
 
 #### Command line parser ####
+# TODO: Add --all-tuples option (see https://github.com/PeteHaitch/comethylation/issues/85)
 parser = argparse.ArgumentParser(description = 'Extract methylation patterns at m-tuples of methylation loci from the aligned reads of a bisulfite-sequencing experiment. Currently only supports BAM files created with Bismark.',
     prog = 'comethylation',
     formatter_class = argparse.ArgumentDefaultsHelpFormatter,
@@ -134,9 +135,9 @@ read_filtering.add_argument('--mmq', '--min-mapq',
     default = 0,
     help = 'Ignore reads with a mapping quality score (mapQ) less than <int>')
 read_filtering.add_argument('--of', '--overlap-filter',
-    choices = ['sequence', 'XM', 'quality', 'Bismark'],
-    default = 'XM',
-    help = "Ignore overlapping reads from paired-end sequencing if they do not pass this filter. Currently, this option means that the entirety of both reads are ignored, not just the overlapping region. The options listed by most-to-least stringent: check the entire overlapping sequence is identical (sequence), check the XM-tag is identical for the overlapping region (XM), do no check of the overlapping bases but use the read with the higher quality basecalls in the overlapping region (quality), do no check of the overlapping bases and just use the overlapping bases from read_1 a la bismark_methylation_extractor (Bismark).")
+    choices = ['sequence_strict', 'sequence', 'XM_strict', 'XM', 'XM_ol', 'quality', 'Bismark'],
+    default = 'XM_ol',
+    help = "overlap_check: The type of check to be performed (listed from most-to-least stringent):\n\t1. Check that the entire overlapping sequence is identical; if not identical then do not use any methylation calls from the entire read-pair (sequence_strict).\n\t2. Check that the entire overlapping sequence is identical; if not identical then do not use any methylation calls from the overlap (sequence).\n\t3. Check that the XM-tag is identical for the overlapping region; if not identical then do not use any methylation calls from the entire read-pair (XM_strict).\n\t4. Check that the XM-tag is identical for the overlapping region; if not identical then do not use any methylation calls from the overlap (XM).\n\t5. Check that the XM-tag is identifal for the overlapping region; if not identical then exclude those positions of disagreement and count once the remaining positions in the overlap (XM_ol).\n\t6. No check of the overlapping bases; simply use the read with the higher average quality basecalls in the overlapping region (quality).\n\t7. No check of the overlapping bases; simply use the overlapping bases from read_1, i.e., the method used by bismark_methylation_extractor (Bismark).")
 read_filtering.add_argument('--uip', '--use-improper-pairs',
     action = 'store_true',
     default = False,
@@ -332,9 +333,6 @@ elif overlap_check == 'quality':
     print('Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only the mate with the higher quality scores in the overlapping region shall be used.\n')
 elif overlap_check == 'Bismark':
     print("Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only read_1 shall be used (as done by bismark_methylation_extractor).\n")
-else:
-    exit_msg = "ERROR: --overlap-filter must be one of 'sequence_strict', 'sequence', 'XM_strict', 'XM', 'XM_ol, 'quality' or 'Bismark'"
-    sys.exit(exit_msg)
 
 print(''.join(['Creating ', methylation_type, ' ', str(m), '-tuples']))
 if m > 1:
