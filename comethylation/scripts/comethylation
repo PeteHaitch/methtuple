@@ -130,11 +130,11 @@ base_filtering = parser.add_argument_group('Filtering of bases', 'Applied after 
 base_filtering.add_argument('--ir1p', '--ignore-read1-positions',
     default = None,
     metavar = 'VALUES',
-    help = 'If single-end data, ignore these read positions from all reads. If paired-end data, ignore these read positions from just read_1 of each pair. Multiple values should be comma-delimited and ranges may be specified by use of the hyphen, e.g. 1-5,80,95-100')
+    help = 'If single-end data, ignore these read positions from all reads. If paired-end data, ignore these read positions from just read_1 of each pair. Multiple values should be comma-delimited, ranges can be specified by use of the hyphen and all positions should use 1-based co-ordinates. For example, 1-5,80,95-100 corresponds to ignoring read-positions 1, 2, 3, 4, 5, 80, 98, 99, 100.')
 base_filtering.add_argument('--ir2p', '--ignore-read2-positions',
     default = None,
     metavar = 'VALUES',
-    help = 'Ignore these read positions from just read_2 of each pair if paired-end sequencing. Multiple values should be comma-delimited and ranges may be specified by use of the hyphen, e.g. 1-5,80,95-100')
+    help = 'Ignore these read positions from just read_2 of each pair if paired-end sequencing. Multiple values should be comma-delimited, ranges can be specified by use of the hyphen and all positions should use 1-based co-ordinates. For example, 1-5,80,95-100 corresponds to ignoring read-positions 1, 2, 3, 4, 5, 80, 98, 99, 100.')
 base_filtering.add_argument('--mbq', '--min-base-qual',
     metavar = '<int>',
     type = int,

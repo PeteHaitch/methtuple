@@ -9,17 +9,17 @@ import itertools
 
 #### Function definitions ####
 def make_ignores_list(ic):
-    """Make a list from a string of read positions that are to be ignored.
+    """Make a list from a string of read positions that are to be ignored. Input should be 1-based co-ordinates and these are converted to 0-based co-ordinates.
 
     Args:
-        ic: A string of read positions to ignore. Multiple values should be comma-delimited and ranges can be specified by use of the hyphen, For example:
+        ic: A string of read positions to ignore. Multiple values should be comma-delimited, ranges can be specified by use of the hyphen and all positions should use 1-based co-ordinates. For example:
 
         '1-5, 80, 98-100'
 
-        corresponds to ignoring read positions 1, 2, 3, 4, 5, 80, 98, 99, 100.
+        corresponds to ignoring read-positions 1, 2, 3, 4, 5, 80, 98, 99, 100 and so returns [0, 1, 2, 3, 4, 79, 97, 98, 99].
 
     Returns:
-        A Python list of the positions to be ignored.
+        A Python list of the 0-based positions to be ignored.
     """
     if ic is None:
         val = []
@@ -33,11 +33,13 @@ def make_ignores_list(ic):
             elif len(z) == 1:
                 val = val + [int(z[0])]
             else:
-                exit_msg = ''.join(['ERROR: -ir1p and -ir2p must be comma-delimited. Ranges can be specified by use of the hyphen, e.g. \'1-5, 80, 98-100\''])
+                exit_msg = ''.join(['ERROR: -ir1p and -ir2p must be comma-delimited. Ranges can be specified by use of the hyphen and all positions should use 1-based co-ordinates, e.g. \'1-5, 80, 98-100\'.'])
                 sys.exit(exit_msg)
         if not all(isinstance(i, int) for i in val):
-                exit_msg = ''.join(['ERROR: -ir1p and -ir2p must be comma-delimited. Ranges can be specified by use of the hyphen, e.g. \'1-5, 80, 98-100\''])
+                exit_msg = ''.join(['ERROR: -ir1p and -ir2p must be comma-delimited. Ranges can be specified by use of the hyphen and all positions should use 1-based co-ordinates, e.g. \'1-5, 80, 98-100\'.'])
                 sys.exit(exit_msg)
+        # Convert from 1-based to 0-based co-ordinates
+        val = [x - 1 for x in val]
     return val
 
 def ignore_read_pos(read, methylation_index, ignore_read_pos_list):
