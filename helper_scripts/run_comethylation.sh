@@ -6,8 +6,8 @@
 # 11/06/2014
 # A example bash script for processing a BAM file with comethylation in parallel
 # on a chromosome-by-chromsome basis.
-# This script makes extensive use of GNU parallel 
-# [O. Tange (2011): GNU Parallel - The Command-Line Power Tool, ;login: 
+# This script makes extensive use of GNU parallel
+# [O. Tange (2011): GNU Parallel - The Command-Line Power Tool, ;login:
 # The USENIX Magazine, February 2011:42-47.
 # https://www.gnu.org/software/parallel/].
 #-------------------------------------------------------------------------------
@@ -33,37 +33,41 @@
 
 # REQUIREMENTS
 #-------------------------------------------------------------------------------
-# REQUIRES: comethylation, SAMtools, SortSam (from Picard), GNU parallel and 
+# REQUIRES: comethylation, SAMtools (>= v0.1.19), GNU parallel and
 # Rscript must be in your $PATH.
 #-------------------------------------------------------------------------------
 
 # WARNINGS
 #-------------------------------------------------------------------------------
-# WARNING: Script will produce output as subdirectories of $OUTDIR
-# WARNING: Roughly, this script runs 1 job per chromosome and each job can use 
-# 1-10Gb of memory. Larger chromosomes and larger values of "m" require more 
+# WARNING: Script will produce output as sub-directories of $OUTDIR
+# WARNING: Roughly, this script runs 1 job per chromosome and each job can use
+# 1-10Gb of memory. Larger chromosomes and larger values of "m" require more
 # memory and more computational time.
 #-------------------------------------------------------------------------------
 
+# NOTES
+#-------------------------------------------------------------------------------
+# NOTE: You may wish to increase the maximum memory per thread when running samtools sort via the -m flag. I have not explored the effects of increasing the number of threads available for sorting and compression (via the -@ flag); in particular, I do not know whether this plays nicely with GNU parallel.
+
 # Required variables
 #-------------------------------------------------------------------------------
-# The path of the BAM file, e.g. data/cs_pe_directional.bam. 
+# The path of the BAM file, e.g. data/cs_pe_directional.bam.
 # The BAM must be sorted in coordinate order and indexed.
 BAM=
-# The path to the directory used for output, e.g. my_outdir. 
+# The path to the directory used for output, e.g. my_outdir.
 # Multiple subdirectories and files will be created in this folder.
-OUTDIR= 
+OUTDIR=
 # A bash array of the "m" in m-tuples, e.g. (1 2 3).
-M= 
-# A bash array of the chromosomes to be processed. 
-# It is recommended, but not required, that this array be in karyotypic order 
-# e.g. (chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 
+M=
+# A bash array of the chromosomes to be processed.
+# It is recommended, but not required, that this array be in karyotypic order
+# e.g. (chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13
 #         chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY chrM)
 CHROMS=
-# Additional parameters to be passed to comethylation e.g. 
-# "--methylation-type CG --ignore-duplicates --min-mapq 0 --ir1p 1-5,98-100 
+# Additional parameters to be passed to comethylation e.g.
+# "--methylation-type CG --ignore-duplicates --min-mapq 0 --ir1p 1-5,98-100
 #  --ir2p 1-10,98-100 --overlap-filter XM"
-COMETHYLATION_OPTIONS= 
+COMETHYLATION_OPTIONS=
 # SE (single-end data) or PE (paired-end data).
 SEQ_TYPE=
 # The number of cores to be used by GNU parallel, e.g. 8
@@ -77,7 +81,7 @@ TABULATE_HIST=
 # The idea is as follows:
 # (1) Split the BAM by chromosome and create chromosome-level BAM files.
 # The original BAM must be sorted in coordinate order and indexed.
-#       (a) if (Single-end data): Continue because there is no need to sort 
+#       (a) if (Single-end data): Continue because there is no need to sort
 #       single-end data.
 #       (b) if (Paired-end data): Sort the chromosome-level BAMs by queryname
 #       order.
@@ -113,9 +117,8 @@ if [ ${SEQ_TYPE} == 'PE' ]
 then
         echo "Paired-end sequencing"
         echo "Creating chromosome-level BAMs and sorting by queryname"
-        parallel --joblog create_chromosome_level_BAMs.log -j ${NUM_CORES} "samtools view -u ${BAM} {1} | SortSam I=/dev/stdin SO=queryname O=${OUTDIR}/${SAMPLE_NAME}_{1}.bam QUIET=true VERBOSITY=ERROR" ::: ${CHROMS[@]} 
-
-elif [ ${SEQ_TYPE} == 'SE'  ] 
+        parallel --joblog create_chromosome_level_BAMs.log -j ${NUM_CORES} "samtools view -u ${BAM} {1} | samtools sort -n - ${OUTDIR}/${SAMPLE_NAME}_{1}" ::: ${CHROMS[@]}
+elif [ ${SEQ_TYPE} == 'SE'  ]
 then
         echo "Single-end sequencing"
         echo "Creating chromosome-level BAMs"
@@ -153,7 +156,7 @@ parallel --joblog cat_reads_that_failed_QC_files.log -j ${NUM_CORES} "
 	for CHROM in ${CHROMS[@]}
 	do
 		cat ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}_\${CHROM}.reads_that_failed_QC.txt >> ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}.reads_that_failed_QC.txt && rm ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}_\${CHROM}.reads_that_failed_QC.txt
-	done 
+	done
         gzip ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}.reads_that_failed_QC.txt" ::: ${M[@]}
 #-------------------------------------------------------------------------------
 
