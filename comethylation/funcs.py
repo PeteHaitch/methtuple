@@ -220,7 +220,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         4. Check that the XM-tag is identical for the overlapping region; if not identical then do not use any methylation calls from the overlap (XM).
         5. Check that the XM-tag is identifal for the overlapping region; if not identical then exclude those positions of disagreement and count once the remaining positions in the overlap (XM_ol).
         6. No check of the overlapping bases; simply use the read with the higher average quality basecalls in the overlapping region (quality).
-        7. No check of the overlapping bases; simply use the overlapping bases from read_1, i.e., the method used by bismark_methylation_extractor (Bismark).
+        7. No check of the overlapping bases; simply use the overlapping bases from read_1, i.e., the method used by bismark_methylation_extractor with the --no_overlap flag (Bismark).
         n_fragment_skipped_due_to_bad_overlap: The total number of fragments (readpairs) skipped due to the overlapping sequencing not passing the filter.
         FAILED_QC: The file object where the QNAME of readpairs that fail the overlap check are written, along with the reason the readpairs failed.
     Returns:
@@ -417,7 +417,7 @@ def process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, ov
       4. Check that the XM-tag is identical for the overlapping region; if not identical then do not use any methylation calls from the overlap (XM).
       5. Check that the XM-tag is identifal for the overlapping region; if not identical then exclude those positions of disagreement and count once the remaining positions in the overlap (XM_ol).
       6. No check of the overlapping bases; simply use the read with the higher average quality basecalls in the overlapping region (quality).
-      7. No check of the overlapping bases; simply use the overlapping bases from read_1, i.e., the method used by bismark_methylation_extractor (Bismark).
+      7. No check of the overlapping bases; simply use the overlapping bases from read_1, i.e., the method used by bismark_methylation_extractor with the --no_overlap flag (Bismark).
       FAILED_QC: The file object where the QNAME of readpairs that fail the overlap check are written, along with the reason the readpairs failed.
 
   Returns:
@@ -525,7 +525,7 @@ def process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, ov
         # Retain only those elements of methylation_index_1 that are outside the overlap.
         methylation_index_1 = [i for i in methylation_index_1 if i < start_ol_1 or i > end_ol_1]
     elif overlap_check == "Bismark":
-      #  Retain only those elements of methylation_index_2 that are outside the overlap; bismark_methylation_extractor always uses read_1 instead of read_2 when there is an overlap.
+      #  Retain only those elements of methylation_index_2 that are outside the overlap; bismark_methylation_extractor --no_overlap always uses read_1 instead of read_2 when there is an overlap.
       methylation_index_2 = [i for i in methylation_index_2 if i < start_ol_2 or i > end_ol_2]
     else:
       raise ValueError("process_overlap: 'overlap_check' must be one of 'sequence_strict', 'sequence', 'XM_strict', 'XM', 'XM_ol', 'quality' or 'Bismark'")
