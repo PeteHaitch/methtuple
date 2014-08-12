@@ -282,7 +282,7 @@ def write_methylation_m_tuples_to_file(methylation_m_tuples, OUT):
         OUT: The file to write output to.
     """
     # tab_writer writes a tab-separated output file to the filehandle OUT
-    tab_writer = csv.writer(OUT, delimiter='\t', quotechar=' ', quoting=csv.QUOTE_MINIMAL)
+    tab_writer = csv.writer(OUT, delimiter = '\t', quotechar = ' ', quoting = csv.QUOTE_MINIMAL, lineterminator = '\n')
 
     # Get m
     m = methylation_m_tuples.m
