@@ -51,7 +51,6 @@ from comethylation.mtuple import *
 from comethylation.funcs import *
 
 #### Command line parser ####
-# TODO: Add --all-tuples option (see https://github.com/PeteHaitch/comethylation/issues/85)
 parser = argparse.ArgumentParser(description = 'Extract methylation patterns at m-tuples of methylation loci from the aligned reads of a bisulfite-sequencing experiment. Currently only supports BAM files created with Bismark.',
     prog = 'comethylation',
     formatter_class = argparse.ArgumentDefaultsHelpFormatter,
@@ -95,7 +94,6 @@ Output.add_argument('--bzip2',
     help = 'bzip2 all output files. --gzip and --bzip2 are mutually exclusive')
 # Construction of methylation loci m-tuples
 Options = parser.add_argument_group('Construction of methylation loci m-tuples')
-# TODO: Better handling of multiple methylation types, e.g. this will break 'comethylation --mt CG CHG in.bam' because in.bam is read as --mt.
 Options.add_argument('--mt', '--methylation-type',
     choices = ['CG', 'CHG', 'CHH', 'CNN'],
     default = ['CG'],
