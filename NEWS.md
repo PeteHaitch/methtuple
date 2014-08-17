@@ -4,7 +4,7 @@
 
 * Support reads containing indels (closes [#25](https://github.com/PeteHaitch/comethylation/issues/25) and [#45](https://github.com/PeteHaitch/comethylation/issues/45)).
 * Refined process for dealing with overlapping reads (closes [#15](https://github.com/PeteHaitch/comethylation/issues/15)).
-* Improved documentation (closes [#82](https://github.com/PeteHaitch/comethylation/issues/82) and [#84](https://github.com/PeteHaitch/comethylation/issues/84)_.
+* Improved documentation (closes [#82](https://github.com/PeteHaitch/comethylation/issues/82) and [#84](https://github.com/PeteHaitch/comethylation/issues/84)).
 * Python 3.4 support.
 
 ## Minor improvements
