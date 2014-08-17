@@ -43,7 +43,6 @@
 ## Bug fixes
 * Fixed bug that meant the sum of the overlap scores was incorrect for paired-end reads aligned to the OT-strand.
 
-## Internal
 
 # Version 1.1.0
 
