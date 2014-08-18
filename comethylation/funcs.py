@@ -192,9 +192,10 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
       meth_calls = sorted(zip([positions[i] + 1 for i in methylation_index], [XM[i] for i in methylation_index]), key = lambda x: x[0])
       this_chr = BAM.getrname(read.tid)
       if ob_strand_offset != 0:
-          mt_strand = '*'
+        mt_strand = '*'
       else:
-          mt_strand = strand
+        mt_strand = strand
+
       if all_combinations:
         for i in itertools.combinations(meth_calls, m):
           methylation_m_tuples.increment_count((this_chr, ) + (mt_strand, ) + tuple(x[0] for x in i), ''.join(x[1] for x in i), read, None)
@@ -204,7 +205,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
 
     return methylation_m_tuples, n_methylation_loci
 
-def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, all_combinations,  methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC):
+def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, all_combinations, methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC):
     """Extracts m-tuples of methylation loci from a readpair and adds the comethylation m-tuple to the methylation_m_tuples object.
 
     Args:
@@ -272,9 +273,9 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
       meth_calls = sorted(zip([positions_1[i] + 1 for i in methylation_index_1] + [positions_2[i] + 1 for i in methylation_index_2], [XM_1[i] for i in methylation_index_1] + [XM_2[i] for i in methylation_index_2]), key = lambda x: x[0])
       this_chr = BAM.getrname(read_1.tid)
       if ob_strand_offset != 0:
-          mt_strand = '*'
+        mt_strand = '*'
       else:
-          mt_strand = strand_1
+        mt_strand = strand_1
 
       if all_combinations:
         for i in itertools.combinations(meth_calls, m):
