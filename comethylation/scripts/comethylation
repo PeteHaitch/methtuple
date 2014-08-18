@@ -104,6 +104,10 @@ Options.add_argument('-m',
     metavar = '<int>',
     default = 1,
     help = 'The size of the m-tuples, i.e., the \'m\' in m-tuples')
+Options.add_argument('--ac', '--all-combinations',
+    action = 'store_true',
+    default = False,
+    help = "Create all combinations of m-tuples, including non-neighbouring m-tuples. WARNING: This will greatly increase the runtime and memory usage, particularly for larger values of -m and when analysing non-CG methylation") # TODO: Check this is true, i.e. quantify
 # Read-level filtering arguments
 read_filtering = parser.add_argument_group('Filtering of reads', 'Applied before filtering of bases')
 read_filtering.add_argument('--id', '--ignore-duplicates',
@@ -225,6 +229,7 @@ else:
 
 # Reformat the variable methylation_type to be a single string
 methylation_type = '/'.join(sorted(methylation_type))
+all_combinations = args.ac
 ignore_read_1_pos = make_ignores_list(args.ir1p)
 ignore_read_2_pos = make_ignores_list(args.ir2p)
 overlap_check = args.of
@@ -315,9 +320,15 @@ elif overlap_check == 'quality':
 elif overlap_check == 'Bismark':
     print("Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only read_1 shall be used (as done by bismark_methylation_extractor --no_overlap).\n")
 
-print(''.join(['Creating ', methylation_type, ' ', str(m), '-tuples']))
-if m > 1:
-    print(''.join([str(m), '-tuples may have intervening methylation loci (i.e. NIC > 0). Such ', str(m), '-tuples generally occur in paired-end reads with non-overlapping mates but can also be caused by filtering methylation calls by base quality, read-position, etc. It is generally recommended that ', str(m), '-tuples with NIC > 0 be post-hoc filtered.\n']))
+if not all_combinations:
+  print(''.join(['Creating ', methylation_type, ' ', str(m), '-tuples']))
+  if m > 1:
+    print(''.join(['WARNING: ', str(m), '-tuples may still have intervening methylation loci (i.e. NIC > 0). Such ', str(m), '-tuples generally occur in paired-end reads with non-overlapping mates but can also be caused by filtering methylation calls by base quality, read-position, etc. You may wish to post-hoc filter ', str(m), '-tuples with NIC > 0.\n']))
+else:
+  if m > 1:
+    print(''.join(['Creating all possible ', str(m), '-tuples, including non-neighbouring ones.']))
+  else:
+    print(''.join(['Creating ', methylation_type, ' ', str(m), '-tuples']))
 
 # Check that mapped reads have the XR-, XG- and XM-tags set. Will only check first mapped read, so assumes that the first mapped read in the BAM is representative of all mapped reads in the BAM.
 for read in BAM:
@@ -416,7 +427,7 @@ for read in BAM:
           continue
         # Check that read_1 and read_2 have identical read-names. If not, exit because the file probably isn't sorted by queryname.
         if read_1.qname == read_2.qname:
-            methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC)
+            methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, all_combinations, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC)
             # Update the n_methylation_loci_per_read dictionary
             if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
                 n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
@@ -466,7 +477,7 @@ for read in BAM:
             read_1 = None
             read_2 = None
             continue
-        methylation_m_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_read_1_pos, min_qual, phred_offset, ob_strand_offset)
+        methylation_m_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, all_combinations, methylation_pattern, ignore_read_1_pos, min_qual, phred_offset, ob_strand_offset)
         if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
             n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
 
@@ -477,7 +488,7 @@ for read in BAM:
         sys.exit(exit_msg)
 
 # Write results to disk
-print(''.join(['Extracted all ',  methylation_type, ' ', str(m), '-tuples.']))
+print(''.join(['Finished extracting ',  methylation_type, ' ', str(m), '-tuples.']))
 print('Now writing output to', OUT.name, '...\n')
 write_methylation_m_tuples_to_file(methylation_m_tuples, OUT)
 

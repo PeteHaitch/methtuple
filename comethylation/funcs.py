@@ -152,16 +152,17 @@ def does_read_contain_complicated_cigar(read):
     val = any([x[0] not in [0, 1, 2, 4, 5] for x in read.cigar])
     return val
 
-def extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_read_1_pos, min_qual, phred_offset, ob_strand_offset):
+def extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, all_combinations, methylation_type, methylation_pattern, ignore_read_1_pos, min_qual, phred_offset, ob_strand_offset):
     """Extracts m-tuples of methylation loci from a single-end read and adds the comethylation m-tuple to the methylation_m_tuples object.
 
     Args:
         read: An AlignedRead instance corresponding to a single-end read.
         BAM: The Samfile instance corresponding to the sample. Required in order to extract chromosome names from read.
         methylation_m_tuples: An MTuple instance.
+        m: Is the "m" in "m-tuple", i.e. the size of the m-tuple. m must be an integer greater than or equal to 1. WARNING: No error or warning produced if this condition is violated.
+        all_combinations: A boolean indicating whether all combinations of m-tuples should be created or just "neighbouring" m-tuples.
         methylation_type: A string of the methylation type, e.g. CG for CpG methylation. Must be a valid option for the MTuple class.
         methylation_pattern: A regular expression of the methylation loci, e.g. '[Zz]' for CpG-methylation
-        m: Is the "m" in "m-tuple", i.e. the size of the m-tuple. m must be an integer greater than or equal to 1. WARNING: No error or warning produced if this condition is violated.
         ignore_read_1_pos: Ignore this list of read positions from each read.
         min_qual: Ignore bases with quality-score less than this value.
         phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
@@ -194,12 +195,16 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
           mt_strand = '*'
       else:
           mt_strand = strand
-      for i in [meth_calls[j:(j + m)] for j in range(0, len(meth_calls) - m + 1)]:
-        methylation_m_tuples.increment_count((this_chr, ) + (mt_strand, ) + tuple(x[0] for x in i), ''.join(x[1] for x in i), read, None)
+      if all_combinations:
+        for i in itertools.combinations(meth_calls, m):
+          methylation_m_tuples.increment_count((this_chr, ) + (mt_strand, ) + tuple(x[0] for x in i), ''.join(x[1] for x in i), read, None)
+      else:
+        for i in [meth_calls[j:(j + m)] for j in range(0, len(meth_calls) - m + 1)]:
+          methylation_m_tuples.increment_count((this_chr, ) + (mt_strand, ) + tuple(x[0] for x in i), ''.join(x[1] for x in i), read, None)
 
     return methylation_m_tuples, n_methylation_loci
 
-def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC):
+def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, all_combinations,  methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC):
     """Extracts m-tuples of methylation loci from a readpair and adds the comethylation m-tuple to the methylation_m_tuples object.
 
     Args:
@@ -208,6 +213,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         BAM: The Samfile instance corresponding to the sample. Required in order to extract chromosome names from read.
         methylation_m_tuples: An MTuple instance.
         m: Is the "m" in "m-tuple", i.e. the size of the m-tuple. m must be an integer greater than or equal to 1. WARNING: No error or warning produced if this condition is violated.
+        all_combinations: A boolean indicating whether all combinations of m-tuples should be created or just "neighbouring" m-tuples.
         methylation_type: A string of the methylation type, e.g. CG for CpG methylation. Must be a valid option for the MTuple class.
         methylation_pattern: A regular expression of the methylation loci, e.g. '[Zz]' for CpG-methylation
         ignore_read_1_pos: Ignore this list of positions from each read_1.
@@ -269,8 +275,13 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
           mt_strand = '*'
       else:
           mt_strand = strand_1
-      for i in [meth_calls[j:(j + m)] for j in range(0, len(meth_calls) - m + 1)]:
-        methylation_m_tuples.increment_count((this_chr, ) + (mt_strand, ) + tuple(x[0] for x in i), ''.join(x[1] for x in i), read_1, read_2)
+
+      if all_combinations:
+        for i in itertools.combinations(meth_calls, m):
+          methylation_m_tuples.increment_count((this_chr, ) + (mt_strand, ) + tuple(x[0] for x in i), ''.join(x[1] for x in i), read_1, read_2)
+      else:
+        for i in [meth_calls[j:(j + m)] for j in range(0, len(meth_calls) - m + 1)]:
+          methylation_m_tuples.increment_count((this_chr, ) + (mt_strand, ) + tuple(x[0] for x in i), ''.join(x[1] for x in i), read_1, read_2)
 
     return methylation_m_tuples, n_methylation_loci, n_fragment_skipped_due_to_bad_overlap
 

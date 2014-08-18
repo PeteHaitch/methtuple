@@ -1,5 +1,7 @@
 [![Build Status](https://travis-ci.org/PeteHaitch/comethylation.png?branch=master)](https://travis-ci.org/PeteHaitch/comethylation)
 
+__TODO: Update with `--all-combinations` option__
+
 # comethylation
 
 ## Overview
