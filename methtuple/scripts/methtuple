@@ -1,21 +1,26 @@
 #!/usr/bin/env python
 
-#### LICENSE ####
-## Copyright (C) 2012 - 2014 Peter Hickey (peter.hickey@gmail.com)
-
-## This file is part of comethylation.
-
-## comethylation is free software: you can redistribute it and/or modify it
-## under the terms of the GNU General Public License as published by
-## the Free Software Foundation, either version 2 of the License, or
-## (at your option) any later version.
-## comethylation is distributed in the hope that it will be useful, but
-## WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
-
-## You should have received a copy of the GNU General Public License
-## along with comethylation.  If not, see <http://www.gnu.org/licenses/>.
+# The MIT License (MIT)
+#
+# Copyright (c) [2012-2014] [Peter Hickey (peter.hickey@gmail.com)]
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
 #### Explanation of XM-tag (methylation string) ####
 # . for bases not involving cytosines
@@ -43,20 +48,20 @@ import bz2
 try:
     import pysam # The only required module that is not a part of the Python Standard Library
 except ImportError:
-    exit_msg = 'ERROR: comethylation requires the Pysam module. Please install it from https://github.com/pysam-developers/pysam before continuing.'
+    exit_msg = 'ERROR: methtuple requires the Pysam module. Please install it from https://github.com/pysam-developers/pysam before continuing.'
     sys.exit(exit_msg)
 
-from comethylation import *
-from comethylation.mtuple import *
-from comethylation.funcs import *
+from methtuple import *
+from methtuple.mtuple import *
+from methtuple.funcs import *
 
 #### Command line parser ####
 parser = argparse.ArgumentParser(description = 'Extract methylation patterns at m-tuples of methylation loci from the aligned reads of a bisulfite-sequencing experiment. Currently only supports BAM files created with Bismark.',
-    prog = 'comethylation',
+    prog = 'methtuple',
     formatter_class = argparse.ArgumentDefaultsHelpFormatter,
     add_help = False,
     usage = '%(prog)s [options] <in.bam>\nPlease run \'%(prog)s -h\' for a full list of options.',
-    epilog = '%(prog)s (v'+__version__+') by Peter Hickey (peter.hickey@gmail.com, https://github.com/PeteHaitch/comethylation/)')
+    epilog = '%(prog)s (v'+__version__+') by Peter Hickey (peter.hickey@gmail.com, https://github.com/PeteHaitch/methtuple/)')
 # Input arguments
 Input = parser.add_argument_group('Input options')
 Input.add_argument('BAM',
@@ -104,6 +109,10 @@ Options.add_argument('-m',
     metavar = '<int>',
     default = 1,
     help = 'The size of the m-tuples, i.e., the \'m\' in m-tuples')
+Options.add_argument('--ac', '--all-combinations',
+    action = 'store_true',
+    default = False,
+    help = "Create all combinations of m-tuples, including non-neighbouring m-tuples. WARNING: This will greatly increase the memory usage, particularly for larger values of -m and when analysing non-CG methylation")
 # Read-level filtering arguments
 read_filtering = parser.add_argument_group('Filtering of reads', 'Applied before filtering of bases')
 read_filtering.add_argument('--id', '--ignore-duplicates',
@@ -225,6 +234,7 @@ else:
 
 # Reformat the variable methylation_type to be a single string
 methylation_type = '/'.join(sorted(methylation_type))
+all_combinations = args.ac
 ignore_read_1_pos = make_ignores_list(args.ir1p)
 ignore_read_2_pos = make_ignores_list(args.ir2p)
 overlap_check = args.of
@@ -266,7 +276,7 @@ chr_map = dict(list(zip(BAM.references, list(range(len(BAM.references)))))) # A 
 methylation_m_tuples = MTuple(args.output_prefix, m, methylation_type, chr_map) # Initiate the MTuple object
 
 # Print key variable names and command line parameter options to STDOUT
-print("comethylation (v"+__version__+")\n")
+print("methtuple (v"+__version__+")\n")
 print('Input BAM file =', BAM.filename.decode("utf-8"))
 print(''.join(['Output file of ', methylation_type, ' ', str(m), '-tuples = ', OUT.name]))
 if args.sc:
@@ -315,9 +325,15 @@ elif overlap_check == 'quality':
 elif overlap_check == 'Bismark':
     print("Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only read_1 shall be used (as done by bismark_methylation_extractor --no_overlap).\n")
 
-print(''.join(['Creating ', methylation_type, ' ', str(m), '-tuples']))
-if m > 1:
-    print(''.join([str(m), '-tuples may have intervening methylation loci (i.e. NIC > 0). Such ', str(m), '-tuples generally occur in paired-end reads with non-overlapping mates but can also be caused by filtering methylation calls by base quality, read-position, etc. It is generally recommended that ', str(m), '-tuples with NIC > 0 be post-hoc filtered.\n']))
+if not all_combinations:
+  print(''.join(['Creating ', methylation_type, ' ', str(m), '-tuples']))
+  if m > 1:
+    print(''.join(['WARNING: ', str(m), '-tuples may still have intervening methylation loci (i.e. NIC > 0). Such ', str(m), '-tuples generally occur in paired-end reads with non-overlapping mates but can also be caused by filtering methylation calls by base quality, read-position, etc. You may wish to post-hoc filter ', str(m), '-tuples with NIC > 0.\n']))
+else:
+  if m > 1:
+    print(''.join(['Creating all possible ', str(m), '-tuples, including non-neighbouring ones.']))
+  else:
+    print(''.join(['Creating ', methylation_type, ' ', str(m), '-tuples']))
 
 # Check that mapped reads have the XR-, XG- and XM-tags set. Will only check first mapped read, so assumes that the first mapped read in the BAM is representative of all mapped reads in the BAM.
 for read in BAM:
@@ -325,15 +341,15 @@ for read in BAM:
         continue
     # Check XR-tag
     if not 'XR' in [x[0] for x in read.tags]:
-        exit_msg = "ERROR: The first mapped read does not contain an XR-tag. Currently, comethylation can only process BAM files created by Bismark, sorry."
+        exit_msg = "ERROR: The first mapped read does not contain an XR-tag. Currently, methtuple can only process BAM files created by Bismark, sorry."
         sys.exit(exit_msg)
     # Check XG-tag
     if not 'XG' in [x[0] for x in read.tags]:
-        exit_msg = "ERROR: The first mapped read does not contain an XG-tag. Currently, comethylation can only process BAM files created by Bismark, sorry."
+        exit_msg = "ERROR: The first mapped read does not contain an XG-tag. Currently, methtuple can only process BAM files created by Bismark, sorry."
         sys.exit(exit_msg)
     # Check XM-tag
     if not 'XM' in [x[0] for x in read.tags]:
-        exit_msg = "ERROR: The first mapped read does not contain an XM-tag. Currently, comethylation can only process BAM files created by Bismark, sorry."
+        exit_msg = "ERROR: The first mapped read does not contain an XM-tag. Currently, methtuple can only process BAM files created by Bismark, sorry."
         sys.exit(exit_msg)
     else:
         print('Verified that the XR-, XG- and XM-tags are set for the first mapped read.\n')
@@ -416,7 +432,7 @@ for read in BAM:
           continue
         # Check that read_1 and read_2 have identical read-names. If not, exit because the file probably isn't sorted by queryname.
         if read_1.qname == read_2.qname:
-            methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC)
+            methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, all_combinations, methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC)
             # Update the n_methylation_loci_per_read dictionary
             if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
                 n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
@@ -466,23 +482,23 @@ for read in BAM:
             read_1 = None
             read_2 = None
             continue
-        methylation_m_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, methylation_type, methylation_pattern, ignore_read_1_pos, min_qual, phred_offset, ob_strand_offset)
+        methylation_m_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, all_combinations, methylation_type, methylation_pattern, ignore_read_1_pos, min_qual, phred_offset, ob_strand_offset)
         if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
             n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
 
         n_methylation_loci_per_read[n_methylation_loci_in_fragment] += 1
     # Read is neither single-end nor a mate from a read-pair. This shouldn't happen.
     else:
-        exit_msg = ''.join(['ERROR: Read ', read.qname, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com.'])
+        exit_msg = ''.join(['ERROR: Read ', read.qname, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. methtuplePlease log an issue at www.github.com/PeteHaitch/methtuple describing the error..'])
         sys.exit(exit_msg)
 
 # Write results to disk
-print(''.join(['Extracted all ',  methylation_type, ' ', str(m), '-tuples.']))
+print(''.join(['Finished extracting ',  methylation_type, ' ', str(m), '-tuples.']))
 print('Now writing output to', OUT.name, '...\n')
 write_methylation_m_tuples_to_file(methylation_m_tuples, OUT)
 
 # Print some summary information to STDOUT
-print('Summary of the number of DNA fragments processed by comethylation')
+print('Summary of the number of DNA fragments processed by methtuple')
 print(''.join(['Number of DNA fragments in file = ', str(n_fragment)]))
 print(''.join(['Number of DNA fragments skipped due to being marked as PCR duplicates = ', str(n_fragment_skipped_due_to_duplicate)]))
 print(''.join(['Number of DNA fragments skipped due to failing the --min-mapq filter = ', str(n_fragment_skipped_due_to_low_mapq)]))

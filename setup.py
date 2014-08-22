@@ -8,9 +8,9 @@ README = open(os.path.join(here, 'README.md')).read()
 CHANGES = '' # open(os.path.join(here, 'CHANGES.md')).read()
 
 setup(
-  name='comethylation',
-  version='1.3.0',
-  description='comethylation',
+  name='methtuple',
+  version='1.4.0',
+  description='methtuple',
   long_description=README + '\n\n' +  CHANGES,
   classifiers=[
     "Programming Language :: Python",
@@ -18,14 +18,14 @@ setup(
     ],
   author='Peter Hickey',
   author_email='peter.hickey@gmail.com',
-  url='https://github.com/PeteHaitch/comethylation',
+  url='https://github.com/PeteHaitch/methtuple',
   keywords='bisulfite sequencing methylation bismark bioinformatics',
   packages=find_packages(),
   include_package_data=True,
   zip_safe=False,
   install_requires=['pysam'],
-  test_suite="comethylation.tests",
+  test_suite="methtuple.tests",
   scripts = [
-    'comethylation/scripts/comethylation'
+    'methtuple/scripts/methtuple'
   ]
 )

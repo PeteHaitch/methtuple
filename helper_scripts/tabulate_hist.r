@@ -1,7 +1,7 @@
 #### DESCRIPTION ####
 # Peter Hickey (peter.hickey@gmai.com)
 # 05/02/2014
-# Merge .hist files created by run_comethylation.sh helper script
+# Merge .hist files created by run_methtuple.sh helper script
 
 #### Parse command line argument to set the working directory ####
 wd <- commandArgs(TRUE)[1]

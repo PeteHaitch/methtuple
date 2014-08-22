@@ -1,4 +1,4 @@
-'''unit testing code for comethylation.
+'''unit testing code for methtuple.
 '''
 
 import unittest
@@ -9,10 +9,10 @@ import os
 import re
 import array
 
-from comethylation import *
+from methtuple import *
 
-from comethylation.mtuple import *
-from comethylation.funcs import *
+from methtuple.mtuple import *
+from methtuple.funcs import *
 
 class TestIgnoreCycles(unittest.TestCase):
 	'''Test the function ignore_read_pos
@@ -1057,37 +1057,64 @@ class TestExtractAndUpdateMethylationIndexFromSingleEndRead(unittest.TestCase):
 		self.filename = self.BAM.filename
 		self.BAM.close()
 		self.BAM = pysam.Samfile(self.filename, 'rb')
-		self.m1ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
-		self.m2ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
-		self.m3ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
-		self.m4ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
-		self.m5ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
-		self.m1ob, self.nmlifob = extract_and_update_methylation_index_from_single_end_read(read = self.obr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
-		self.m2ob, self.nmlifob = extract_and_update_methylation_index_from_single_end_read(read = self.obr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
-		self.m3ob, self.nmlifob = extract_and_update_methylation_index_from_single_end_read(read = self.obr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
-		self.m2cgchg, self.nmlifotcgchg = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG/CHG', {'chr1': 0}), m = 2, methylation_type = 'CG/CHG', methylation_pattern = re.compile(r'[ZzXx]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m1ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', all_combinations = False, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m1otac, self.nmlifotac = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', all_combinations = True, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m2ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2,  methylation_type = 'CG', all_combinations = False, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m2otac, self.nmlifotac = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2,  methylation_type = 'CG', all_combinations = True, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m3ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m3otac, self.nmlifotac = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m4ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m4otac, self.nmlifotac = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m5ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m5otac, self.nmlifotac = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m1ob, self.nmlifob = extract_and_update_methylation_index_from_single_end_read(read = self.obr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m1obac, self.nmlifobac = extract_and_update_methylation_index_from_single_end_read(read = self.obr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m2ob, self.nmlifob = extract_and_update_methylation_index_from_single_end_read(read = self.obr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m2obac, self.nmlifobac = extract_and_update_methylation_index_from_single_end_read(read = self.obr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m3ob, self.nmlifob = extract_and_update_methylation_index_from_single_end_read(read = self.obr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m3obac, self.nmlifobac = extract_and_update_methylation_index_from_single_end_read(read = self.obr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
+		self.m2cgchg, self.nmlifotcgchg = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG/CHG', {'chr1': 0}), m = 2, all_combinations = False, methylation_type = 'CG/CHG', methylation_pattern = re.compile(r'[ZzXx]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 0)
+		self.m2cgchgac, self.nmlifotcgchgac = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG/CHG', {'chr1': 0}), m = 2, all_combinations = True, methylation_type = 'CG/CHG', methylation_pattern = re.compile(r'[ZzXx]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 0)
 
 	def test_correct_number_of_m_tuples(self):
 		self.assertEqual(len(self.m1ot.mtuples), 5)
+		self.assertEqual(len(self.m1otac.mtuples), 5)
 		self.assertEqual(len(self.m2ot.mtuples), 4)
+		self.assertEqual(len(self.m2otac.mtuples), 10)
 		self.assertEqual(len(self.m3ot.mtuples), 3)
+		self.assertEqual(len(self.m3otac.mtuples), 10)
 		self.assertEqual(len(self.m4ot.mtuples), 2)
+		self.assertEqual(len(self.m4otac.mtuples), 5)
 		self.assertEqual(len(self.m5ot.mtuples), 1)
+		self.assertEqual(len(self.m5otac.mtuples), 1)
 		self.assertEqual(len(self.m1ob.mtuples), 3)
+		self.assertEqual(len(self.m1obac.mtuples), 3)
 		self.assertEqual(len(self.m2ob.mtuples), 2)
+		self.assertEqual(len(self.m2obac.mtuples), 3)
 		self.assertEqual(len(self.m3ob.mtuples), 1)
+		self.assertEqual(len(self.m3obac.mtuples), 1)
+		self.assertEqual(len(self.m2cgchg.mtuples), 10)
+		self.assertEqual(len(self.m2cgchgac.mtuples), 55)
 
 	def test_correct_m_tuple_ids(self):
 		# Can't use assertItemsEqual because it is renamed assertCountEqual in Python 3.
 		# Instead use assertEqual(sorted(expected), sorted(actual))
 		self.assertEqual(sorted(list(self.m1ot.mtuples.keys())), sorted([('chr1', '*', 4562), ('chr1', '*', 4604), ('chr1', '*', 4579), ('chr1', '*', 4573), ('chr1', '*', 4610)]))
+		self.assertEqual(sorted(list(self.m1otac.mtuples.keys())), sorted([('chr1', '*', 4562), ('chr1', '*', 4604), ('chr1', '*', 4579), ('chr1', '*', 4573), ('chr1', '*', 4610)]))
 		self.assertEqual(sorted(list(self.m2ot.mtuples.keys())), sorted([('chr1', '*', 4579, 4604), ('chr1', '*', 4562, 4573), ('chr1', '*', 4604, 4610), ('chr1', '*', 4573, 4579)]))
+		self.assertEqual(sorted(list(self.m2otac.mtuples.keys())), sorted([('chr1', '*', 4562, 4573), ('chr1', '*', 4562, 4579), ('chr1', '*', 4562, 4604), ('chr1', '*', 4562, 4610), ('chr1', '*', 4573, 4579), ('chr1', '*', 4573, 4604), ('chr1', '*', 4573, 4610), ('chr1', '*', 4579, 4604), ('chr1', '*', 4579, 4610), ('chr1', '*', 4604, 4610)]))
 		self.assertEqual(sorted(list(self.m3ot.mtuples.keys())), sorted([('chr1', '*', 4562, 4573, 4579), ('chr1', '*', 4573, 4579, 4604), ('chr1', '*', 4579, 4604, 4610)]))
+		self.assertEqual(sorted(list(self.m3otac.mtuples.keys())), sorted([('chr1', '*', 4562, 4579, 4610), ('chr1', '*', 4562, 4604, 4610), ('chr1', '*', 4573, 4579, 4604), ('chr1', '*', 4573, 4579, 4610), ('chr1', '*', 4573, 4604, 4610), ('chr1', '*', 4579, 4604, 4610), ('chr1', '*', 4562, 4573, 4579), ('chr1', '*', 4562, 4573, 4604), ('chr1', '*', 4562, 4573, 4610), ('chr1', '*', 4562, 4579, 4604)]))
 		self.assertEqual(sorted(list(self.m4ot.mtuples.keys())), sorted([('chr1', '*', 4562, 4573, 4579, 4604), ('chr1', '*', 4573, 4579, 4604, 4610)]))
+		self.assertEqual(sorted(list(self.m4otac.mtuples.keys())), sorted([('chr1', '*', 4562, 4573, 4579, 4604), ('chr1', '*', 4573, 4579, 4604, 4610), ('chr1', '*', 4562, 4573, 4604, 4610), ('chr1', '*', 4562, 4573, 4579, 4610), ('chr1', '*', 4562, 4579, 4604, 4610)]))
 		self.assertEqual(sorted(list(self.m5ot.mtuples.keys())), sorted([('chr1', '*', 4562, 4573, 4579, 4604, 4610)]))
+		self.assertEqual(sorted(list(self.m5otac.mtuples.keys())), sorted([('chr1', '*', 4562, 4573, 4579, 4604, 4610)]))
 		self.assertEqual(sorted(list(self.m1ob.mtuples.keys())), sorted([('chr1', '*', 3400), ('chr1', '*', 3366), ('chr1', '*', 3391)]))
+		self.assertEqual(sorted(list(self.m1obac.mtuples.keys())), sorted([('chr1', '*', 3400), ('chr1', '*', 3366), ('chr1', '*', 3391)]))
 		self.assertEqual(sorted(list(self.m2ob.mtuples.keys())), sorted([('chr1', '*', 3391, 3400), ('chr1', '*', 3366, 3391)]))
+		self.assertEqual(sorted(list(self.m2obac.mtuples.keys())), sorted([('chr1', '*', 3391, 3400), ('chr1', '*', 3366, 3400), ('chr1', '*', 3366, 3391)]))
 		self.assertEqual(sorted(list(self.m3ob.mtuples.keys())), sorted([('chr1', '*', 3366, 3391, 3400)]))
+		self.assertEqual(sorted(list(self.m3obac.mtuples.keys())), sorted([('chr1', '*', 3366, 3391, 3400)]))
 
 	def test_correct_number_of_methylation_loci_in_fragment(self):
 		self.assertEqual(self.nmlifot, 5)
@@ -1208,59 +1235,109 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 		self.BAM.close()
 		self.BAM = pysam.Samfile(self.filename, 'rb')
 		self.FAILED_QC = open(tempfile.mkstemp()[1], 'w')
-		self.m1ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m2ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m3ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m4ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m5ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m6ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 6, 'CG', {'chr1': 0}), m = 6, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m7ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 7, 'CG', {'chr1': 0}), m = 7, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m8ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 8, 'CG', {'chr1': 0}), m = 8, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m9ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 9, 'CG', {'chr1': 0}), m = 9, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m10ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 10, 'CG', {'chr1': 0}), m = 10, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m1ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m2ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m3ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m4ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m5ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m6ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 6, 'CG', {'chr1': 0}), m = 6, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m7ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 7, 'CG', {'chr1': 0}), m = 7, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m8ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 8, 'CG', {'chr1': 0}), m = 8, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m9ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 9, 'CG', {'chr1': 0}), m = 9, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m10ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 10, 'CG', {'chr1': 0}), m = 10, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m11ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 11, 'CG', {'chr1': 0}), m = 11, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m12ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 12, 'CG', {'chr1': 0}), m = 12, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
-		self.m2cgchg, self.nmlifotcgchg , self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG/CHG', {'chr1': 0}), m = 2, methylation_type = 'CG/CHG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m1ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', all_combinations = False, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m1otac, self.nmlifotac, self.nfsdtboca = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', all_combinations = True, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m2ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, methylation_type = 'CG', all_combinations = False, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m2otac, self.nmlifotac, self.nfsdtboca = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, methylation_type = 'CG', all_combinations = True, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m3ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, methylation_type = 'CG', all_combinations = False, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m3otac, self.nmlifotac, self.nfsdtbosca = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, methylation_type = 'CG', all_combinations = True, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m4ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, methylation_type = 'CG', all_combinations = False, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m4otac, self.nmlifotac, self.nfsdtboac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, methylation_type = 'CG', all_combinations = True, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m5ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, methylation_type = 'CG', all_combinations = False, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m5otac, self.nmlifotac, self.nfsdtboac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, methylation_type = 'CG', all_combinations = True, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m6ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 6, 'CG', {'chr1': 0}), m = 6, methylation_type = 'CG', all_combinations = False, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m6otac, self.nmlifotac, self.nfsdtboac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 6, 'CG', {'chr1': 0}), m = 6, methylation_type = 'CG', all_combinations = True, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m7ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 7, 'CG', {'chr1': 0}), m = 7, methylation_type = 'CG', all_combinations = False, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m7otac, self.nmlifotac, self.nfsdtboac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 7, 'CG', {'chr1': 0}), m = 7, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m8ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 8, 'CG', {'chr1': 0}), m = 8, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m8otac, self.nmlifotac, self.nfsdtboac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 8, 'CG', {'chr1': 0}), m = 8, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m9ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 9, 'CG', {'chr1': 0}), m = 9, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m9otac, self.nmlifotac, self.nfsdtboac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 9, 'CG', {'chr1': 0}), m = 9, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m10ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 10, 'CG', {'chr1': 0}), m = 10, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m10otac, self.nmlifotac, self.nfsdtboac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 10, 'CG', {'chr1': 0}), m = 10, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m1ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m1obac, self.nmlifobac, self.nfsdtbac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m2ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m2obac, self.nmlifobac, self.nfsdtboac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m3ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m3obac, self.nmlifobac, self.nfsdtboac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 3, 'CG', {'chr1': 0}), m = 3, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m4ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m4obac, self.nmlifobac, self.nfsdtbac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 4, 'CG', {'chr1': 0}), m = 4, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m5ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m5obac, self.nmlifobac, self.nfsdtboac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 5, 'CG', {'chr1': 0}), m = 5, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m6ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 6, 'CG', {'chr1': 0}), m = 6, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m6obac, self.nmlifobac, self.nfsdtboac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 6, 'CG', {'chr1': 0}), m = 6, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m7ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 7, 'CG', {'chr1': 0}), m = 7, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m7obac, self.nmlifobac, self.nfsdtboac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 7, 'CG', {'chr1': 0}), m = 7, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m8ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 8, 'CG', {'chr1': 0}), m = 8, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m8obac, self.nmlifobac, self.nfsdtboac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 8, 'CG', {'chr1': 0}), m = 8, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m9ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 9, 'CG', {'chr1': 0}), m = 9, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m9obac, self.nmlifobac, self.nfsdtboac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 9, 'CG', {'chr1': 0}), m = 9, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m10ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 10, 'CG', {'chr1': 0}), m = 10, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m10obac, self.nmlifobac, self.nfsdtboac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 10, 'CG', {'chr1': 0}), m = 10, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m11ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 11, 'CG', {'chr1': 0}), m = 11, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m11obac, self.nmlifobac, self.nfsdtboac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 11, 'CG', {'chr1': 0}), m = 11, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m12ob, self.nmlifob, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 12, 'CG', {'chr1': 0}), m = 12, all_combinations = False, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m12obac, self.nmlifobac, self.nfsdtboac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.obr_1, read_2 = self.obr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 12, 'CG', {'chr1': 0}), m = 12, all_combinations = True, methylation_type = 'CG', methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m2cgchg, self.nmlifotcgchg, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG/CHG', {'chr1': 0}), m = 2, all_combinations = False, methylation_type = 'CG/CHG', methylation_pattern = re.compile(r'[ZzXx]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
+		self.m2cgchgac, self.nmlifotcgchgac, self.nfsdtboac = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG/CHG', {'chr1': 0}), m = 2, all_combinations = True, methylation_type = 'CG/CHG', methylation_pattern = re.compile(r'[ZzXx]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_check = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
 
 	def test_correct_number_of_m_tuples(self):
 		self.assertEqual(len(self.m1ot.mtuples), 10)
+		self.assertEqual(len(self.m1otac.mtuples), 10)
 		self.assertEqual(len(self.m2ot.mtuples), 9)
+		self.assertEqual(len(self.m2otac.mtuples), 45)
 		self.assertEqual(len(self.m3ot.mtuples), 8)
+		self.assertEqual(len(self.m3otac.mtuples), 120)
 		self.assertEqual(len(self.m4ot.mtuples), 7)
+		self.assertEqual(len(self.m4otac.mtuples), 210)
 		self.assertEqual(len(self.m5ot.mtuples), 6)
+		self.assertEqual(len(self.m5otac.mtuples), 252)
 		self.assertEqual(len(self.m6ot.mtuples), 5)
+		self.assertEqual(len(self.m6otac.mtuples), 210)
 		self.assertEqual(len(self.m7ot.mtuples), 4)
+		self.assertEqual(len(self.m7otac.mtuples), 120)
 		self.assertEqual(len(self.m8ot.mtuples), 3)
+		self.assertEqual(len(self.m8otac.mtuples), 45)
 		self.assertEqual(len(self.m9ot.mtuples), 2)
+		self.assertEqual(len(self.m9otac.mtuples), 10)
 		self.assertEqual(len(self.m10ot.mtuples), 1)
+		self.assertEqual(len(self.m10otac.mtuples), 1)
 		self.assertEqual(len(self.m1ob.mtuples), 12)
+		self.assertEqual(len(self.m1obac.mtuples), 12)
 		self.assertEqual(len(self.m2ob.mtuples), 11)
+		self.assertEqual(len(self.m2obac.mtuples), 66)
 		self.assertEqual(len(self.m3ob.mtuples), 10)
+		self.assertEqual(len(self.m3obac.mtuples), 220)
 		self.assertEqual(len(self.m4ob.mtuples), 9)
+		self.assertEqual(len(self.m4obac.mtuples), 495)
 		self.assertEqual(len(self.m5ob.mtuples), 8)
+		self.assertEqual(len(self.m5obac.mtuples), 792)
 		self.assertEqual(len(self.m6ob.mtuples), 7)
+		self.assertEqual(len(self.m6obac.mtuples), 924)
 		self.assertEqual(len(self.m7ob.mtuples), 6)
+		self.assertEqual(len(self.m7obac.mtuples), 792)
 		self.assertEqual(len(self.m8ob.mtuples), 5)
+		self.assertEqual(len(self.m8obac.mtuples), 495)
 		self.assertEqual(len(self.m9ob.mtuples), 4)
+		self.assertEqual(len(self.m9obac.mtuples), 220)
 		self.assertEqual(len(self.m10ob.mtuples), 3)
+		self.assertEqual(len(self.m10obac.mtuples), 66)
 		self.assertEqual(len(self.m11ob.mtuples), 2)
+		self.assertEqual(len(self.m11obac.mtuples), 12)
 		self.assertEqual(len(self.m12ob.mtuples), 1)
+		self.assertEqual(len(self.m12obac.mtuples), 1)
+		self.assertEqual(len(self.m2cgchg.mtuples), 24)
+		self.assertEqual(len(self.m2cgchgac.mtuples), 300)
 
 	def test_correct_m_tuple_ids(self):
 		# Can't use assertItemsEqual because it is renamed assertCountEqual in Python 3.
 		# Instead use assertEqual(sorted(expected), sorted(actual))
+		# Only test a few values of m when --ac because of the large number of combinations this method produces.
 		self.assertEqual(sorted(list(self.m1ot.mtuples.keys())), sorted([('chr1', '*', 563), ('chr1', '*', 571), ('chr1', '*', 525), ('chr1', '*', 493), ('chr1', '*', 469), ('chr1', '*', 484), ('chr1', '*', 489), ('chr1', '*', 497), ('chr1', '*', 471), ('chr1', '*', 542)]))
+		self.assertEqual(sorted(list(self.m1otac.mtuples.keys())), sorted([('chr1', '*', 563), ('chr1', '*', 571), ('chr1', '*', 525), ('chr1', '*', 493), ('chr1', '*', 469), ('chr1', '*', 484), ('chr1', '*', 489), ('chr1', '*', 497), ('chr1', '*', 471), ('chr1', '*', 542)]))
 		self.assertEqual(sorted(list(self.m2ot.mtuples.keys())), sorted([('chr1', '*', 497, 525), ('chr1', '*', 563, 571), ('chr1', '*', 484, 489), ('chr1', '*', 469, 471), ('chr1', '*', 542, 563), ('chr1', '*', 493, 497), ('chr1', '*', 471, 484), ('chr1', '*', 489, 493), ('chr1', '*', 525, 542)]))
+		self.assertEqual(sorted(list(self.m2otac.mtuples.keys())), sorted([('chr1', '*', 469, 471), ('chr1', '*', 469, 484), ('chr1', '*', 469, 489), ('chr1', '*', 469, 493), ('chr1', '*', 469, 497), ('chr1', '*', 469, 525), ('chr1', '*', 469, 542), ('chr1', '*', 469, 563), ('chr1', '*', 469, 571), ('chr1', '*', 471, 484), ('chr1', '*', 471, 489), ('chr1', '*', 471, 493), ('chr1', '*', 471, 497), ('chr1', '*', 471, 525), ('chr1', '*', 471, 542), ('chr1', '*', 471, 563), ('chr1', '*', 471, 571), ('chr1', '*', 484, 489), ('chr1', '*', 484, 493), ('chr1', '*', 484, 497), ('chr1', '*', 484, 525), ('chr1', '*', 484, 542), ('chr1', '*', 484, 563), ('chr1', '*', 484, 571), ('chr1', '*', 489, 493), ('chr1', '*', 489, 497), ('chr1', '*', 489, 525), ('chr1', '*', 489, 542), ('chr1', '*', 489, 563), ('chr1', '*', 489, 571), ('chr1', '*', 493, 497), ('chr1', '*', 493, 525), ('chr1', '*', 493, 542), ('chr1', '*', 493, 563), ('chr1', '*', 493, 571), ('chr1', '*', 497, 525), ('chr1', '*', 497, 542), ('chr1', '*', 497, 563), ('chr1', '*', 497, 571), ('chr1', '*', 525, 542), ('chr1', '*', 525, 563), ('chr1', '*', 525, 571), ('chr1', '*', 542, 563), ('chr1', '*', 542, 571), ('chr1', '*', 563, 571)]))
 		self.assertEqual(sorted(list(self.m3ot.mtuples.keys())), sorted([('chr1', '*', 493, 497, 525), ('chr1', '*', 497, 525, 542), ('chr1', '*', 489, 493, 497), ('chr1', '*', 525, 542, 563), ('chr1', '*', 471, 484, 489), ('chr1', '*', 484, 489, 493), ('chr1', '*', 542, 563, 571), ('chr1', '*', 469, 471, 484)]))
 		self.assertEqual(sorted(list(self.m4ot.mtuples.keys())), sorted([('chr1', '*', 484, 489, 493, 497), ('chr1', '*', 525, 542, 563, 571), ('chr1', '*', 471, 484, 489, 493), ('chr1', '*', 493, 497, 525, 542), ('chr1', '*', 469, 471, 484, 489), ('chr1', '*', 497, 525, 542, 563), ('chr1', '*', 489, 493, 497, 525)]))
 		self.assertEqual(sorted(list(self.m5ot.mtuples.keys())), sorted([('chr1', '*', 469, 471, 484, 489, 493), ('chr1', '*', 497, 525, 542, 563, 571), ('chr1', '*', 493, 497, 525, 542, 563), ('chr1', '*', 489, 493, 497, 525, 542), ('chr1', '*', 484, 489, 493, 497, 525), ('chr1', '*', 471, 484, 489, 493, 497)]))
@@ -1269,8 +1346,11 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 		self.assertEqual(sorted(list(self.m8ot.mtuples.keys())), sorted([('chr1', '*', 469, 471, 484, 489, 493, 497, 525, 542), ('chr1', '*', 484, 489, 493, 497, 525, 542, 563, 571), ('chr1', '*', 471, 484, 489, 493, 497, 525, 542, 563)]))
 		self.assertEqual(sorted(list(self.m9ot.mtuples.keys())), sorted([('chr1', '*', 471, 484, 489, 493, 497, 525, 542, 563, 571), ('chr1', '*', 469, 471, 484, 489, 493, 497, 525, 542, 563)]))
 		self.assertEqual(sorted(list(self.m10ot.mtuples.keys())), sorted([('chr1', '*', 469, 471, 484, 489, 493, 497, 525, 542, 563, 571)]))
+		self.assertEqual(sorted(list(self.m10otac.mtuples.keys())), sorted([('chr1', '*', 469, 471, 484, 489, 493, 497, 525, 542, 563, 571)]))
 		self.assertEqual(sorted(list(self.m1ob.mtuples.keys())), sorted([('chr1', '*', 563), ('chr1', '*', 617), ('chr1', '*', 493), ('chr1', '*', 577), ('chr1', '*', 525), ('chr1', '*', 542), ('chr1', '*', 579), ('chr1', '*', 589), ('chr1', '*', 571), ('chr1', '*', 620), ('chr1', '*', 497), ('chr1', '*', 609)]))
+		self.assertEqual(sorted(list(self.m1obac.mtuples.keys())), sorted([('chr1', '*', 563), ('chr1', '*', 617), ('chr1', '*', 493), ('chr1', '*', 577), ('chr1', '*', 525), ('chr1', '*', 542), ('chr1', '*', 579), ('chr1', '*', 589), ('chr1', '*', 571), ('chr1', '*', 620), ('chr1', '*', 497), ('chr1', '*', 609)]))
 		self.assertEqual(sorted(list(self.m2ob.mtuples.keys())), sorted([('chr1', '*', 589, 609), ('chr1', '*', 609, 617), ('chr1', '*', 571, 577), ('chr1', '*', 563, 571), ('chr1', '*', 577, 579), ('chr1', '*', 542, 563), ('chr1', '*', 493, 497), ('chr1', '*', 617, 620), ('chr1', '*', 579, 589), ('chr1', '*', 525, 542), ('chr1', '*', 497, 525)]))
+		self.assertEqual(sorted(list(self.m2obac.mtuples.keys())), sorted([('chr1', '*', 493, 497), ('chr1', '*', 493, 525), ('chr1', '*', 493, 542), ('chr1', '*', 493, 563), ('chr1', '*', 493, 571), ('chr1', '*', 493, 577), ('chr1', '*', 493, 579), ('chr1', '*', 493, 589), ('chr1', '*', 493, 609), ('chr1', '*', 493, 617), ('chr1', '*', 493, 620), ('chr1', '*', 497, 525), ('chr1', '*', 497, 542), ('chr1', '*', 497, 563), ('chr1', '*', 497, 571), ('chr1', '*', 497, 577), ('chr1', '*', 497, 579), ('chr1', '*', 497, 589), ('chr1', '*', 497, 609), ('chr1', '*', 497, 617), ('chr1', '*', 497, 620), ('chr1', '*', 525, 542), ('chr1', '*', 525, 563), ('chr1', '*', 525, 571), ('chr1', '*', 525, 577), ('chr1', '*', 525, 579), ('chr1', '*', 525, 589), ('chr1', '*', 525, 609), ('chr1', '*', 525, 617), ('chr1', '*', 525, 620), ('chr1', '*', 542, 563), ('chr1', '*', 542, 571), ('chr1', '*', 542, 577), ('chr1', '*', 542, 579), ('chr1', '*', 542, 589), ('chr1', '*', 542, 609), ('chr1', '*', 542, 617), ('chr1', '*', 542, 620), ('chr1', '*', 563, 571), ('chr1', '*', 563, 577), ('chr1', '*', 563, 579), ('chr1', '*', 563, 589), ('chr1', '*', 563, 609), ('chr1', '*', 563, 617), ('chr1', '*', 563, 620), ('chr1', '*', 571, 577), ('chr1', '*', 571, 579), ('chr1', '*', 571, 589), ('chr1', '*', 571, 609), ('chr1', '*', 571, 617), ('chr1', '*', 571, 620), ('chr1', '*', 577, 579), ('chr1', '*', 577, 589), ('chr1', '*', 577, 609), ('chr1', '*', 577, 617), ('chr1', '*', 577, 620), ('chr1', '*', 579, 589), ('chr1', '*', 579, 609), ('chr1', '*', 579, 617), ('chr1', '*', 579, 620), ('chr1', '*', 589, 609), ('chr1', '*', 589, 617), ('chr1', '*', 589, 620), ('chr1', '*', 609, 617), ('chr1', '*', 609, 620), ('chr1', '*', 617, 620)]))
 		self.assertEqual(sorted(list(self.m3ob.mtuples.keys())), sorted([('chr1', '*', 571, 577, 579), ('chr1', '*', 493, 497, 525), ('chr1', '*', 609, 617, 620), ('chr1', '*', 497, 525, 542), ('chr1', '*', 589, 609, 617), ('chr1', '*', 579, 589, 609), ('chr1', '*', 525, 542, 563), ('chr1', '*', 563, 571, 577), ('chr1', '*', 542, 563, 571), ('chr1', '*', 577, 579, 589)]))
 		self.assertEqual(sorted(list(self.m4ob.mtuples.keys())), sorted([('chr1', '*', 577, 579, 589, 609), ('chr1', '*', 571, 577, 579, 589), ('chr1', '*', 563, 571, 577, 579), ('chr1', '*', 525, 542, 563, 571), ('chr1', '*', 542, 563, 571, 577), ('chr1', '*', 579, 589, 609, 617), ('chr1', '*', 493, 497, 525, 542), ('chr1', '*', 497, 525, 542, 563), ('chr1', '*', 589, 609, 617, 620)]))
 		self.assertEqual(sorted(list(self.m5ob.mtuples.keys())), sorted([('chr1', '*', 563, 571, 577, 579, 589), ('chr1', '*', 571, 577, 579, 589, 609), ('chr1', '*', 577, 579, 589, 609, 617), ('chr1', '*', 497, 525, 542, 563, 571), ('chr1', '*', 493, 497, 525, 542, 563), ('chr1', '*', 579, 589, 609, 617, 620), ('chr1', '*', 542, 563, 571, 577, 579), ('chr1', '*', 525, 542, 563, 571, 577)]))
@@ -1281,6 +1361,7 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 		self.assertEqual(sorted(list(self.m10ob.mtuples.keys())), sorted([('chr1', '*', 497, 525, 542, 563, 571, 577, 579, 589, 609, 617), ('chr1', '*', 493, 497, 525, 542, 563, 571, 577, 579, 589, 609), ('chr1', '*', 525, 542, 563, 571, 577, 579, 589, 609, 617, 620)]))
 		self.assertEqual(sorted(list(self.m11ob.mtuples.keys())), sorted([('chr1', '*', 497, 525, 542, 563, 571, 577, 579, 589, 609, 617, 620), ('chr1', '*', 493, 497, 525, 542, 563, 571, 577, 579, 589, 609, 617)]))
 		self.assertEqual(sorted(list(self.m12ob.mtuples.keys())), sorted([('chr1', '*', 493, 497, 525, 542, 563, 571, 577, 579, 589, 609, 617, 620)]))
+		self.assertEqual(sorted(list(self.m12obac.mtuples.keys())), sorted([('chr1', '*', 493, 497, 525, 542, 563, 571, 577, 579, 589, 609, 617, 620)]))
 
 	def test_correct_number_of_methylation_loci_in_fragment(self):
 		self.assertEqual(self.nmlifot, 10)
@@ -1867,834 +1948,6 @@ class TestGetStrand(unittest.TestCase):
 	def test_ctob_pe(self):
 		self.assertEqual(get_strand(self.ctobpe_1), '-')
 		self.assertEqual(get_strand(self.ctobpe_2), '-')
-
-#############
-# Everything in this commented chunk was previously used in testing get_positions(). However, these examples were too complicated to be used to unit tests here. They may still be useful in another context, which is why they haven't been deleted.
-#
-# def buildRead1OTNoINDELs():
-# 	'''build an example read_1 aligned to OT-strand that contains no INDELs
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2116:11787:72282_1:N:0:"
-# 	read.seq = "ATTTTTATTTTAATTTTAATTTTCGCGGTATTTTTAGTCGGTTTGTTCGTTCGGGTTTGATTTGAGGAGAATTGTGTTTCGTTTTTAGAGTATTATCGAA"
-# 	read.flag = 99
-# 	read.pos = 10445
-# 	read.mapq = 255
-# 	read.cigar = [(0, 100)]
-# 	read.rnext = 0
-# 	read.pnext = 10506
-# 	read.tlen = 161
-# 	read.qual = "BBBFFFFFFFFFFIIIIIIIIIIIIIIIBFFIIIIFIFFFIFFIIFIIIFFIIIF7BFFBFFFFBBFBBBBFFFBBBBFFFFFFFFFFBFBFFFFFFFBF"
-# 	read.tags = read.tags + [("XG", "CT")] + [("XM", ".hhh...hhh...hhh...hhh.Z.Z....hhh.x..xZ..hxz.hxZ.hxZ....x...hx.........x....h.xZ.hh..x......hh.xZ...")] + [("XR", "CT")]
-# 	return read
-#
-# def buildRead1OTNoINDELsWithSoftClip():
-# 	'''build an example read_1 aligned to OT-strand that contains no INDELs but has 5' and 3' soft-clipping
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2116:11787:72282_1:N:0:sc"
-# 	read.seq = "ATTTTTATTTTAATTTTAATTTTCGCGGTATTTTTAGTCGGTTTGTTCGTTCGGGTTTGATTTGAGGAGAATTGTGTTTCGTTTTTAGAGTATTATCGAA"
-# 	read.flag = 99
-# 	read.pos = 10448
-# 	read.mapq = 255
-# 	read.cigar = [(4, 3), (0, 95), (4, 2)]
-# 	read.rnext = 0
-# 	read.pnext = 10506
-# 	read.tlen = 158
-# 	read.qual = "BBBFFFFFFFFFFIIIIIIIIIIIIIIIBFFIIIIFIFFFIFFIIFIIIFFIIIF7BFFBFFFFBBFBBBBFFFBBBBFFFFFFFFFFBFBFFFFFFFBF"
-# 	read.tags = read.tags + [("XG", "CT")] + [("XM", "...h...hhh...hhh...hhh.Z.Z....hhh.x..xZ..hxz.hxZ.hxZ....x...hx.........x....h.xZ.hh..x......hh.xZ...")] + [("XR", "CT")]
-# 	return read
-#
-# def buildRead1OTNoINDELsWithHardClip():
-# 	'''build an example read_1 aligned to OT-strand that contains no INDELs but has 5' and 3' hard-clipping
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2116:11787:72282_1:N:0:hc"
-# 	read.seq = "TTTATTTTAATTTTAATTTTCGCGGTATTTTTAGTCGGTTTGTTCGTTCGGGTTTGATTTGAGGAGAATTGTGTTTCGTTTTTAGAGTATTATCG"
-# 	read.flag = 99
-# 	read.pos = 10448
-# 	read.mapq = 255
-# 	read.cigar = [(5, 3), (0, 95), (5, 2)]
-# 	read.rnext = 0
-# 	read.pnext = 10506
-# 	read.tlen = 158
-# 	read.qual = "FFFFFFFFFFIIIIIIIIIIIIIIIBFFIIIIFIFFFIFFIIFIIIFFIIIF7BFFBFFFFBBFBBBBFFFBBBBFFFFFFFFFFBFBFFFFFFF"
-# 	read.tags = read.tags + [("XG", "CT")] + [("XM", "h...hhh...hhh...hhh.Z.Z....hhh.x..xZ..hxz.hxZ.hxZ....x...hx.........x....h.xZ.hh..x......hh.xZ.")] + [("XR", "CT")]
-# 	return read
-#
-# def buildRead1OTNoINDELsWithHardClipAndSoftClip():
-# 	'''build an example read_1 aligned to OT-strand that contains no INDELs but has 5' and 3' hard-clipping and soft-clipping
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2116:11787:72282_1:N:0:hcsc"
-# 	read.seq = "TTTATTTTAATTTTAATTTTCGCGGTATTTTTAGTCGGTTTGTTCGTTCGGGTTTGATTTGAGGAGAATTGTGTTTCGTTTTTAGAGTATTATCG"
-# 	read.flag = 99
-# 	read.pos = 10450
-# 	read.mapq = 255
-# 	read.cigar = [(5, 3), (4, 2), (0, 90), (4, 3), (5, 2)]
-# 	read.rnext = 0
-# 	read.pnext = 10506
-# 	read.tlen = 156
-# 	read.qual = "FFFFFFFFFFIIIIIIIIIIIIIIIBFFIIIIFIFFFIFFIIFIIIFFIIIF7BFFBFFFFBBFBBBBFFFBBBBFFFFFFFFFFBFBFFFFFFF"
-# 	read.tags = read.tags + [("XG", "CT")] + [("XM", "....hhh...hhh...hhh.Z.Z....hhh.x..xZ..hxz.hxZ.hxZ....x...hx.........x....h.xZ.hh..x......hh....")] + [("XR", "CT")]
-# 	return read
-#
-# def buildRead1OT1Insertion():
-# 	'''build an example read_1 aligned to OT-strand that contains a single insertion.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1210:2378:71483_1:N:0:"
-# 	read.seq = "ATGAAAAATGTGTTGTTGTAGTTTGTTATTAGATTTTTTTTTTTTTATTGGTTTAATTAGGAATGGGGAATTTAGAGTTTTATTTGTTTAGGTTTTTTTT"
-# 	read.flag = 99
-# 	read.pos = 16315
-# 	read.mapq = 255
-# 	read.cigar = [(0, 33), (1, 1), (0, 66)]
-# 	read.rnext = 0
-# 	read.pnext = 16422
-# 	read.tlen = 208
-# 	read.qual = "BBBFFFFFFFFFFIIFIIFFIIIIIFFFIIIIIIIIIIIIIIIIFF0<BBB<BBBBBF<BBBBBBBFF07BBF<<'<<<BF<BBF<<BFBBBBB<BBFFF"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '...............x..................hhhh..h...hh........................hhx....hh.h.h.....x...h.hhh.x.')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OT1InsertionWithSoftClip():
-# 	'''build an example read_1 aligned to OT-strand that contains a single insertion and also has 5' and 3' soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1210:2378:71483_1:N:0:sc"
-# 	read.seq = "ATGAAAAATGTGTTGTTGTAGTTTGTTATTAGATTTTTTTTTTTTTATTGGTTTAATTAGGAATGGGGAATTTAGAGTTTTATTTGTTTAGGTTTTTTTT"
-# 	read.flag = 99
-# 	read.pos = 16318
-# 	read.mapq = 255
-# 	read.cigar = [(4, 3), (0, 30), (1, 1), (0, 60), (4, 6)]
-# 	read.rnext = 0
-# 	read.pnext = 16422
-# 	read.tlen = 205
-# 	read.qual = "BBBFFFFFFFFFFIIFIIFFIIIIIFFFIIIIIIIIIIIIIIIIFF0<BBB<BBBBBF<BBBBBBBFF07BBF<<'<<<BF<BBF<<BFBBBBB<BBFFF"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '...............x..................hhhh..h...hh........................hhx....hh.h.h.....x...h.......')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OT1InsertionWithHardClip():
-# 	'''build an example read_1 aligned to OT-strand that contains a single insertion and also has 5' and 3' hard-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1210:2378:71483_1:N:0:hc"
-# 	read.seq = "AAAAATGTGTTGTTGTAGTTTGTTATTAGATTTTTTTTTTTTTATTGGTTTAATTAGGAATGGGGAATTTAGAGTTTTATTTGTTTAGGTT"
-# 	read.flag = 99
-# 	read.pos = 16318
-# 	read.mapq = 255
-# 	read.cigar = [(5, 3), (0, 30), (1, 1), (0, 60), (5, 6)]
-# 	read.rnext = 0
-# 	read.pnext = 16422
-# 	read.tlen = 205
-# 	read.qual = "FFFFFFFFFFIIFIIFFIIIIIFFFIIIIIIIIIIIIIIIIFF0<BBB<BBBBBF<BBBBBBBFF07BBF<<'<<<BF<BBF<<BFBBBBB"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '............x..................hhhh..h...hh........................hhx....hh.h.h.....x...h.')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OT1InsertionWithHardClipAndSoftClip():
-# 	'''build an example read_1 aligned to OT-strand that contains a single insertion and also has 5' and 3' hard-clipping and soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1210:2378:71483_1:N:0:hcsc"
-# 	read.seq = "AAAAATGTGTTGTTGTAGTTTGTTATTAGATTTTTTTTTTTTTATTGGTTTAATTAGGAATGGGGAATTTAGAGTTTTATTTGTTTAGGTT"
-# 	read.flag = 99
-# 	read.pos = 16320
-# 	read.mapq = 255
-# 	read.cigar = [(5, 3), (4, 2), (0, 28), (1, 1), (0, 58), (4, 2), (5, 6)]
-# 	read.rnext = 0
-# 	read.pnext = 16422
-# 	read.tlen = 203
-# 	read.qual = "FFFFFFFFFFIIFIIFFIIIIIFFFIIIIIIIIIIIIIIIIFF0<BBB<BBBBBF<BBBBBBBFF07BBF<<'<<<BF<BBF<<BFBBBBB"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '............x..................hhhh..h...hh........................hhx....hh.h.h.....x.....')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OT1Deletion():
-# 	'''build an example read_1 aligned to OT-strand that contains a single deletion.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-ST1445:66:D1W8JACXX:8:2201:2380:75186_1:N:0:"
-# 	read.seq = "TTAATTTTAATTTTAATTTTAATCTTAATTTTAATTTTTGTGGTATTTTTAGTTGGTTTGTTTGTTTGGGTTTGATTTGAGGAGAATTGTGTTTTGT"
-# 	read.flag = 99
-# 	read.pos = 10429
-# 	read.mapq = 255
-# 	read.cigar = [(0, 10), (2, 1), (0, 87)]
-# 	read.rnext = 0
-# 	read.pnext = 10471
-# 	read.tlen = 142
-# 	read.qual = "BBBFFFFFFFFFFIIIIIIIIIIIIIIFIIIIIIIIIIIBFBBFFFIIIIFBFF7BFFFFFIIBFFF777FFF<B<FF0<77B<BBBF<BBBBFF7B"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', 'h...hhh...hhh...hhh...hHh...hhh...hhh.z.z....hhh.x..xz..hxz.hxz.hxz....x...hx.........x....h.xz.h')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OT1DeletionWithSoftClip():
-# 	'''build an example read_1 aligned to OT-strand that contains a single deletion and also 5' and 3' soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-ST1445:66:D1W8JACXX:8:2201:2380:75186_1:N:0:sc"
-# 	read.seq = "TTAATTTTAATTTTAATTTTAATCTTAATTTTAATTTTTGTGGTATTTTTAGTTGGTTTGTTTGTTTGGGTTTGATTTGAGGAGAATTGTGTTTTGT"
-# 	read.flag = 99
-# 	read.pos = 10434
-# 	read.mapq = 255
-# 	read.cigar = [(4, 5), (0, 5), (2, 1), (0, 85), (4, 2)]
-# 	read.rnext = 0
-# 	read.pnext = 10471
-# 	read.tlen = 137
-# 	read.qual = "BBBFFFFFFFFFFIIIIIIIIIIIIIIFIIIIIIIIIIIBFBBFFFIIIIFBFF7BFFFFFIIBFFF777FFF<B<FF0<77B<BBBF<BBBBFF7B"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '.....hh...hhh...hhh...hHh...hhh...hhh.z.z....hhh.x..xz..hxz.hxz.hxz....x...hx.........x....h.xz..')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OT1DeletionWithHardClip():
-# 	'''build an example read_1 aligned to OT-strand that contains a single deletion and also 5' and 3' hard-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-ST1445:66:D1W8JACXX:8:2201:2380:75186_1:N:0:hc"
-# 	read.seq = "TTTAATTTTAATTTTAATCTTAATTTTAATTTTTGTGGTATTTTTAGTTGGTTTGTTTGTTTGGGTTTGATTTGAGGAGAATTGTGTTTT"
-# 	read.flag = 99
-# 	read.pos = 10434
-# 	read.mapq = 255
-# 	read.cigar = [(5, 5), (0, 5), (2, 1), (0, 85), (5, 2)]
-# 	read.rnext = 0
-# 	read.pnext = 10471
-# 	read.tlen = 137
-# 	read.qual = "FFFFFFFFIIIIIIIIIIIIIIFIIIIIIIIIIIBFBBFFFIIIIFBFF7BFFFFFIIBFFF777FFF<B<FF0<77B<BBBF<BBBBFF"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', 'hh...hhh...hhh...hHh...hhh...hhh.z.z....hhh.x..xz..hxz.hxz.hxz....x...hx.........x....h.xz')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OT1DeletionWithHardClipAndSoftClip():
-# 	'''build an example read_1 aligned to OT-strand that contains a single deletion and also 5' and 3' hard-clipping and soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-ST1445:66:D1W8JACXX:8:2201:2380:75186_1:N:0:hcsc"
-# 	read.seq = "TTTAATTTTAATTTTAATCTTAATTTTAATTTTTGTGGTATTTTTAGTTGGTTTGTTTGTTTGGGTTTGATTTGAGGAGAATTGTGTTTT"
-# 	read.flag = 99
-# 	read.pos = 10437
-# 	read.mapq = 255
-# 	read.cigar = [(5, 5), (4, 3), (0, 2), (2, 1), (0, 80), (4, 5), (5, 2)]
-# 	read.rnext = 0
-# 	read.pnext = 10471
-# 	read.tlen = 134
-# 	read.qual = "FFFFFFFFIIIIIIIIIIIIIIFIIIIIIIIIIIBFBBFFFIIIIFBFF7BFFFFFIIBFFF777FFF<B<FF0<77B<BBBF<BBBBFF"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '.....hhh...hhh...hHh...hhh...hhh.z.z....hhh.x..xz..hxz.hxz.hxz....x...hx.........x........')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OTMultipleInsertions():
-# 	'''build an example read_1 aligned to OT-strand that contains more than one insertion.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2310:4022:64703_1:N:0:"
-# 	read.seq = "GGGTTAATTTGATAGTAGTTGTTTGGGTATTGGGGTATTTTTTCGTTTGTTAGGTGGGTAGTGGATAGTTTGTTTTTTTTTTTGGGGAAGGGAGACGAGG"
-# 	read.flag = 99
-# 	read.pos = 1053796
-# 	read.mapq = 255
-# 	read.cigar = [(0, 31), (1, 1), (0, 40), (1, 1), (0, 27)]
-# 	read.rnext = 0
-# 	read.pnext = 1053855
-# 	read.tlen = 159
-# 	read.qual = "BBBFFFFFFFFFFFIFIIIIIIIIIIIFFFFIIIIBFFIIIIIIIIIIIFIFIIBFFI<BFFFFBFFFFFFFFFFFFFFFFFF7<BF7<BBF777<B7<B"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '...hh..hx...x..x..x..hx....h.h.....h.h.hhh.Z..x...x...z...x.........h.z...hh.h.hhx.............Z....')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OTMultipleInsertionsWithSoftClip():
-# 	'''build an example read_1 aligned to OT-strand that contains more than one insertion and 5' and 3' soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2310:4022:64703_1:N:0:sc"
-# 	read.seq = "GGGTTAATTTGATAGTAGTTGTTTGGGTATTGGGGTATTTTTTCGTTTGTTAGGTGGGTAGTGGATAGTTTGTTTTTTTTTTTGGGGAAGGGAGACGAGG"
-# 	read.flag = 99
-# 	read.pos = 1053801
-# 	read.mapq = 255
-# 	read.cigar = [(4, 5), (0, 26), (1, 1), (0, 40), (1, 1), (0, 22), (4, 5)]
-# 	read.rnext = 0
-# 	read.pnext = 1053855
-# 	read.tlen = 154
-# 	read.qual = "BBBFFFFFFFFFFFIFIIIIIIIIIIIFFFFIIIIBFFIIIIIIIIIIIFIFIIBFFI<BFFFFBFFFFFFFFFFFFFFFFFF7<BF7<BBF777<B7<B"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '.......hx...x..x..x..hx....h.h.....h.h.hhh.Z..x...x...z...x.........h.z...hh.h.hhx..................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OTMultipleInsertionsWithHardClip():
-# 	'''build an example read_1 aligned to OT-strand that contains more than one insertion and 5' and 3' hard-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2310:4022:64703_1:N:0:hc"
-# 	read.seq = "AATTTGATAGTAGTTGTTTGGGTATTGGGGTATTTTTTCGTTTGTTAGGTGGGTAGTGGATAGTTTGTTTTTTTTTTTGGGGAAGGGAGA"
-# 	read.flag = 99
-# 	read.pos = 1053801
-# 	read.mapq = 255
-# 	read.cigar = [(5, 5), (0, 26), (1, 1), (0, 40), (1, 1), (0, 22), (5, 5)]
-# 	read.rnext = 0
-# 	read.pnext = 1053855
-# 	read.tlen = 154
-# 	read.qual = "FFFFFFFFFIFIIIIIIIIIIIFFFFIIIIBFFIIIIIIIIIIIFIFIIBFFI<BFFFFBFFFFFFFFFFFFFFFFFF7<BF7<BBF777"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '..hx...x..x..x..hx....h.h.....h.h.hhh.Z..x...x...z...x.........h.z...hh.h.hhx.............')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OTMultipleInsertionsWithHardClipAndSoftClip():
-# 	'''build an example read_1 aligned to OT-strand that contains more than one insertion and 5' and 3' hard-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2310:4022:64703_1:N:0:hcsc"
-# 	read.seq = "AATTTGATAGTAGTTGTTTGGGTATTGGGGTATTTTTTCGTTTGTTAGGTGGGTAGTGGATAGTTTGTTTTTTTTTTTGGGGAAGGGAGA"
-# 	read.flag = 99
-# 	read.pos = 1053801
-# 	read.mapq = 255
-# 	read.cigar = [(5, 5), (4, 4), (0, 22), (1, 1), (0, 40), (1, 1), (0, 20), (4, 2), (5, 5)]
-# 	read.rnext = 0
-# 	read.pnext = 1053851
-# 	read.tlen = 150
-# 	read.qual = "FFFFFFFFFIFIIIIIIIIIIIFFFFIIIIBFFIIIIIIIIIIIFIFIIBFFI<BFFFFBFFFFFFFFFFFFFFFFFF7<BF7<BBF777"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '.......x..x..x..hx....h.h.....h.h.hhh.Z..x...x...z...x.........h.z...hh.h.hhx.............')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OTMultipleDeletions():
-# 	'''build an example read_1 aligned to OT-strand that contains more than one deletion.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1211:13000:93908_1:N:0:"
-# 	read.seq = "TGATTTTTATTTATAGGGTTTATTAGTAAAGTTATAGTGGGGGTAGGAGGGTGGTTAGGTTTTTAATATTTTTTTTTCGTTGATTTTAGTAGGTGGAGAGG"
-# 	read.flag = 99
-# 	read.pos = 880552
-# 	read.mapq = 255
-# 	read.cigar = [(0, 68), (2, 1), (0, 15), (2, 1), (0, 18)]
-# 	read.rnext = 0
-# 	read.pnext = 880596
-# 	read.tlen = 147
-# 	read.qual = "BBBFFFFFFFFFFIIIIIBFFFFIIIFFIIIIFIIIIFFFFII7BFFBBFI0<B<BFFF7BFBFFFFFFFFFFFFFFFFBBFFFFFBFFBFFFBBBBFBFB"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '...h.hhh.hhh.x.....hh.hx..h.....h.x........x..........hx...h.hhh..h.hh..hhh.xZ.x.....hx..x...........')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OTMultipleDeletionsWithSoftClip():
-# 	'''build an example read_1 aligned to OT-strand that contains more than one deletion and 5' and 3' soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1211:13000:93908_1:N:0:sc"
-# 	read.seq = "TGATTTTTATTTATAGGGTTTATTAGTAAAGTTATAGTGGGGGTAGGAGGGTGGTTAGGTTTTTAATATTTTTTTTTCGTTGATTTTAGTAGGTGGAGAGG"
-# 	read.flag = 99
-# 	read.pos = 880556
-# 	read.mapq = 255
-# 	read.cigar = [(4, 4), (0, 64), (2, 1), (0, 15), (2, 1), (0, 16), (4, 2)]
-# 	read.rnext = 0
-# 	read.pnext = 880596
-# 	read.tlen = 143
-# 	read.qual = "BBBFFFFFFFFFFIIIIIBFFFFIIIFFIIIIFIIIIFFFFII7BFFBBFI0<B<BFFF7BFBFFFFFFFFFFFFFFFFBBFFFFFBFFBFFFBBBBFBFB"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '...h.hhh.hhh.x.....hh.hx..h.....h.x........x..........hx...h.hhh..h.hh..hhh.xZ.x.....hx..x...........')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OTMultipleDeletionsWithHardClip():
-# 	'''build an example read_1 aligned to OT-strand that contains more than one deletion and 5' and 3' hard-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1211:13000:93908_1:N:0:hc"
-# 	read.seq = "TTTTATTTATAGGGTTTATTAGTAAAGTTATAGTGGGGGTAGGAGGGTGGTTAGGTTTTTAATATTTTTTTTTCGTTGATTTTAGTAGGTGGAGA"
-# 	read.flag = 99
-# 	read.pos = 880556
-# 	read.mapq = 255
-# 	read.cigar = [(5, 4), (0, 64), (2, 1), (0, 15), (2, 1), (0, 16), (5, 2)]
-# 	read.rnext = 0
-# 	read.pnext = 880596
-# 	read.tlen = 143
-# 	read.qual = "FFFFFFFFFIIIIIBFFFFIIIFFIIIIFIIIIFFFFII7BFFBBFI0<B<BFFF7BFBFFFFFFFFFFFFFFFFBBFFFFFBFFBFFFBBBBFB"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '.hhh.hhh.x.....hh.hx..h.....h.x........x..........hx...h.hhh..h.hh..hhh.xZ.x.....hx..x.........')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OTMultipleDeletionsWithHardClipAndSoftClip():
-# 	'''build an example read_1 aligned to OT-strand that contains more than one deletion and 5' and 3' hard-clipping and soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1211:13000:93908_1:N:0:hcsc"
-# 	read.seq = "TTTTATTTATAGGGTTTATTAGTAAAGTTATAGTGGGGGTAGGAGGGTGGTTAGGTTTTTAATATTTTTTTTTCGTTGATTTTAGTAGGTGGAGA"
-# 	read.flag = 99
-# 	read.pos = 880560
-# 	read.mapq = 255
-# 	read.cigar = [(5, 4), (4, 4), (0, 60), (2, 1), (0, 15), (2, 1), (0, 10), (4, 6), (5, 2)]
-# 	read.rnext = 0
-# 	read.pnext = 880596
-# 	read.tlen = 139
-# 	read.qual = "FFFFFFFFFIIIIIBFFFFIIIFFIIIIFIIIIFFFFII7BFFBBFI0<B<BFFF7BFBFFFFFFFFFFFFFFFFBBFFFFFBFFBFFFBBBBFB"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '.....hhh.x.....hh.hx..h.....h.x........x..........hx...h.hhh..h.hh..hhh.xZ.x.....hx..x.........')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OTInsertionAndDeletion():
-# 	'''build an example read_1 aligned to OT-strand that contains an insertion and a deletion.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:2110:14312:31481_1:N:0:"
-# 	read.seq = "AAAAAAAATAAAAAAAAAAAAAATAAAAAAAAATTAGAGTTGATTTTTAGGTTTTGATTTTGTTATAATTATTTAAATGTGTGTGCGGGTTTTAAGTATG"
-# 	read.flag = 99
-# 	read.pos = 1606063
-# 	read.mapq = 255
-# 	read.cigar = [(0, 9), (1, 1), (0, 85), (2, 2), (0, 5)]
-# 	read.rnext = 0
-# 	read.pnext = 1606135
-# 	read.tlen = 174
-# 	read.qual = "BBBFFFFFFFFFFIIIIIIIIFF<BFFFFFFFFBBBB7BFFB0<BFFF<BFBBFFBBBBFFBFFBBFFFBBBFBFBBBBFF<B070<<BBFFBFFB<<BB"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '........h..............h.........hx........h.......h.................h.hh....z.......Z....h.h...h...')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OTInsertionAndDeletionWithSoftClip():
-# 	'''build an example read_1 aligned to OT-strand that contains an insertion and a deletion and 5' and 3' soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:2110:14312:31481_1:N:0:sc"
-# 	read.seq = "AAAAAAAATAAAAAAAAAAAAAATAAAAAAAAATTAGAGTTGATTTTTAGGTTTTGATTTTGTTATAATTATTTAAATGTGTGTGCGGGTTTTAAGTATG"
-# 	read.flag = 99
-# 	read.pos = 1606064
-# 	read.mapq = 255
-# 	read.cigar = [(4, 1), (0, 8), (1, 1), (0, 85), (2, 2), (0, 2), (4, 3)]
-# 	read.rnext = 0
-# 	read.pnext = 1606135
-# 	read.tlen = 173
-# 	read.qual = "BBBFFFFFFFFFFIIIIIIIIFF<BFFFFFFFFBBBB7BFFB0<BFFF<BFBBFFBBBBFFBFFBBFFFBBBFBFBBBBFF<B070<<BBFFBFFB<<BB"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '........h..............h.........hx........h.......h.................h.hh....z.......Z....h.h.......')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OTInsertionAndDeletionWithHardClip():
-# 	'''build an example read_1 aligned to OT-strand that contains an insertion and a deletion and 5' and 3' hard-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:2110:14312:31481_1:N:0:hc"
-# 	read.seq = "AAAAAAATAAAAAAAAAAAAAATAAAAAAAAATTAGAGTTGATTTTTAGGTTTTGATTTTGTTATAATTATTTAAATGTGTGTGCGGGTTTTAAGT"
-# 	read.flag = 99
-# 	read.pos = 1606064
-# 	read.mapq = 255
-# 	read.cigar = [(5, 1), (0, 8), (1, 1), (0, 85), (2, 2), (0, 2), (5, 3)]
-# 	read.rnext = 0
-# 	read.pnext = 1606135
-# 	read.tlen = 173
-# 	read.qual = "BBFFFFFFFFFFIIIIIIIIFF<BFFFFFFFFBBBB7BFFB0<BFFF<BFBBFFBBBBFFBFFBBFFFBBBFBFBBBBFF<B070<<BBFFBFFB<"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '.......h..............h.........hx........h.......h.................h.hh....z.......Z....h.h....')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OTInsertionAndDeletionWithHardClipAndSoftClip():
-# 	'''build an example read_1 aligned to OT-strand that contains an insertion and a deletion and 5' and 3' hard-clipping and soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:2110:14312:31481_1:N:0:hcsc"
-# 	read.seq = "AAAAAAATAAAAAAAAAAAAAATAAAAAAAAATTAGAGTTGATTTTTAGGTTTTGATTTTGTTATAATTATTTAAATGTGTGTGCGGGTTTTAAGT"
-# 	read.flag = 99
-# 	read.pos = 1606064
-# 	read.mapq = 255
-# 	read.cigar = [(5, 1), (4, 1), (0, 7), (1, 1), (0, 85), (2, 2), (0, 1), (4, 1), (5, 3)]
-# 	read.rnext = 0
-# 	read.pnext = 1606135
-# 	read.tlen = 173
-# 	read.qual = "BBFFFFFFFFFFIIIIIIIIFF<BFFFFFFFFBBBB7BFFB0<BFFF<BFBBFFBBBBFFBFFBBFFFBBBFBFBBBBFF<B070<<BBFFBFFB<"
-# 	read.tags = read.tags + [('XG', 'CT')] + [('XM', '.......h..............h.........hx........h.......h.................h.hh....z.......Z....h.h....')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OBNoINDELs():
-# 	'''build an example read_1 aligned to OB-strand that contains no INDELs
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-ST1445:66:D1W8JACXX:8:1112:17127:12640_1:N:0:"
-# 	read.seq = "AAAATCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACN"
-# 	read.flag = 83
-# 	read.pos = 9994
-# 	read.mapq = 255
-# 	read.cigar = [(0, 71)]
-# 	read.rnext = 0
-# 	read.pnext = 9994
-# 	read.tlen = 74
-# 	read.qual = "BBFFBBFBFFBBFBFB<BFBFFFFFBFFFFFBIFFFFFIFFFFFFFBBFFFBBBIFFFFBFFFFFBFB<0#"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '.......................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OBNoINDELsWithSoftClip():
-# 	'''build an example read_1 aligned to OB-strand that contains no INDELs but with 5' and 3' soft-clipping
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-ST1445:66:D1W8JACXX:8:1112:17127:12640_1:N:0:sc"
-# 	read.seq = "AAAATCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACN"
-# 	read.flag = 83
-# 	read.pos = 9997
-# 	read.mapq = 255
-# 	read.cigar = [(4, 3), (0, 61), (4, 7)]
-# 	read.rnext = 0
-# 	read.pnext = 9994
-# 	read.tlen = 71
-# 	read.qual = "BBFFBBFBFFBBFBFB<BFBFFFFFBFFFFFBIFFFFFIFFFFFFFBBFFFBBBIFFFFBFFFFFBFB<0#"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '.......................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OBNoINDELsWithHardClip():
-# 	'''build an example read_1 aligned to OB-strand that contains no INDELs but with 5' and 3' hard-clipping
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-ST1445:66:D1W8JACXX:8:1112:17127:12640_1:N:0:hc"
-# 	read.seq = "ATCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC"
-# 	read.flag = 83
-# 	read.pos = 9997
-# 	read.mapq = 255
-# 	read.cigar = [(5, 3), (0, 61), (5, 7)]
-# 	read.rnext = 0
-# 	read.pnext = 9994
-# 	read.tlen = 71
-# 	read.qual = "FBBFBFFBBFBFB<BFBFFFFFBFFFFFBIFFFFFIFFFFFFFBBFFFBBBIFFFFBFFFF"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '.............................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OBNoINDELsWithHardClipAndSoftClip():
-# 	'''build an example read_1 aligned to OB-strand that contains no INDELs but with 5' and 3' hard-clipping and soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-ST1445:66:D1W8JACXX:8:1112:17127:12640_1:N:0:hcsc"
-# 	read.seq = "ATCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC"
-# 	read.flag = 83
-# 	read.pos = 9998
-# 	read.mapq = 255
-# 	read.cigar = [(5, 3), (4, 1), (0, 57), (4, 3), (5, 7)]
-# 	read.rnext = 0
-# 	read.pnext = 9994
-# 	read.tlen = 70
-# 	read.qual = "FBBFBFFBBFBFB<BFBFFFFFBFFFFFBIFFFFFIFFFFFFFBBFFFBBBIFFFFBFFFF"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '.............................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OB1Insertion():
-# 	'''build an example read_1 aligned to OB-strand that contains a single insertion.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2316:15832:19438_1:N:0:"
-# 	read.seq = "AACCCTAACCCTAACCCTTACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCAACCCTAACC"
-# 	read.flag = 83
-# 	read.pos = 10019
-# 	read.mapq = 255
-# 	read.cigar = [(0, 17), (1, 1), (0, 82)]
-# 	read.rnext = 0
-# 	read.pnext = 9994
-# 	read.tlen = -124
-# 	read.qual = "<7FFBB<7FBBFBBFFBBFFFFFBB<0FBBBB<FFFBB<FFFBB7IFFFB7IIFFF<IFFFFBIIIFFFIIIFFBIIFFFBIIIFFBFFFFFFFFFFBBB"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '....................................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OB1InsertionWithSoftClip():
-# 	'''build an example read_1 aligned to OB-strand that contains a single insertion and 5' and 3' soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2316:15832:19438_1:N:0:sc"
-# 	read.seq = "AACCCTAACCCTAACCCTTACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCAACCCTAACC"
-# 	read.flag = 83
-# 	read.pos = 10022
-# 	read.mapq = 255
-# 	read.cigar = [(4, 3), (0, 14), (1, 1), (0, 80), (4, 2)]
-# 	read.rnext = 0
-# 	read.pnext = 9994
-# 	read.tlen = -122
-# 	read.qual = "<7FFBB<7FBBFBBFFBBFFFFFBB<0FBBBB<FFFBB<FFFBB7IFFFB7IIFFF<IFFFFBIIIFFFIIIFFBIIFFFBIIIFFBFFFFFFFFFFBBB"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '....................................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OB1InsertionWithHardClip():
-# 	'''build an example read_1 aligned to OB-strand that contains a single insertion and 5' and 3' hard-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2316:15832:19438_1:N:0:hc"
-# 	read.seq = "CCTAACCCTAACCCTTACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCAACCCTAA"
-# 	read.flag = 83
-# 	read.pos = 10022
-# 	read.mapq = 255
-# 	read.cigar = [(5, 3), (0, 14), (1, 1), (0, 80), (5, 2)]
-# 	read.rnext = 0
-# 	read.pnext = 9994
-# 	read.tlen = -122
-# 	read.qual = "FBB<7FBBFBBFFBBFFFFFBB<0FBBBB<FFFBB<FFFBB7IFFFB7IIFFF<IFFFFBIIIFFFIIIFFBIIFFFBIIIFFBFFFFFFFFFFB"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...............................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OB1InsertionWithHardClipAndSoftClip():
-# 	'''build an example read_1 aligned to OB-strand that contains a single insertion and 5' and 3' hard-clipping and soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:2316:15832:19438_1:N:0:hcsc"
-# 	read.seq = "CCTAACCCTAACCCTTACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCAACCCTAA"
-# 	read.flag = 83
-# 	read.pos = 10026
-# 	read.mapq = 255
-# 	read.cigar = [(5, 3), (4, 4), (0, 10), (1, 1), (0, 78), (4, 2), (5, 2)]
-# 	read.rnext = 0
-# 	read.pnext = 9994
-# 	read.tlen = -120
-# 	read.qual = "FBB<7FBBFBBFFBBFFFFFBB<0FBBBB<FFFBB<FFFBB7IFFFB7IIFFF<IFFFFBIIIFFFIIIFFBIIFFFBIIIFFBFFFFFFFFFFB"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...............................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OB1Deletion():
-# 	'''build an example read_1 aligned to OB-strand that contains a single deletion.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1307:10748:81180_1:N:0:"
-# 	read.seq = "AACCCTAACCCTAACCCTAACCCTAACCCTAACCCTACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCA"
-# 	read.flag = 83
-# 	read.pos =  10013
-# 	read.mapq = 255
-# 	read.cigar = [(0, 36), (2, 1), (0, 59)]
-# 	read.rnext = 0
-# 	read.pnext = 10012
-# 	read.tlen = -97
-# 	read.qual = "70B<70BB<0<770BB<70<BBB<7'FFBBB<FB<<7FFFBF<FFFF<0IIFBBFFIFFFFIFFFFBFFFFFFIIFFFFIIFFBFFFFFFBFBBB"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...............................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OB1DeletionWithSoftClip():
-# 	'''build an example read_1 aligned to OB-strand that contains a single deletion and 5' and 3' soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1307:10748:81180_1:N:0:sc"
-# 	read.seq = "AACCCTAACCCTAACCCTAACCCTAACCCTAACCCTACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCA"
-# 	read.flag = 83
-# 	read.pos =  10016
-# 	read.mapq = 255
-# 	read.cigar = [(4, 3), (0, 33), (2, 1), (0, 57), (4, 2)]
-# 	read.rnext = 0
-# 	read.pnext = 10012
-# 	read.tlen = -95
-# 	read.qual = "70B<70BB<0<770BB<70<BBB<7'FFBBB<FB<<7FFFBF<FFFF<0IIFBBFFIFFFFIFFFFBFFFFFFIIFFFFIIFFBFFFFFFBFBBB"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...............................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OB1DeletionWithHardClip():
-# 	'''build an example read_1 aligned to OB-strand that contains a single deletion and 5' and 3' hard-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1307:10748:81180_1:N:0:hc"
-# 	read.seq = "CCTAACCCTAACCCTAACCCTAACCCTAACCCTACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACC"
-# 	read.flag = 83
-# 	read.pos =  10016
-# 	read.mapq = 255
-# 	read.cigar = [(5, 3), (0, 33), (2, 1), (0, 57), (5, 2)]
-# 	read.rnext = 0
-# 	read.pnext = 10012
-# 	read.tlen = -95
-# 	read.qual = "<70BB<0<770BB<70<BBB<7'FFBBB<FB<<7FFFBF<FFFF<0IIFBBFFIFFFFIFFFFBFFFFFFIIFFFFIIFFBFFFFFFBFB"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '..........................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OB1DeletionWithHardClipAndSoftClip():
-# 	'''build an example read_1 aligned to OB-strand that contains a single deletion and 5' and 3' hard-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:1307:10748:81180_1:N:0:hcsc"
-# 	read.seq = "CCTAACCCTAACCCTAACCCTAACCCTAACCCTACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACC"
-# 	read.flag = 83
-# 	read.pos =  10019
-# 	read.mapq = 255
-# 	read.cigar = [(5, 3), (4, 3), (0, 30), (2, 1), (0, 50), (4, 7), (5, 2)]
-# 	read.rnext = 0
-# 	read.pnext = 10012
-# 	read.tlen = -88
-# 	read.qual = "<70BB<0<770BB<70<BBB<7'FFBBB<FB<<7FFFBF<FFFF<0IIFBBFFIFFFFIFFFFBFFFFFFIIFFFFIIFFBFFFFFFBFB"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '..........................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OBMultipleInsertions():
-# 	'''build an example read_1 aligned to OB-strand that contains more than one insertion.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:1204:4767:23545_1:N:0:"
-# 	read.seq = "CCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAAC"
-# 	read.flag = 83
-# 	read.pos = 10081
-# 	read.mapq = 255
-# 	read.cigar = [(0, 27), (1, 1), (0, 2), (1, 1), (0, 68)]
-# 	read.rnext = 0
-# 	read.pnext = 10007
-# 	read.tlen = -171
-# 	read.qual = "BBB7<7B777BBBBBBBBFFFFBFBB<7<0BBB<7B7FFB<B0FFFB<0FFBBB<IIFFFFFFFFFFFFFFBFFIFFFFFFFFFFFFFFFFFFFFFBBB"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...................................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OBMultipleInsertionsWithSoftClip():
-# 	'''build an example read_1 aligned to OB-strand that contains more than one insertion and 5' and 3' soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:1204:4767:23545_1:N:0:sc"
-# 	read.seq = "CCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAAC"
-# 	read.flag = 83
-# 	read.pos = 10084
-# 	read.mapq = 255
-# 	read.cigar = [(4, 3), (0, 24), (1, 1), (0, 2), (1, 1), (0, 67), (4, 1)]
-# 	read.rnext = 0
-# 	read.pnext = 10007
-# 	read.tlen = -170
-# 	read.qual = "BBB7<7B777BBBBBBBBFFFFBFBB<7<0BBB<7B7FFB<B0FFFB<0FFBBB<IIFFFFFFFFFFFFFFBFFIFFFFFFFFFFFFFFFFFFFFFBBB"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...................................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OBMultipleInsertionsWithHardClip():
-# 	'''build an example read_1 aligned to OB-strand that contains more than one insertion and 5' and 3' hard-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:1204:4767:23545_1:N:0:hc"
-# 	read.seq = "TAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAA"
-# 	read.flag = 83
-# 	read.pos = 10084
-# 	read.mapq = 255
-# 	read.cigar = [(5, 3), (0, 24), (1, 1), (0, 2), (1, 1), (0, 67), (5, 1)]
-# 	read.rnext = 0
-# 	read.pnext = 10007
-# 	read.tlen = -170
-# 	read.qual = "7<7B777BBBBBBBBFFFFBFBB<7<0BBB<7B7FFB<B0FFFB<0FFBBB<IIFFFFFFFFFFFFFFBFFIFFFFFFFFFFFFFFFFFFFFFBB"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...............................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OBMultipleInsertionsWithHardClipAndSoftClip():
-# 	'''build an example read_1 aligned to OB-strand that contains more than one insertion and 5' and 3' hard-clipping and soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:1204:4767:23545_1:N:0:hcsc"
-# 	read.seq = "TAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAA"
-# 	read.flag = 83
-# 	read.pos = 10088
-# 	read.mapq = 255
-# 	read.cigar = [(5, 3), (4, 4), (0, 20), (1, 1), (0, 2), (1, 1), (0, 65), (4, 2), (5, 1)]
-# 	read.rnext = 0
-# 	read.pnext = 10007
-# 	read.tlen = -168
-# 	read.qual = "7<7B777BBBBBBBBFFFFBFBB<7<0BBB<7B7FFB<B0FFFB<0FFBBB<IIFFFFFFFFFFFFFFBFFIFFFFFFFFFFFFFFFFFFFFFBB"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...............................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OBMultipleDeletions():
-# 	'''build an example read_1 aligned to OB-strand that contains more than one deletion.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:2111:5724:55868_1:N:0:"
-# 	read.seq = "AACCCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCT"
-# 	read.flag = 83
-# 	read.pos = 10055
-# 	read.mapq = 255
-# 	read.cigar = [(0, 29), (2, 1), (0, 61), (2, 1), (0, 10)]
-# 	read.rnext = 0
-# 	read.pnext = 10041
-# 	read.tlen = -116
-# 	read.qual = "<0FFFBB7BBBB<7FFBBB7BFFB<7FFBBBFBBB<7FFB<<0FFFBB7IFFFBIFFFFBIFFFFBIFFFF<FFFFFBIIIFFBIFFFFBFFFFFBFBBB"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '....................................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OBMultipleDeletionsWithSoftClip():
-# 	'''build an example read_1 aligned to OB-strand that contains more than one deletion and 5' and 3' soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:2111:5724:55868_1:N:0:sc"
-# 	read.seq = "AACCCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCT"
-# 	read.flag = 83
-# 	read.pos = 10057
-# 	read.mapq = 255
-# 	read.cigar = [(4, 2), (0, 27), (2, 1), (0, 61), (2, 1), (0, 7), (4, 3)]
-# 	read.rnext = 0
-# 	read.pnext = 10041
-# 	read.tlen = -113
-# 	read.qual = "<0FFFBB7BBBB<7FFBBB7BFFB<7FFBBBFBBB<7FFB<<0FFFBB7IFFFBIFFFFBIFFFFBIFFFF<FFFFFBIIIFFBIFFFFBFFFFFBFBBB"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '....................................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OBMultipleDeletionsWithHardClip():
-# 	'''build an example read_1 aligned to OB-strand that contains more than one deletion and 5' and 3' hard-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:2111:5724:55868_1:N:0:hc"
-# 	read.seq = "CCCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC"
-# 	read.flag = 83
-# 	read.pos = 10057
-# 	read.mapq = 255
-# 	read.cigar = [(5, 2), (0, 27), (2, 1), (0, 61), (2, 1), (0, 7), (5, 3)]
-# 	read.rnext = 0
-# 	read.pnext = 10041
-# 	read.tlen = -113
-# 	read.qual = "FFFBB7BBBB<7FFBBB7BFFB<7FFBBBFBBB<7FFB<<0FFFBB7IFFFBIFFFFBIFFFFBIFFFF<FFFFFBIIIFFBIFFFFBFFFFFBF"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '....................................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OBMultipleDeletionsWithHardClipAndSoftClip():
-# 	'''build an example read_1 aligned to OB-strand that contains more than one deletion and 5' and 3' hard-clipping and soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:27:C22KTACXX:3:2111:5724:55868_1:N:0:hcsc"
-# 	read.seq = "CCCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC"
-# 	read.flag = 83
-# 	read.pos = 10063
-# 	read.mapq = 255
-# 	read.cigar = [(5, 2), (4, 6), (0, 21), (2, 1), (0, 61), (2, 1), (0, 6), (4, 1), (5, 3)]
-# 	read.rnext = 0
-# 	read.pnext = 10041
-# 	read.tlen = -112
-# 	read.qual = "FFFBB7BBBB<7FFBBB7BFFB<7FFBBBFBBB<7FFB<<0FFFBB7IFFFBIFFFFBIFFFFBIFFFF<FFFFFBIIIFFBIFFFFBFFFFFBF"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '....................................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OBInsertionAndDeletion():
-# 	'''build an example read_1 aligned to OB-strand that contains an insertion and a deletion.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:1302:14214:50765_1:N:0:"
-# 	read.seq = "CCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC"
-# 	read.flag = 83
-# 	read.pos = 10034
-# 	read.mapq = 255
-# 	read.cigar = [(0, 26), (2, 1), (0, 47), (1, 1), (0, 27)]
-# 	read.rnext = 0
-# 	read.pnext = 10012
-# 	read.tlen = -123
-# 	read.qual = "FFFBBFFFBB7FFBB<0FFBB<7BB<<7BBB<B<FFBBB<FFFB<0IFFBFBIFFFFBIFF<FBIIFFFFIIIFFFIIIIFFIIIFFFFFFFFFFFFFBBB"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '.....................................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OBInsertionAndDeletionWithSoftClip():
-# 	'''build an example read_1 aligned to OB-strand that contains an insertion and a deletion and 5' and 3' soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:1302:14214:50765_1:N:0:sc"
-# 	read.seq = "CCTAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC"
-# 	read.flag = 83
-# 	read.pos = 10036
-# 	read.mapq = 255
-# 	read.cigar = [(4, 2), (0, 24), (2, 1), (0, 47), (1, 1), (0, 23), (4, 4)]
-# 	read.rnext = 0
-# 	read.pnext = 10012
-# 	read.tlen = -119
-# 	read.qual = "FFFBBFFFBB7FFBB<0FFBB<7BB<<7BBB<B<FFBBB<FFFB<0IFFBFBIFFFFBIFF<FBIIFFFFIIIFFFIIIIFFIIIFFFFFFFFFFFFFBBB"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '.....................................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OBInsertionAndDeletionWithHardClip():
-# 	'''build an example read_1 aligned to OB-strand that contains an insertion and a deletion and 5' and 3' hard-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:1302:14214:50765_1:N:0:hc"
-# 	read.seq = "TAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCC"
-# 	read.flag = 83
-# 	read.pos = 10036
-# 	read.mapq = 255
-# 	read.cigar = [(5, 2), (0, 24), (2, 1), (0, 47), (1, 1), (0, 23), (5, 4)]
-# 	read.rnext = 0
-# 	read.pnext = 10012
-# 	read.tlen = -119
-# 	read.qual = "FBBFFFBB7FFBB<0FFBB<7BB<<7BBB<B<FFBBB<FFFB<0IFFBFBIFFFFBIFF<FBIIFFFFIIIFFFIIIIFFIIIFFFFFFFFFFFF"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...............................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# def buildRead1OBInsertionAndDeletionWithHardClipAndSoftClip():
-# 	'''build an example read_1 aligned to OB-strand that contains an insertion and a deletion and 5' and 3' hard-clipping and soft-clipping.
-# 	'''
-# 	read = pysam.AlignedRead()
-# 	read.qname = "HWI-D00119:25:D1WYEACXX:3:1302:14214:50765_1:N:0:hcsc"
-# 	read.seq = "TAACCCTAACCCTAACCCTAACCCAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCC"
-# 	read.flag = 83
-# 	read.pos = 10040
-# 	read.mapq = 255
-# 	read.cigar = [(5, 2), (4, 4), (0, 20), (2, 1), (0, 47), (1, 1), (0, 20), (4, 3), (5, 4)]
-# 	read.rnext = 0
-# 	read.pnext = 10012
-# 	read.tlen = -116
-# 	read.qual = "FBBFFFBB7FFBB<0FFBB<7BB<<7BBB<B<FFBBB<FFFB<0IFFBFBIFFFFBIFF<FBIIFFFFIIIFFFIIIIFFIIIFFFFFFFFFFFF"
-# 	read.tags = read.tags + [('XG', 'GA')] + [('XM', '...............................................................................................')] + [('XR', 'CT')]
-# 	return read
-#
-# # A couple of helper functions used in the testing
-# def get_and_process_aligned_pairs(read):
-# 	return [y[1] for y in read.aligned_pairs if y[0] is not None]
-#
-# def trim_None(pos):
-# 	returnfilter(None, pos)
-
-############
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
