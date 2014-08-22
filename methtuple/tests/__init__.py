@@ -1,4 +1,4 @@
-'''unit testing code for comethylation.
+'''unit testing code for methtuple.
 '''
 
 import unittest
@@ -9,10 +9,10 @@ import os
 import re
 import array
 
-from comethylation import *
+from methtuple import *
 
-from comethylation.mtuple import *
-from comethylation.funcs import *
+from methtuple.mtuple import *
+from methtuple.funcs import *
 
 class TestIgnoreCycles(unittest.TestCase):
 	'''Test the function ignore_read_pos

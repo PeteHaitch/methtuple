@@ -6,7 +6,7 @@ import array
 
 class MTuple:
     """ An MTuple instance stores methylation loci m-tuples and their associated counts for a single sample and a single "m" value.
-    
+
     Attributes:
         sample_name: The name of the sample
         m: The "m" in m-tuples, i.e. size of the methylation-loci m-tuples.
@@ -32,7 +32,7 @@ class MTuple:
         tmp_k = list((itertools.product(('U', 'M'), repeat = m))) # Create all combinations of 'U', 'M' of length m by Cartesian product
         self.comethylation_patterns = sorted([''.join(a) for a in tmp_k])
         self.mtuples = {}
-    def display(self): 
+    def display(self):
         """Display an MTuple instance."""
         print('Sample name =', self.sample_name)
         print('Methylation type =', self.methylation_type)
@@ -43,7 +43,7 @@ class MTuple:
         """Increment the counts attribute based on the comethylation_state that has been extracted from read_1 and read_2.
         NB: read_2 should be set to None if data is single-end.
         NB: No check is made of the informative strand for read_1 and read_2."""
-        # Collapse the 9 possible characters in the comethylation_state (., Z, z, X, x, H, h, U, u) to (., M, U, *unchanged*) based on the methylation_type parameter. 
+        # Collapse the 9 possible characters in the comethylation_state (., Z, z, X, x, H, h, U, u) to (., M, U, *unchanged*) based on the methylation_type parameter.
         if 'CG' in self.methylation_type.split('/'):
             comethylation_state = comethylation_state.replace('Z', 'M')
             comethylation_state = comethylation_state.replace('z', 'U')
@@ -59,12 +59,12 @@ class MTuple:
 
         # Check whether there are any unexpected, and therefore invalid, characters in comethylation_state
         if not re.search('[^MU]', comethylation_state) is None:
-            exit_msg = ''.join([read_1.qname, ' has an invalid comethylation state = ', comethylation_state, '.\nThis should never happen. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com.'])
+            exit_msg = ''.join([read_1.qname, ' has an invalid comethylation state = ', comethylation_state, '.\nThis should never happen. methtuplePlease log an issue at www.github.com/PeteHaitch/methtuple describing the error..'])
             sys.exit(exit_msg)
         if (len(comethylation_state) != self.m):
-            exit_msg = ''.join(['Length of comethylation string (', str(len(comethylation_state)), ') does not equal m (', str(self.m), '). \nThis should never happen. Please log an issue at www.github.com/PeteHaitch/comethylation describing the error or email me at peter.hickey@gmail.com.'])
+            exit_msg = ''.join(['Length of comethylation string (', str(len(comethylation_state)), ') does not equal m (', str(self.m), '). \nThis should never happen. methtuplePlease log an issue at www.github.com/PeteHaitch/methtuple describing the error..'])
             sys.exit(exit_msg)
-        
+
         # Check whether this m-tuple is already in MTuple. If it is just update the corresponding count, otherwise add that m-tuple and then update the corresponding count
         if not pos in self.mtuples:
             self.mtuples[pos] = array.array('i',[0] * 2**self.m)

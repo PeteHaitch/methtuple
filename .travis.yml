@@ -1,6 +1,6 @@
 language: python
 python:
-  # - "2.6" # Won't support until given reason to. See https://github.com/PeteHaitch/comethylation/issues/75.
+  # - "2.6" # Won't support until given reason to. See https://github.com/PeteHaitch/methtuple/issues/75.
   - "2.7"
   - "3.2"
   - "3.3"

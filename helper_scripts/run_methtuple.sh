@@ -1,39 +1,42 @@
 #!/usr/bin/env bash
 
 # DESCRIPTION
-#-------------------------------------------------------------------------------
+#-----------------------------------------------------------------
 # Peter Hickey (peter.hickey@gmail.com)
-# 11/06/2014
-# A example bash script for processing a BAM file with comethylation in parallel
-# on a chromosome-by-chromsome basis.
+# 22/09/2014
+# A example bash script for processing a BAM file with methtuple
+# in parallelon a chromosome-by-chromsome basis.
 # This script makes extensive use of GNU parallel
 # [O. Tange (2011): GNU Parallel - The Command-Line Power Tool, ;login:
 # The USENIX Magazine, February 2011:42-47.
 # https://www.gnu.org/software/parallel/].
-#-------------------------------------------------------------------------------
+#-----------------------------------------------------------------
 
-# LICENSE
-#-------------------------------------------------------------------------------
-# Copyright (C) 2012 - 2014 Peter Hickey (peter.hickey@gmail.com)
-
-# This file is part of comethylation.
-
-# comethylation is free software: you can redistribute it and/or modify it
-# under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 2 of the License, or
-# (at your option) any later version.
-# comethylation is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with comethylation.  If not, see <http://www.gnu.org/licenses/>.
-#-------------------------------------------------------------------------------
+# The MIT License (MIT)
+#
+# Copyright (c) [2012-2014] [Peter Hickey (peter.hickey@gmail.com)]
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
 # REQUIREMENTS
 #-------------------------------------------------------------------------------
-# REQUIRES: comethylation, SAMtools (>= v0.1.19), GNU parallel and
+# REQUIRES: methtuple, SAMtools (>= v0.1.19), GNU parallel and
 # Rscript must be in your $PATH.
 #-------------------------------------------------------------------------------
 
@@ -64,10 +67,10 @@ M=
 # e.g. (chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13
 #         chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY chrM)
 CHROMS=
-# Additional parameters to be passed to comethylation e.g.
+# Additional parameters to be passed to methtuple e.g.
 # "--methylation-type CG --ignore-duplicates --min-mapq 0 --ir1p 1-5,98-100
 #  --ir2p 1-10,98-100 --overlap-filter XM"
-COMETHYLATION_OPTIONS=
+METHTUPLE_OPTIONS=
 # SE (single-end data) or PE (paired-end data).
 SEQ_TYPE=
 # The number of cores to be used by GNU parallel, e.g. 8
@@ -86,7 +89,7 @@ TABULATE_HIST=
 #       (b) if (Paired-end data): Sort the chromosome-level BAMs by queryname
 #       order.
 # (2) For each m-tuple value:
-#       (a) Process each chromosome-level BAM with comethylation.
+#       (a) Process each chromosome-level BAM with methtuple.
 #       (b) Concetanate all chromosome-level m-tuples files.
 # (3) Clean up by removing chromosome-level BAM files
 #-------------------------------------------------------------------------------
@@ -94,13 +97,13 @@ TABULATE_HIST=
 # Step 0
 #-------------------------------------------------------------------------------
 # Check variables
-if [[ -n "${BAM}" && -n "${OUTDIR}" && -n "${M}" && -n "${CHROMS}" && -n "${COMETHYLATION_OPTIONS}" && -n "${SEQ_TYPE}" ]]
+if [[ -n "${BAM}" && -n "${OUTDIR}" && -n "${M}" && -n "${CHROMS}" && -n "${METHTUPLE_OPTIONS}" && -n "${SEQ_TYPE}" ]]
 then
         echo "BAM file = ${BAM}"
         echo "Output directory = ${OUTDIR}"
         echo "'m' in m-tuples = ${M[@]}"
         echo "Chromosomes = ${CHROMS[@]}"
-        echo "Additional comethylation options = ${COMETHYLATION_OPTIONS}"
+        echo "Additional methtuple options = ${METHTUPLE_OPTIONS}"
         echo "Sequencing type = ${SEQ_TYPE}"
 else
         echo "Please check all parameters are valid"
@@ -135,7 +138,7 @@ fi
 parallel -j ${NUM_CORES} "mkdir -p ${OUTDIR}/{1}_tuples/log ${OUTDIR}/{1}_tuples/hist" ::: ${M[@]}
 # Extract methylation loci m-tuples for each chromosome
 echo "Extracting methylation loci m-tuples for each chromosome..."
-parallel --joblog comethylation.log -j ${NUM_CORES} "comethylation ${COMETHYLATION_OPTIONS} -m {1} -o {1}_tuples/${SAMPLE_NAME}_{2} ${OUTDIR}/${SAMPLE_NAME}_{2}.bam &> ${OUTDIR}/{1}_tuples/log/${SAMPLE_NAME}_{1}.{2}.log" ::: ${M[@]} ::: ${CHROMS[@]}
+parallel --joblog methtuple.log -j ${NUM_CORES} "methtuple ${METHTUPLE_OPTIONS} -m {1} -o {1}_tuples/${SAMPLE_NAME}_{2} ${OUTDIR}/${SAMPLE_NAME}_{2}.bam &> ${OUTDIR}/{1}_tuples/log/${SAMPLE_NAME}_{1}.{2}.log" ::: ${M[@]} ::: ${CHROMS[@]}
 # Concatenate all chromosome-level data at the genome level. The only chromosome-level files that are retained are the .hist files.
 echo "Concatenating chromosome-level files into genome-level files..."
 # Move all .hist files to a 'hist' directory and create the genome-wide .hist file.
