@@ -3,119 +3,168 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>Co-methylation by PeteHaitch</title>
+    <title>methtuple by PeteHaitch</title>
+
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-    <script src="javascripts/respond.js"></script>
-    <!--[if lt IE 9]>
-      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <!--[if lt IE 8]>
-    <link rel="stylesheet" href="stylesheets/ie.css">
-    <![endif]-->
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
   </head>
   <body>
-      <div id="header">
-        <nav>
-          <li class="fork"><a href="https://github.com/PeteHaitch/comethylation">View On GitHub</a></li>
-          <li class="downloads"><a href="https://github.com/PeteHaitch/comethylation/zipball/master">ZIP</a></li>
-          <li class="downloads"><a href="https://github.com/PeteHaitch/comethylation/tarball/master">TAR</a></li>
-          <li class="title">DOWNLOADS</li>
-        </nav>
-      </div><!-- end header -->
-
     <div class="wrapper">
+      <header>
+        <h1>methtuple</h1>
+        <p>methtuple is a methylation caller for methylation events that co-occur on the same DNA fragment from high-throughput bisulfite sequencing data, such as methylC-seq</p>
 
+        <p class="view"><a href="https://github.com/PeteHaitch/methtuple">View the Project on GitHub <small>PeteHaitch/methtuple</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/PeteHaitch/methtuple/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/PeteHaitch/methtuple/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/PeteHaitch/methtuple">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
       <section>
-        <div id="title">
-          <h1>Co-methylation</h1>
-          <p>A methylation caller for methylation events that co-occur on the same DNA fragment from high-throughput bisulfite-sequencing data, such as methylC-seq.</p>
-          <hr>
-          <span class="credits left">Project maintained by <a href="https://github.com/PeteHaitch">PeteHaitch</a></span>
-          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></span>
-        </div>
-
-        <p><a href="https://travis-ci.org/PeteHaitch/comethylation"><img src="https://travis-ci.org/PeteHaitch/comethylation.png?branch=master" alt="Build Status"></a></p>
+        <p><a href="https://travis-ci.org/PeteHaitch/methtuple"><img src="https://travis-ci.org/PeteHaitch/methtuple.png?branch=master" alt="Build Status"></a></p>
 
 <h1>
-<a name="comethylation" class="anchor" href="#comethylation"><span class="octicon octicon-link"></span></a>comethylation</h1>
+<a name="methtuple" class="anchor" href="#methtuple"><span class="octicon octicon-link"></span></a>methtuple</h1>
 
-<p><code>comethylation</code> is a methylation caller for methylation events that co-occur on the same DNA fragment from high-throughput bisulfite sequencing data, such as <code>methylC-seq</code>. A typical read from such an experiment reports a binary methylated or unmethylated measurement at multiple loci, where each read originates from a single cell. <code>comethylation</code> allows us to investigate the co-occurence of methylation marks at the level of a single cell.</p>
+<h2>
+<a name="overview" class="anchor" href="#overview"><span class="octicon octicon-link"></span></a>Overview</h2>
 
-<h1>
-<a name="installation-and-dependencies" class="anchor" href="#installation-and-dependencies"><span class="octicon octicon-link"></span></a>Installation and dependencies</h1>
+<h3>
+<a name="what-does-it-do" class="anchor" href="#what-does-it-do"><span class="octicon octicon-link"></span></a>What does it do?</h3>
 
-<p>Simply running </p>
+<p><code>methtuple</code> allows the user to investigate the co-occurence of methylation marks at the level of individual DNA fragments. It does this by performing methylation calling at <em>m-tuples</em> of methylation loci from high-throughput bisulfite sequencing data, such as <em>methylC-seq</em>. In short, <code>methtuple</code> extracts and tabulates the methylation states of all m-tuples from a <code>BAM</code> file (for a user-defined value of <em>m</em>).</p>
+
+<h3>
+<a name="why-would-i-want-to-do-that" class="anchor" href="#why-would-i-want-to-do-that"><span class="octicon octicon-link"></span></a>Why would I want to do that?</h3>
+
+<p>A typical read from a bisulfite-sequencing experiment reports a binary methylated or unmethylated measurement at multiple loci. Each read originates from a single cell. Because methylation calls are made from individual reads/read-pairs, we can investigate the co-occurence of methylation events at the level of individual DNA fragments.</p>
+
+<p>I have been using <code>methtuple</code> to investigate the spatial dependence of DNA methylation at the level of individual DNA fragments by studying methylation patterns of CpG 2-tuples. <code>methtuple</code> can also be used as a drop-in replacement for <code>bismark_methylation_extractor</code> while also providing enhanced filtering options and a slightly faster runtime (10-20% faster, albeit with an increased memory usage).</p>
+
+<h3>
+<a name="what-is-an-m-tuple" class="anchor" href="#what-is-an-m-tuple"><span class="octicon octicon-link"></span></a>What is an m-tuple?</h3>
+
+<p>The simplest <em>m-tuple</em> is the 1-tuple (<em>m</em> = 1). <code>methtuple</code> tabulates the number of reads that are methylated (<em>M</em>) and unmethylated (<em>U</em>) for each methylation 1-tuple in the genome. 1-tuples are the type of methylation calling performed by most methylation calling software such as Bismark's <code>bismark_methylation_extractor</code>.</p>
+
+<p>A 2-tuple (<em>m</em> = 2) is a pair of methylation loci. <code>methtuple</code> tabulates the number of reads that methylated at each locus in the pair (<em>MM</em>), both unmethylated (<em>UU</em>) or methylated at one locus but not the other (<em>MU</em> or <em>UM</em>). This idea readily extends to 3-tuples, 4-tuples, etc.</p>
+
+<p>In its default settings, and with <em>m</em> &gt; 1, <code>methtuple</code> tries to create only m-tuples made of "neighbouring" loci. However, please see the example below for why I say this only "tries" to create m-tuples of neighbouring loci. For a DNA fragment containing <em>k</em> methylation loci there are <em>m - k + 1</em> m-tuples made of neighbouring loci.</p>
+
+<p>Alternatively, we can create all combinations of m-tuples by using the <code>--all-combinations</code> flag. For a DNA fragment containing <em>k</em> methylation loci there are "<em>k</em> choose <em>m</em>" m-tuples when using <code>--all-combinations</code>, a number that grows rapidly in <em>k</em>, particularly when <em>m</em> is close to <em>k/2</em>.</p>
+
+<p>Regardless of how m-tuples are constructed, <code>methtuple</code> always takes care to only count each methylation locus once when it has been twice-sequenced by overlapping paired-end reads.</p>
+
+<h3>
+<a name="draw-me-a-picture" class="anchor" href="#draw-me-a-picture"><span class="octicon octicon-link"></span></a>Draw me a picture</h3>
+
+<p>Well, I hope ASCII art will do.</p>
+
+<p>Suppose we sequence a region of the genome containing five methylation loci with three paired-end reads (<code>A</code>, <code>B</code> and <code>C</code>):</p>
+
+<pre><code>ref: 1    2   3 4 5
+A_1: |-----&gt;
+A_2:         &lt;------|
+B_1:
+B_2: |-----&gt;   &lt;----|
+C_1:    |-----&gt;
+C_2:      &lt;------|
+</code></pre>
+
+<p>If we are interested in 1-tuples, then we would obtain the following from each read by running <code>methtuple</code>:</p>
+
+<pre><code>A: {1}, {2}, {3}, {4}, {5}
+B: {1}, {2}, {4}, {5}
+C: {2}, {3}, {4}
+</code></pre>
+
+<p>This result is true regardless of whether the <code>--all-combinations</code> flag is set.</p>
+
+<p>If we are interested in 3-tuples, then we would obtain the following from each read by running <code>methtuple</code> in its default mode:</p>
+
+<pre><code>A: {1, 2, 3}, {2, 3, 4}, {3, 4, 5}
+B: {1, 2, 4}, {2, 4, 5}
+C: {2, 3, 4}
+</code></pre>
+
+<p>Things to note:</p>
+
+<ul>
+<li>Read-pair <code>A</code> sequences all three (= 5 - 3 + 1) "neighbouring" 3-tuples</li>
+<li>Read-pair <code>B</code> sequences none of the "neighbouring" 3-tuples but does "erroneously" construct two non-neighbouring 3-tuples. This happens because m-tuples are created independently from each read-pair; effectively, read-pair <code>B</code> is "unaware" of methylation locus <code>3</code>. Depending on the downstream analysis, you may want to <em>post-hoc</em> filter out these "non-neighbouring" m-tuples.</li>
+<li>The twice-sequenced methylation loci, <code>2</code> and <code>3</code>, in read-pair <code>C</code> are not double counted.</li>
+</ul><p>However, if we were to run <code>methtuple</code> with <code>--all-combinations</code> then we would obtain:</p>
+
+<pre><code>A: {1, 2, 3}, {2, 3, 4}, {3, 4, 5}, {1, 2, 4}, {1, 2, 5}, {1, 3, 4}, {1, 3, 5}, {1, 4, 5}, {2, 3, 5}, {2, 4, 5}
+B: {1, 2, 4}, {2, 4, 5}, {1, 2, 5}, {1, 4, 5}
+C: {2, 3, 4}
+</code></pre>
+
+<h2>
+<a name="installation-and-dependencies" class="anchor" href="#installation-and-dependencies"><span class="octicon octicon-link"></span></a>Installation and dependencies</h2>
+
+<p>Simply running</p>
 
 <pre><code>python setup.py install
 </code></pre>
 
-<p>in the root <code>comethylation</code> directory should work for most systems.</p>
+<p>in the root <code>methtuple</code> directory should work for most systems.</p>
 
-<p><code>comethylation</code> is written in Python and relies upon the pysam module. Running <code>python setup.py install</code> will attempt to install pysam if it isn't found on your system. Alternatively, pysam is available from <a href="https://code.google.com/p/pysam/">https://code.google.com/p/pysam/</a>.</p>
+<p><code>methtuple</code> is written in Python and relies upon the <code>pysam</code> module. Running <code>python setup.py install</code> will attempt to install <code>pysam</code> if it isn't found on your system. Alternatively, instructions for installing <code>pysam</code> are available from <a href="https://github.com/pysam-developers/pysam">https://github.com/pysam-developers/pysam</a>.</p>
 
-<p><code>comethylation</code> has only been tested on Python 2.7 with pysam v0.7.7.</p>
-
-<h1>
-<a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h1>
+<p><code>pysam</code> is currently undergoing an extensive re-design. I have tested and used <code>methtuple</code> with Python 2.7 and <code>pysam</code> version &gt;= 0.7.5. It should also work on Python 3.2, 3.3 and 3.4 with the current version of <code>pysam</code> (<code>v0.8.0</code>), as indicated by the <a href="https://travis-ci.org/PeteHaitch/methtuple">Travis-CI builds</a>.</p>
 
 <h2>
-<a name="method" class="anchor" href="#method"><span class="octicon octicon-link"></span></a>Method</h2>
+<a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h2>
 
-<p><code>comethylation</code> extracts <em>m-tuples</em> of methylation loci that co-occur on the same read. The simplest <em>m-tuple</em> is the 1-tuple (m = 1), which corresponds to counting the number of reads that are methylated (<em>M</em>) and unmethylated (<em>U</em>) for each cytosine in the genome; 1-tuples are the type of methylation calling performed by most methylation calling software such as Bismark's <code>bismark_methylation_extractor</code>. </p>
+<h3>
+<a name="basic-usage" class="anchor" href="#basic-usage"><span class="octicon octicon-link"></span></a>Basic usage</h3>
 
-<p>A 2-tuple (m = 2) is a pair of methylation loci; <code>comethylation</code> tabulates the number of reads that methylated at each locus in the pair (<em>MM</em>), both unmethylated (<em>UU</em>) or methylated at one locus but not the other (<em>MU</em> or <em>UM</em>). This idea extends to 3-tuples, 4-tuples, etc. </p>
+<p><code>methtuple</code> processes a single <code>BAM</code> file and works for both single-end and paired-end sequencing data. Example <code>BAM</code> files from single-end directional and paired-end directional bisulfite-sequencing experiments are available in the <code>data/</code> directory.</p>
 
-<p>For a chosen value of <em>m</em>, all <em>m-tuples</em> are extracted and tabulated across the genome. The key point is that <em>m-tuples</em> are only constructed if all <em>m</em> loci are within a single read, so we can investigate the co-occurence of methylation events at the level of a single cell.</p>
+<p>Methylation measurements may be filtered by base quality or other criteria such as the mapping quality of the read or whether the read is marked as a PCR duplicate. For a full list of filtering options, please run <code>methtuple --help</code> or see the <strong>Advanced Usage</strong> section below.</p>
 
-<h2>
-<a name="basic-usage" class="anchor" href="#basic-usage"><span class="octicon octicon-link"></span></a>Basic usage</h2>
+<p>Currently, the BAM file must have been created with <a href="http://www.bioinformatics.bbsrc.ac.uk/projects/download.html#bismark">Bismark</a>. If the data were aligned with Bismark version &lt; 0.8.3 please use the <code>--aligner Bismark_old</code> flag. Please file an issue if you would like to use a <code>BAM</code> file created with another aligner and I will do my best to support it.</p>
 
-<p><code>comethylation</code> processes a single <code>BAM</code> file and works for both single-end and paired-end sequencing data. Example <code>BAM</code> files from single-end directional and paired-end directional bisulfite-sequencing experiments are available in the <code>data/</code> directory. </p>
+<p>The main options to pass <code>methtuple</code> are the size of the m-tuple (<code>-m</code>); the type of methylation, which is some combination of <em>CG</em>, <em>CHG</em>, <em>CHH</em> and <em>CNN</em> (<code>--methylation-type</code>); any filters to be applied to reads or positions within reads (see below); the BAM file; and the sample name, which will be used as a prefix for all output files. Multiple methylation types may be specified jointly, e.g., <code>--methylation-type CG --methylation-type CHG</code></p>
 
-<p>Methylation measurements may be filtered by base quality or other criteria such as the mapping quality of the read or whether the read is marked as a PCR duplicate. For a full list of filtering options, please run <code>comethylation --help</code> or see the <strong>Advanced Usage</strong> section below. </p>
+<h3>
+<a name="output" class="anchor" href="#output"><span class="octicon octicon-link"></span></a>Output</h3>
 
-<p>Currently, the BAM file must have been created with <a href="http://www.bioinformatics.bbsrc.ac.uk/projects/download.html#bismark">Bismark</a>. If the data were aligned with Bismark version &lt; 0.8.3 please use the <code>--oldBismark</code> flag. A future version of this software will support the use of BAM files created with other popular bisulfite aligners such as <a href="https://code.google.com/p/bsmap/">BSMAP</a>, <a href="https://github.com/BenLangmead/bsmooth-align">BSmooth</a>, <a href="https://github.com/brentp/bwa-meth/">bwa-meth</a>, <a href="http://research-pub.gene.com/gmap/">gsnap</a>, <a href="http://last.cbrc.jp/">last</a> and <a href="http://www.novocraft.com/">Novoalign</a>. Support will either be provided natively in <code>comethylation</code> or via an pre-processing script <code>bismarkify</code>.</p>
+<p>Three output files are created and summary information is written to <code>STDOUT</code>. The main output file is a tab-delimited file of all m-tuples, <code>&lt;in&gt;.&lt;--methylation-type&gt;.&lt;-m&gt;.tsv</code>, where <code>&lt;in&gt;</code> is the prefix of the <code>&lt;in.bam&gt;</code> BAM file.</p>
 
-<p>The main options to pass <code>comethylation</code> are the size of the m-tuple (<code>--mTuple</code>); the type of methylation, which is some combination of <em>CG</em>, <em>CHG</em>, <em>CHH</em> and <em>CNN</em> (<code>--methylationType</code>); any filters to be applied to reads or positions within reads (see below); the BAM file; and the sample name, which will be used as a prefix for all output files. </p>
+<p>Here are the first 5 rows (including with the header row) from <code>data/se_directional.fq.gz_bismark_bt2.CG.2.tsv</code>, which is created by running the single-end directional example shown below:</p>
 
-<p>To simultaneously study multiple methylation types the <code>--methylationType</code> parameter must be specified multiple times, e.g. to study CG and CHH methylation <code>--methylationType CG --methylationType CHH</code>.</p>
-
-<h2>
-<a name="output" class="anchor" href="#output"><span class="octicon octicon-link"></span></a>Output</h2>
-
-<p>Three output files are created and summary information is written to <code>STDOUT</code>.</p>
-
-<p>The main output file is a tab-delimited file of all m-tuples (<code>&lt;sampleName&gt;.&lt;--methylationType&gt;.&lt;--mTuple&gt;.tsv</code>). </p>
-
-<p>Here are the 5 rows (along with the header row) from <code>data/se_directional.fq.gz_bismark_bt2.CG.2.tsv</code>, which is created by running the single-end directional example shown below:</p>
-
-<pre><code>chr     pos1        pos2        MM  MU  UM  UU
-chr10   42383637    42383660    1   0   0   0
-chr10   42383660    42383672    0   2   0   0
-chr10   42383672    42383686    0   0   2   0
-chr10   42385004    42385040    1   0   0   0
-chr10   42385040    42385063    1   0   0   0
+<pre><code>chr     strand  pos1    pos2    MM      MU      UM      UU
+chr1    +       6387768 6387783 1       0       0       0
+chr1    +       7104116 7104139 1       0       0       0
+chr1    +       7104139 7104152 1       0       0       0
+chr1    +       9256170 9256179 0       0       0       1
 </code></pre>
 
-<p>So, for the CpG 2-tuple chr10:(42,383,637, 42,383,660) we observed 1 read that was methylated at chr10:42,383,637 and methylated at chr10:42,383,660. For CpG 2-tuple chr10:(42,383,660, 42,383,672) we observed 2 reads that were both methylated at chr10:42,383,660 but unmethylated at chr10:42,383,672.</p>
+<p>So, for example, at the CpG 2-tuple chr1:+:(6,387,768, 6,387,783) we observed 1 read that was methylated at chr1:+:6,387,768 and methylated at chr1:+:6,387,783.</p>
 
-<p>The second file (<code>&lt;sampleName&gt;.&lt;--methylationType&gt;_per_read.hist</code>) is a text histogram of the number of methylation loci per read or readpair (of the type specified by <code>--methylationType</code>) that passed the filters specified at runtime of <code>comethylation</code>.</p>
+<p>The <code>strand</code> is recorded as <code>+</code> (forward strand, "OT" in Bismark), <code>-</code> (reverse strand, "OB" in Bismark) or <code>*</code>, meaning not applicable (if the <code>--strand-collapse</code> option is set). The position of all methylation loci is always with respect to the forward strand.</p>
+
+<p>The second file (<code>&lt;in&gt;.&lt;--methylation-type&gt;_per_read.hist</code>) is a text histogram of the number of methylation loci per read/readpair (of the type specified by <code>--methylation-type</code>) that passed the filters specified at runtime of <code>methtuple</code>.</p>
 
 <p>Here is the file <code>data/se_directional.fq.gz_bismark_bt2.CG_per_read.hist</code>, which is created by running the single-end directional example shown below:</p>
 
 <pre><code>n       count
-0       4389
-1       2262
-2       750
-3       287
-4       131
-5       55
-6       27
-7       18
+0       4561
+1       2347
+2       789
+3       296
+4       144
+5       61
+6       29
+7       19
 8       3
 9       4
 10      2
@@ -126,248 +175,296 @@ chr10   42385040    42385063    1   0   0   0
 18      2
 </code></pre>
 
-<p>So, 4,389 reads aligned to a position with no CpGs while 2 reads aligned to a position with 18 CpGs.</p>
+<p>So, 4,561 reads aligned to a position containing no CpGs while 2 reads aligned to a position containing 18 CpGs.</p>
 
-<p>An optional third and final file (<code>&lt;sampleName.reads_that_failed_QC.txt&gt;</code>) records the querynames (<code>QNAME</code>) of all reads that failed to pass quality control filters and which filter the read failed. This file may be omitted by use of the <code>--noFailedQCFile</code> flag.</p>
+<p>An optional third and final file (<code>&lt;in&gt;.reads_that_failed_QC.txt&gt;</code>) records the querynames (<code>QNAME</code>) of all reads that failed to pass quality control filters and which filter the read failed. This file may be omitted by use of the <code>--no-failed-filter-file</code> flag.</p>
 
-<p>Here are the first 2 rows of <code>data/se_directional.fq.gz_bismark_bt2.reads_that_failed_QC.txt</code>, which is created by running the single-end directional example shown below:</p>
+<p>In this case we didn't set any quality control filters and so this file is empty.</p>
 
-<pre><code>SRR921747.5_JONAS:2105:C0G2AACXX:4:2205:18672:56112_length=101  read has indel
-SRR921747.81_JONAS:2105:C0G2AACXX:4:2205:18836:56196_length=101 read has indel
-</code></pre>
-
-<p>So, both of these reads were filtered out because they contained indels (see section "<strong>Limitations and notes</strong>").</p>
-
-<h2>
-<a name="examples" class="anchor" href="#examples"><span class="octicon octicon-link"></span></a>Examples</h2>
+<h3>
+<a name="examples" class="anchor" href="#examples"><span class="octicon octicon-link"></span></a>Examples</h3>
 
 <p>Two small example datasets are included in the <code>data/</code> directory. Included are the <code>FASTQ</code> files and the <code>BAM</code> files generated with <strong>Bismark</strong> in <strong>Bowtie2</strong> mode. More details of the example datasets can be found in <code>data/README.md</code></p>
 
-<p>Although the example datasets are both from directional bisulfite-sequencing protocols, <code>comethylation</code> works with data from both directional and non-directional bisulfite-sequencing protocols.</p>
+<p>Although the example datasets are both from directional bisulfite-sequencing protocols, <code>methtuple</code> also works with data from non-directional bisulfite-sequencing protocols.</p>
 
-<h3>
-<a name="single-end" class="anchor" href="#single-end"><span class="octicon octicon-link"></span></a>Single-end</h3>
+<h4>
+<a name="single-end-reads" class="anchor" href="#single-end-reads"><span class="octicon octicon-link"></span></a>Single-end reads</h4>
 
 <p>The following command will extract all CpG 2-tuples from the file <code>data/se_directional.bam</code>:</p>
 
-<pre><code>comethylation --mTuple 2 --methylationType CG data/se_directional.fq.gz_bismark_bt2.bam data/se_directional.fq.gz_bismark_bt2
+<pre><code>methtuple -m 2 --methylation-type CG data/se_directional.fq.gz_bismark_bt2.bam
 </code></pre>
 
-<p>This results in 3 files: </p>
+<p>This results in 3 files:</p>
 
 <ul>
 <li><code>data/se_directional.fq.gz_bismark_bt2.CG.2.tsv</code></li>
 <li><code>data/se_directional.fq.gz_bismark_bt2.CG_per_read.hist</code></li>
 <li><code>data/se_directional.fq.gz_bismark_bt2.reads_that_failed_QC.txt</code></li>
-</ul><h3>
-<a name="paired-end" class="anchor" href="#paired-end"><span class="octicon octicon-link"></span></a>Paired-end</h3>
+</ul><h4>
+<a name="paired-end-reads" class="anchor" href="#paired-end-reads"><span class="octicon octicon-link"></span></a>Paired-end reads</h4>
 
-<p>Paired-end data must firstly be sorted by queryname prior to running <code>comethylation</code>. <code>BAM</code> files created by Bismark, such as <code>data/pe_directional.bam</code>, are already sorted by queryname. So, to extract all CG/CHH 3-tuples we would simply run:</p>
+<p>Paired-end data must firstly be sorted by queryname prior to running <code>methtuple</code>. <code>BAM</code> files created by Bismark, such as <code>data/pe_directional.bam</code>, are already sorted by queryname. So, to extract all CG/CHH 3-tuples we would simply run:</p>
 
-<pre><code>comethylation --mTuple 3 --methylationType CG --methylationType CHH --strandSpecific data/pe_directional_1.fq.gz_bismark_bt2_pe.bam data/pe_directional_1.fq.gz_bismark_bt2_pe
+<pre><code>methtuple -m 3 --methylation-type CG --methylation-type CHH data/pe_directional_1.fq.gz_bismark_bt2_pe.bam
 </code></pre>
 
-<p>Note that we had to specify <code>--strandSpecific</code> because <strong>CHH</strong> methylation is not symmetric between the Watson and Crick strands.</p>
-
-<p>This results in 3 files: </p>
+<p>This results in 3 files:</p>
 
 <ul>
 <li><code>data/pe_directional_1.fq.gz_bismark_bt2_pe.CG_CHH.3.tsv</code></li>
-<li>
-<code>data/pe_directional_1.fq.gz_bismark_bt2_pe.CG_CHH_per_read.hist</code> </li>
+<li><code>data/pe_directional_1.fq.gz_bismark_bt2_pe.CG_CHH_per_read.hist</code></li>
 <li><code>data/pe_directional_1.fq.gz_bismark_bt2_pe.reads_that_failed_QC.txt</code></li>
-</ul><p>If your paired-end BAM file is sorted by genomic coordinates, then you must first sort the <code>BAM</code> by queryname and then run <code>comethylation</code> on the queryname-sorted <code>BAM</code>:</p>
+</ul><h5>
+<a name="note-on-sort-order-of-paired-end-bam-files" class="anchor" href="#note-on-sort-order-of-paired-end-bam-files"><span class="octicon octicon-link"></span></a>Note on sort-order of paired-end BAM files</h5>
+
+<p>If your paired-end BAM file is sorted by genomic coordinates, then you must first sort the <code>BAM</code> by queryname and then run <code>methtuple</code> on the queryname-sorted <code>BAM</code>. This can be done by using <code>samtools sort</code> with the <code>-n</code> option or Picard's <code>SortSam</code> function with the <code>SO=queryname</code> option:</p>
 
 <pre><code># Create a coordinate-sorted BAM for the sake of argument
 samtools sort data/pe_directional_1.fq.gz_bismark_bt2_pe.bam data/cs_pe_directional_1.fq.gz_bismark_bt2_pe
 # Re-sort the coordinate-sorted BAM by queryname
 samtools sort -n data/cs_pe_directional_1.fq.gz_bismark_bt2_pe.bam data/qs_pe_directional_1.fq.gz_bismark_bt2_pe
-# Run comethylation on the queryname sorted BAM
-comethylation --mTuple 3 --strandSpecific --methylationType CG --methylationType CHH data/qs_pe_directional_1.fq.gz_bismark_bt2_pe.bam data/qs_pe_directional
+# Run methtuple on the queryname sorted BAM
+methtuple -m 3 --methylation-type CG --methylation-type CHG data/qs_pe_directional_1.fq.gz_bismark_bt2_pe.bam
 </code></pre>
 
-<h2>
-<a name="memory-usage-and-running-time" class="anchor" href="#memory-usage-and-running-time"><span class="octicon octicon-link"></span></a>Memory usage and running time</h2>
+<h3>
+<a name="memory-usage-and-running-time" class="anchor" href="#memory-usage-and-running-time"><span class="octicon octicon-link"></span></a>Memory usage and running time</h3>
 
-<p>Memory usage is dependent upon the number of methylation loci on the chromosome (more methylation loci means increased memory usage) and the value of <code>--mTuple</code> (roughly, larger values means increased memory usage), but largely independent of the number of reads in the <code>BAM</code> file. In contrast, running time is dependent on the number of reads in the <code>BAM</code> file and largely independent of the choice of <code>--mTuple</code>.</p>
+<p>For a rough indication of performance, here are the results for processing approximately 40,000,000 100bp paired-end reads from chr1 of a 20-30x coverage whole-genome methylC-seq experiment of human data. This analysis used a single AMD Opteron 6276 CPU (2.3GHz) on a shared memory system.</p>
 
-<p>I will include more detailed performance benchmarks in future releases. For a rough indication of performance, here are the results for processing approximately 41,000,000 100bp paired-end reads from chr1 of a 20-30x coverage whole-genome methylC-seq experiment of human data. This analysis used a single AMD Opteron 6276 CPU (2.3GHz) on a shared memory system.</p>
+<h4>
+<a name="-m-2" class="anchor" href="#-m-2"><span class="octicon octicon-link"></span></a><code>-m 2</code>
+</h4>
+
+<p>Memory usage peaked at 1.9GB and the running time was approximately 5 hours.</p>
+
+<h4>
+<a name="-m-2---all-combinations" class="anchor" href="#-m-2---all-combinations"><span class="octicon octicon-link"></span></a><code>-m 2 --all-combinations</code>
+</h4>
+
+<p>Memory usage peaked at 7GB and the running time was approximately 5.5 hours.</p>
+
+<p>Use of the <code>--all-combinations</code> flag creates all possible m-tuples, including non-neighbouring ones. This produces many more m-tuples and so increases the memory usage.</p>
+
+<h4>
+<a name="-m-5" class="anchor" href="#-m-5"><span class="octicon octicon-link"></span></a><code>-m 5</code>
+</h4>
+
+<p>Memory usage peaked at 1.5GB and the running time was approximately 4.3 hours.</p>
 
 <h3>
-<a name="--mtuple-2" class="anchor" href="#--mtuple-2"><span class="octicon octicon-link"></span></a><code>--mTuple 2</code>
-</h3>
+<a name="helper-script" class="anchor" href="#helper-script"><span class="octicon octicon-link"></span></a>Helper script</h3>
 
-<p>Memory usage peaked at 2.9GB and the running time was approximately 1.5 hours. </p>
+<p>I frequently work with large, coordinate-sorted <code>BAM</code> files. To speed up the extraction of m-tuples, I use a simple parallelisation strategy with <a href="http://www.gnu.org/software/parallel/">GNU parallel</a>. The idea is to split the <code>BAM</code> file into chromosome-level <code>BAM</code> files, process each chromosome-level <code>BAM</code> separately and then recombine these chromosome-level files into a genome-level file. The script <code>helper_scripts/run_methtuple.sh</code> implements this strategy; simply edit the key variables in this script or adapt it to your own needs. Please check the requirements listed in <code>helper_scripts/run_methtuple.sh</code>.</p>
 
-<h3>
-<a name="--mtuple-5" class="anchor" href="#--mtuple-5"><span class="octicon octicon-link"></span></a><code>--mTuple 5</code>
-</h3>
-
-<p>Memory usage peaked at 8.8GB and the running time was approximately 1.5 hours.</p>
-
-<h2>
-<a name="helper-script" class="anchor" href="#helper-script"><span class="octicon octicon-link"></span></a>Helper script</h2>
-
-<p>I frequently work with large, coordinate-sorted <code>BAM</code> files. To speed up the extraction of m-tuples I use a simple (naive) parallelisation strategy. The idea is to split the <code>BAM</code> file into chromosome-level <code>BAM</code> files, process each chromosome-level <code>BAM</code> separately and then recombine these chromosome-level files into a genome-level file. The script <code>helper_scripts/run_comethylation.sh</code> implements this strategy; simply edit the key variables in this script.</p>
-
-<h3>
-<a name="warnings" class="anchor" href="#warnings"><span class="octicon octicon-link"></span></a>Warnings</h3>
+<h4>
+<a name="warnings" class="anchor" href="#warnings"><span class="octicon octicon-link"></span></a>Warnings</h4>
 
 <ul>
 <li>
-<strong>WARNING</strong>: This simple strategy uses as many cores as there are chromosomes. This can result in <strong>very</strong> large memory usage, depending on the value of <code>--mTuple</code>, and may cause problems if you have more chromosomes than available cores.</li>
+<strong>WARNING</strong>: This simple strategy uses as many cores as there are chromosomes. This can result in <strong>very</strong> large memory usage, depending on the value of <code>-m</code>, and may cause problems if you have more chromosomes than available cores.</li>
 <li>
-<strong>WARNING</strong>: The script <code>tabulate_hist.R</code> must be in the same directory as <code>run_comethylation.sh</code>
+<strong>WARNING</strong>: The script <code>tabulate_hist.R</code> must be in the same directory as <code>run_methtuple.sh</code>
 </li>
-</ul><h2>
-<a name="advanced-usage" class="anchor" href="#advanced-usage"><span class="octicon octicon-link"></span></a>Advanced usage</h2>
+</ul><h3>
+<a name="advanced-usage" class="anchor" href="#advanced-usage"><span class="octicon octicon-link"></span></a>Advanced usage</h3>
 
-<p>A full list of options is available by running <code>comethylation --help</code>:</p>
+<p>A full list of options is available by running <code>methtuple --help</code>:</p>
 
-<pre><code>usage: comethylation [-h] [--mTuple &lt;int&gt;] [--methylationType &lt;string&gt;]
-                     [--oldBismark] [--ignoreDuplicates]
-                     [--ignoreStart_r1 &lt;int&gt;] [--ignoreStart_r2 &lt;int&gt;]
-                     [--ignoreEnd_r1 &lt;int&gt;] [--ignoreEnd_r2 &lt;int&gt;]
-                     [--minQual &lt;int&gt;] [--minMapQ &lt;int&gt;] [--phred64]
-                     [--overlappingPairedEndFilter &lt;string&gt;]
-                     [--strandSpecific] [--useImproperPairs]
-                     [--noFailedQCFile] [--version]
-                     BAM sampleName
+<pre><code>usage: methtuple [options] &lt;in.bam&gt;
+Please run 'methtuple -h' for a full list of options.
 
-Extract within-fragment co-methylation measurements at methylation loci from
-the aligned reads of a bisulfite-sequencing experiment. WARNING: Requires
-Bismark-style BAM files including XG-, XR- and XM-tags and corrected SAM
-flags. Currently only supports the directional (aka 2-strand) bisulfite-
-sequencing protocol.
+Extract methylation patterns at m-tuples of methylation loci from the aligned
+reads of a bisulfite-sequencing experiment. Currently only supports BAM files
+created with Bismark.
 
-positional arguments:
-  BAM                   The path to the SAM/BAM file
-  sampleName            The name of the sample. All output files will have
-                        this prefix.
+Input options:
+  --aligner {Bismark,Bismark_old}
+                        The aligner used to generate the BAM file. Bismark_old
+                        refers to Bismark version &lt; 0.8.3 (default: Bismark)
+  --Phred64             Quality scores are encoded as Phred64 rather than
+                        Phred33 (default: False)
 
-optional arguments:
+Output options:
+  -o &lt;text&gt;, --output-prefix &lt;text&gt;
+                        By default, all output files have the same prefix as
+                        that of the input file. This will override the prefix
+                        of output file names
+  --sc, --strand-collapse
+                        Collapse counts across across Watson and Crick
+                        strands. Only possible for CG methylation type. The
+                        strand is recorded as '*' if this option is selected.
+                        (default: False)
+  --nfff, --no-failed-filter-file
+                        Do not create the file listing the reads that failed
+                        to pass to pass the filters and which filter it failed
+                        (default: False)
+  --gzip                gzip all output files. --gzip and --bzip2 are mutually
+                        exclusive (default: False)
+  --bzip2               bzip2 all output files. --gzip and --bzip2 are
+                        mutually exclusive (default: False)
+
+Construction of methylation loci m-tuples:
+  --mt {CG,CHG,CHH,CNN}, --methylation-type {CG,CHG,CHH,CNN}
+                        The methylation type. Multiple methylation types may
+                        be analysed jointly by repeated use of this argument,
+                        e.g., --methylation-type CG --methylation-type CHG
+                        (default: ['CG'])
+  -m &lt;int&gt;              The size of the m-tuples, i.e., the 'm' in m-tuples
+                        (default: 1)
+  --ac, --all-combinations
+                        Create all combinations of m-tuples, including non-
+                        neighbouring m-tuples. WARNING: This will greatly
+                        increase the runtime and memory usage, particularly
+                        for larger values of -m and when analysing non-CG
+                        methylation (default: False)
+
+Filtering of reads:
+  Applied before filtering of bases
+
+  --id, --ignore-duplicates
+                        Ignore reads that have been flagged as PCR duplicates
+                        by, for example, Picard's MarkDuplicates function.
+                        More specifically, ignore reads with the 0x400 bit in
+                        the FLAG (default: False)
+  --mmq &lt;int&gt;, --min-mapq &lt;int&gt;
+                        Ignore reads with a mapping quality score (mapQ) less
+                        than &lt;int&gt; (default: 0)
+  --of {sequence_strict,sequence,XM_strict,XM,XM_ol,quality,Bismark}, --overlap-filter {sequence_strict,sequence,XM_strict,XM,XM_ol,quality,Bismark}
+                        overlap_check: The type of check to be performed
+                        (listed roughly from most-to-least stringent): Ignore
+                        the read-pair if the sequence in the overlap differs
+                        between mates (sequence_strict); Ignore the
+                        overlapping region if the sequence in the overlap
+                        differs between mates (sequence); Ignore the read-pair
+                        if the XM-tag in the overlap differs (XM_strict);
+                        Ignore the overlapping region if the XM-tag in the
+                        overlap differs between mates (XM); Ignore any
+                        positions in the overlapping region where the XM-tags
+                        differ between the mates (XM_ol); Use the mate with
+                        the higher average quality basecalls in the
+                        overlapping region (quality); Use the first mate of
+                        each read-pair, i.e., the method used by
+                        bismark_methylation_extractor with the --no_overlap
+                        flag (Bismark) (default: XM_ol)
+  --uip, --use-improper-pairs
+                        Use the improper read-pairs, i.e. don't filter them.
+                        More specifically, check the 0x2 FLAG bit of each
+                        read; the exact definition of an improper read-pair
+                        depends on the aligner and alignment parameters
+                        (default: False)
+
+Filtering of bases:
+  Applied after filtering of reads
+
+  --ir1p VALUES, --ignore-read1-positions VALUES
+                        If single-end data, ignore these read positions from
+                        all reads. If paired-end data, ignore these read
+                        positions from just read_1 of each pair. Multiple
+                        values should be comma-delimited, ranges can be
+                        specified by use of the hyphen and all positions
+                        should use 1-based co-ordinates. For example,
+                        1-5,80,95-100 corresponds to ignoring read-positions
+                        1, 2, 3, 4, 5, 80, 98, 99, 100. (default: None)
+  --ir2p VALUES, --ignore-read2-positions VALUES
+                        Ignore these read positions from just read_2 of each
+                        pair if paired-end sequencing. Multiple values should
+                        be comma-delimited, ranges can be specified by use of
+                        the hyphen and all positions should use 1-based co-
+                        ordinates. For example, 1-5,80,95-100 corresponds to
+                        ignoring read-positions 1, 2, 3, 4, 5, 80, 98, 99,
+                        100. (default: None)
+  --mbq &lt;int&gt;, --min-base-qual &lt;int&gt;
+                        Ignore read positions with a base quality score less
+                        than &lt;int&gt; (default: 0)
+
+Other:
+  -v, --version         show program's version number and exit
   -h, --help            show this help message and exit
-  --mTuple &lt;int&gt;        The size of the methylation-loci m-tuples (i.e. the
-                        choice of m); must be an integer &gt; 1 (default: 2).
-  --methylationType &lt;string&gt;
-                        The type of methylation loci to study: CG, CHG, CHH or
-                        CNN. This option may be specified multiple times in
-                        order to study multiple methylation types
-                        simultaneously, e.g. --methylationType CG
-                        --methylationType CHG
-  --oldBismark          SAM/BAM created with Bismark version &lt; 0.8.3. The FLAG
-                        and QNAME field in SAM/BAM files created by these
-                        older versions of Bismark differed from the SAM
-                        specifications and need to be adjusted on the fly by
-                        comethylation
-  --ignoreDuplicates    Ignore reads that have been flagged as PCR duplicates
-                        by Picard's MarkDuplicates function
-  --ignoreStart_r1 &lt;int&gt;
-                        Ignore first &lt;int&gt; bases from start (5' end) of read
-                        (respectively, read_1) for single-end data
-                        (respectively, paired-end data) (default: 0). WARNING:
-                        Parameter value not sanity checked by program.
-  --ignoreStart_r2 &lt;int&gt;
-                        Only used if data are paired-end. Ignore first &lt;int&gt;
-                        bases from start (5' end) of read_2 (default: 0).
-                        WARNING: Parameter value not sanity checked by
-                        program.
-  --ignoreEnd_r1 &lt;int&gt;  Ignore last &lt;int&gt; bases from end (3' end) of read
-                        (respectively, read_1) for single-end data
-                        (respectively, paired-end data) (default: 0). WARNING:
-                        Parameter value not sanity checked by program.
-  --ignoreEnd_r2 &lt;int&gt;  Only used if data are paired-end. Ignore last &lt;int&gt;
-                        bases from end (5' end) of read_2 (default: 0).
-                        WARNING: Parameter value not sanity checked by
-                        program.
-  --minQual &lt;int&gt;       Minimum base-quality (default: 0). Any base with a
-                        lower base-quality is ignored.
-  --minMapQ &lt;int&gt;       Minimum mapping quality mapQ (default: 0). Any read
-                        with a lower mapQ is ignored. WARNING: This option has
-                        no effect with SAM/BAM files created with Bismark.
-                        Bismark sets all mapQ values to 255, which indicates
-                        that the mapping quality is not available.
-  --phred64             Quality scores are encoded as Phred64 (default:
-                        Phred33).
-  --overlappingPairedEndFilter &lt;string&gt;
-                        What filter should be applied to any overlapping
-                        paired-end reads. Read-pairs that don't pass the
-                        filter are not used for methylation calling (options
-                        listed by most-to-least stringent): check the entire
-                        overlapping sequence is identical (sequence), check
-                        the XM-tag is identical for the overlapping region
-                        (XM), do no check of the overlapping bases but use the
-                        read with the higher quality basecalls in the
-                        overlapping region (quality), do no check of the
-                        overlapping bases and just use the overlapping bases
-                        from read_1 a la bismark_methylation_extractor
-                        (bismark) (default: XM).
-  --strandSpecific      Produce strand-specific counts, i.e. don't collapse
-                        methylation calls across Watson and Crick strands
-  --useImproperPairs    Do not filter out improper readpairs. The definition
-                        of a proper readpair is aligner-specific and the value
-                        set with the 0x2 bit in the SAM flag
-  --noFailedQCFile      Do not create the file listing the reads that failed
-                        to pass a QC filter and which filter they failed
-  --version             show program's version number and exit
+
+methtuple (v1.4.0) by Peter Hickey (peter.hickey@gmail.com,
+https://github.com/PeteHaitch/methtuple/)
 </code></pre>
 
-<h1>
-<a name="limitations-and-notes" class="anchor" href="#limitations-and-notes"><span class="octicon octicon-link"></span></a>Limitations and notes</h1>
+<h2>
+<a name="limitations-and-notes" class="anchor" href="#limitations-and-notes"><span class="octicon octicon-link"></span></a>Limitations and notes</h2>
 
 <p>These are current limitations and their statuses:</p>
 
-<h2>
-<a name="only-works-with-data-aligned-with-the-bismark-mapping-software" class="anchor" href="#only-works-with-data-aligned-with-the-bismark-mapping-software"><span class="octicon octicon-link"></span></a>Only works with data aligned with the <strong>Bismark</strong> mapping software</h2>
+<h3>
+<a name="only-works-with-data-aligned-with-the-bismark-mapping-software" class="anchor" href="#only-works-with-data-aligned-with-the-bismark-mapping-software"><span class="octicon octicon-link"></span></a>Only works with data aligned with the <strong>Bismark</strong> mapping software</h3>
 
-<p><code>comethylation</code> makes use of Bismark's custom SAM tags <code>XM</code>, <code>XR</code> and <code>XG</code>. The <code>XM</code> tag is used to infer the methylation state of each sequenced cytosine while the <code>XR</code> and <code>XG</code> tags are used to infer the orientation and strand of the alignment. If the data were aligned with Bismark version &lt; 0.8.3 please use the <code>--oldBismark</code> flag.</p>
+<p><code>methtuple</code> makes use of Bismark's custom SAM tags <code>XM</code>, <code>XR</code> and <code>XG</code>. The <code>XM</code> tag is used to infer the methylation state of each sequenced cytosine while the <code>XR</code> and <code>XG</code> tags are used to infer the orientation and strand of the alignment. If the data were aligned with Bismark version &lt; 0.8.3 please use the <code>--oldBismark</code> flag.</p>
 
-<p>A future version of this software will support the use of <code>BAM</code> files created with other popular bisulfite aligners such as <a href="https://code.google.com/p/bsmap/">BSMAP</a>, <a href="https://github.com/BenLangmead/bsmooth-align">BSmooth</a>, <a href="https://github.com/brentp/bwa-meth/">bwa-meth</a>, <a href="http://research-pub.gene.com/gmap/">gsnap</a>, <a href="http://last.cbrc.jp/">last</a> and <a href="http://www.novocraft.com/">Novoalign</a>. Support will either be provided natively in <code>comethylation</code> or via an pre-processing script <code>bismarkify</code>. See <a href="https://github.com/PeteHaitch/comethylation/issues/30">Issue #30</a></p>
+<p>Please file an issue if you would like to use a <code>BAM</code> file created with another aligner and I will do my best to support it; also, see <a href="https://github.com/PeteHaitch/methtuple/issues/30">Issue #30</a></p>
 
-<h2>
-<a name="paired-end-data-must-be-sorted-by-queryname" class="anchor" href="#paired-end-data-must-be-sorted-by-queryname"><span class="octicon octicon-link"></span></a>Paired-end data must be sorted by queryname</h2>
+<h3>
+<a name="paired-end-data-must-be-sorted-by-queryname" class="anchor" href="#paired-end-data-must-be-sorted-by-queryname"><span class="octicon octicon-link"></span></a>Paired-end data must be sorted by queryname</h3>
 
 <p>This is required in order to avoid lookups when finding the mate of a paired-end read.</p>
 
-<p>The <code>BAM</code> file created by Bismark is natively in queryname order so this is not a problem. If the file is not in queryname order then use <code>samtools sort</code> with the <code>-n</code> option to sort you <code>BAM</code> by queryname. The helper script <code>helper_scripts/run_comethylation.sh</code> works with a coordinate-sorted <code>BAM</code> file and so includes a step to sort the chromosome-level <code>BAM</code> files by queryname.</p>
+<p>The <code>BAM</code> file created by Bismark is natively in queryname order and so this is not a problem. If the file is not in queryname order then use <code>samtools sort</code> with the <code>-n</code> option or Picard's <code>SortSam</code> function with <code>SO=queryname</code> to sort your <code>BAM</code> by queryname. The helper script <code>helper_scripts/run_methtuple.sh</code> works with a coordinate-sorted <code>BAM</code> file and does so by including a step to sort the chromosome-level <code>BAM</code> files by queryname using Picard's <code>SortSam</code>.</p>
 
-<h2>
-<a name="comethylation-will-skip-any-read-containing-an-indel" class="anchor" href="#comethylation-will-skip-any-read-containing-an-indel"><span class="octicon octicon-link"></span></a><code>comethylation</code> will skip any read containing an indel</h2>
+<h3>
+<a name="the---aligner-bismark_old-option-is-a-bit-crude" class="anchor" href="#the---aligner-bismark_old-option-is-a-bit-crude"><span class="octicon octicon-link"></span></a>The <code>--aligner Bismark_old</code> option is a bit crude</h3>
 
-<p>It is difficult, although not impossible, to assign coordinates to a cytosine within an indel. To avoid this complication, <code>comethylation</code> currently skips any reads containing an indel. I aim to improve the handling of indels in the next release.</p>
+<p>Specifically, it assumes that there are no '/' characters in the read names (<code>QNAME</code>) and that the BAM has not been processed with any other programs, e.g. Picard's MarkDuplicates, that might change the <code>FLAG</code> field. Please file an issue or submit a pull request if you would like this improved.</p>
 
-<h2>
-<a name="the---oldbismark-option-is-a-bit-crude" class="anchor" href="#the---oldbismark-option-is-a-bit-crude"><span class="octicon octicon-link"></span></a>The <code>--oldBismark</code> option is a bit crude</h2>
+<h3>
+<a name="construction-of-non-neighbouring-m-tuples" class="anchor" href="#construction-of-non-neighbouring-m-tuples"><span class="octicon octicon-link"></span></a>Construction of "non-neighbouring" m-tuples</h3>
 
-<p>Specifically, it assumes that there are no '/' characters in the read names (<code>QNAME</code>) and that the BAM has not been processed with any other programs, e.g. Picard's MarkDuplicates, that might change the <code>FLAG</code> field. I am happy to improve this functionality if requested.</p>
+<p>As discussed in the above example, <code>methtuple</code> tries not to create "non-neighbouring" m-tuples, however, these do occur due to m-tuples being created independently from each read/read-pair. I do not make use of non-neighbouring m-tuples in my downstream analyses and so I <em>post-hoc</em> filter these out.</p>
 
-<h2>
-<a name="memory-usage-can-be-large" class="anchor" href="#memory-usage-can-be-large"><span class="octicon octicon-link"></span></a>Memory usage can be large</h2>
+<p>If you would like the option to create all possible m-tuples, both "neighbouring" and "non-neighbouring", please let me know at <a href="https://github.com/PeteHaitch/methtuple/issues/85">https://github.com/PeteHaitch/methtuple/issues/85</a> as there is a simple solution that just awaits motivation for me to implement it.</p>
 
-<p>For instance, 5-20Gb per chromosome for a typical 20-30x coverage whole-genome methylC-seq experiment of human data. I think this is largely due to inefficiencies in how I store the m-tuples internally in <code>comethylation</code> (which is basically as a dictionary of dictionaries). See <a href="https://github.com/PeteHaitch/comethylation/issues/64">Issue #64</a></p>
+<h3>
+<a name="choice-of---overlap-filter" class="anchor" href="#choice-of---overlap-filter"><span class="octicon octicon-link"></span></a>Choice of <code>--overlap-filter</code>
+</h3>
 
-<h2>
-<a name="other-notes" class="anchor" href="#other-notes"><span class="octicon octicon-link"></span></a>Other notes</h2>
+<p>The two mates of a paired-end read, <code>read_1</code> and <code>read_2</code>, often overlap in bisulfite-sequencing data. <code>methtuple</code> ensures that the overlapping sequence isn't double-counted and offers several different choices of how overlapping paired-end reads are processed via the <code>--overlap-filter</code> flag. Listed roughly from most-to-least stringent these are:</p>
+
+<ol>
+<li>
+<code>sequence_strict</code>: Check that the entire overlapping sequence is identical; if not identical then do not use any methylation calls from the entire read-pair.</li>
+<li>
+<code>sequence</code>: Check that the entire overlapping sequence is identical; if not identical then do not use any methylation calls from the overlap.</li>
+<li>
+<code>XM_strict</code>: Check that the XM-tag is identical for the overlapping region; if not identical then do not use any methylation calls from the entire read-pair.</li>
+<li>
+<code>XM</code>: Check that the XM-tag is identical for the overlapping region; if not identical then do not use any methylation calls from the overlap.</li>
+<li>
+<code>XM_ol</code>: Check that the XM-tag is identical for the overlapping region; if not identical then exclude those positions of disagreement and count once the remaining positions in the overlap.</li>
+<li>
+<code>quality</code>: No check of the overlapping bases; simply use the read with the higher average quality basecalls in the overlapping region.</li>
+<li>
+<code>Bismark</code>: No check of the overlapping bases; simply use the overlapping bases from read_1, i.e., the method used by <code>bismark_methylation_extractor</code> with the <code>--no_overlap</code> flag.</li>
+</ol><h3>
+<a name="other-notes" class="anchor" href="#other-notes"><span class="octicon octicon-link"></span></a>Other notes</h3>
 
 <ul>
-<li>Bismark always sets the mapping quality (<code>mapQ</code>) as the value 255, which means unavailable in the SAM format specification. Thus the <code>--minMapQ</code> option will not have any effect for Bismark data.</li>
+<li>Bismark-Bowtie1 always sets the mapping quality (<code>mapQ</code>) as the value 255, which means unavailable in the SAM format specification. Thus the <code>--min-mapq</code> option will not have any effect for Bismark-Bowtie1 data.</li>
 <li>
-<code>comethylation</code> skip paired-end reads where either mate is unmapped.</li>
-</ul><h1>
-<a name="acknowledgements" class="anchor" href="#acknowledgements"><span class="octicon octicon-link"></span></a>Acknowledgements</h1>
+<code>methtuple</code> skips paired-end reads where either mate is unmapped.</li>
+</ul><h2>
+<a name="acknowledgements" class="anchor" href="#acknowledgements"><span class="octicon octicon-link"></span></a>Acknowledgements</h2>
 
 <p>A big thank you to <a href="http://www.bioinformatics.babraham.ac.uk/people.html">Felix Krueger</a> (the author of Bismark) for his help in understanding mapping of bisulfite-sequencing data and for answering my many questions along the way.</p>
 
-<p>Thanks also to Tobias Sargeant (<a href="https://github.com/folded">@folded</a>) for his help in turning the original <code>comethylation.py</code> script into the current Python module <code>comethylation</code> and for help in setting up a testing framework.</p>
+<p>Thanks also to Tobias Sargeant (<a href="https://github.com/folded">@folded</a>) for his help in turning the original <code>methtuple.py</code> script into the current Python module <code>methtuple</code> and for help in setting up a testing framework.</p>
 
-<h1>
-<a name="questions-and-comments" class="anchor" href="#questions-and-comments"><span class="octicon octicon-link"></span></a>Questions and comments</h1>
+<h2>
+<a name="questions-and-comments" class="anchor" href="#questions-and-comments"><span class="octicon octicon-link"></span></a>Questions and comments</h2>
 
-<p>Please use the GitHub Issue Tracker (available at <a href="www.github.com/PeteHaitch/comethylation">www.github.com/PeteHaitch/comethylation</a>) to file bug reports or request new functionality. I welcome questions and comments; you can email me at <a href="mailto:peter.hickey@gmail.com">peter.hickey@gmail.com</a>. </p>
+<p>Please use the <a href="www.github.com/PeteHaitch/methtuple">GitHub Issue Tracker</a> to file bug reports or request new functionality. I welcome questions and comments; you can email me at <a href="mailto:peter.hickey@gmail.com">peter.hickey@gmail.com</a>.</p>
       </section>
-
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/PeteHaitch">PeteHaitch</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
     </div>
-    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    <script src="javascripts/scale.fix.js"></script>
               <script type="text/javascript">
             var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
             document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
