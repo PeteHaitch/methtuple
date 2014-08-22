@@ -1,6 +1,12 @@
 # Version 1.4.0
 
-__TODO__
+This version of the software changes the name from `comethylation` to `methtuple` to better reflect what it actually does.
+
+I have also switched to the MIT licence.
+
+## New or improved features
+
+* Added `--all-combinations` option to create all possible m-tuples including non-neighbouring ones. This will greatly increase the memory usage if combined with larger values of `--m` (e.g. > 2).
 
 # Version 1.3.0
 
