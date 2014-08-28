@@ -143,7 +143,7 @@ parallel --joblog methtuple.log -j ${NUM_CORES} "methtuple ${METHTUPLE_OPTIONS} 
 echo "Concatenating chromosome-level files into genome-level files..."
 # Move all .hist files to a 'hist' directory and create the genome-wide .hist file.
 parallel -j ${NUM_CORES} "mv ${OUTDIR}/{1}_tuples/*.hist ${OUTDIR}/{1}_tuples/hist;
-Rscript ${TABULATE_HIST} ${OUTDIR}/{1}_tuples/hist" ::: ${M[@]}
+Rscript ${TABULATE_HIST} ${SAMPLE_NAME} ${OUTDIR}/{1}_tuples/hist" ::: ${M[@]}
 # Create the header for the genome-wide .tsv file (for given m)
 parallel -j ${NUM_CORES} "EXTENSION=\$(basename ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}_${CHROMS[0]}.*.tsv | rev | cut -d '.' -f -3 | rev);
 head -n 1 ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}_${CHROMS[0]}.\${EXTENSION} > ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}.\${EXTENSION}" ::: ${M[@]} # Note the need to escape the $ character for variables defined within the command to avoid the shell interpreting them (i.e. EXTENSION)
