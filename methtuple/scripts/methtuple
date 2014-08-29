@@ -244,22 +244,29 @@ min_mapq = args.mmq
 #### The main program. Loops over the BAM file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or read-pair. ####
 # Open SAM/BAM file and output files
 BAM = pysam.Samfile(args.BAM, 'rb')
-if args.gzip:
-    OUT = gzip.open(".".join([args.output_prefix, '_'.join(methylation_type.split('/')), str(args.m), "tsv.gz"]), "wb")
-    HIST = gzip.open("".join([args.output_prefix, '.', '_'.join(methylation_type.split('/')), "_per_read.hist.gz"]), "wb")
-elif args.bzip2:
-    OUT = bz2.BZ2File(".".join([args.output_prefix, '_'.join(methylation_type.split('/')), str(args.m), "tsv.bz2"]), "w")
-    HIST = bz2.BZ2File("".join([args.output_prefix, '.', '_'.join(methylation_type.split('/')), "_per_read.hist.bz2"]), "w")
+if all_combinations
+  out_prefix = ".".join([args.output_prefix, '_'.join(methylation_type.split('/')), ''.join([str(args.m), 'ac']), "tsv"])
 else:
-    OUT = open(".".join([args.output_prefix, '_'.join(methylation_type.split('/')), str(args.m), "tsv"]), "w")
-    HIST = open("".join([args.output_prefix, '.', '_'.join(methylation_type.split('/')), "_per_read.hist"]), "w")
+  out_prefix = ".".join([args.output_prefix, '_'.join(methylation_type.split('/')), str(args.m), "tsv"])
+hist_prefix = "".join([args.output_prefix, '.', '_'.join(methylation_type.split('/')), "_per_read.hist"])
+
+if args.gzip:
+  OUT = gzip.open(".".join([out_prefix, "gz"]), "wb")
+  HIST = gzip.open(".".join([hist_prefix, "gz"]), "wb")
+elif args.bzip2:
+  OUT = bz2.BZ2File(".".join([out_prefix, "bz2"]), "w")
+  HIST = bz2.BZ2file(".".join([hist_prefix, "bz2"]), "w")
+else:
+  OUT = open(out_prefix, "w")
+  HIST = open(hist_prefix, "w")
 if not args.nfff:
-    if args.gzip:
-        FAILED_QC = gzip.open("".join([args.output_prefix, ".reads_that_failed_QC.txt.gz"]), "wb")
-    elif args.bzip2:
-        FAILED_QC = bz2.BZ2File("".join([args.output_prefix, ".reads_that_failed_QC.txt.bz2"]), "w")
-    else:
-        FAILED_QC = open("".join([args.output_prefix, ".reads_that_failed_QC.txt"]), "w")
+  nfff_prefix = "".join([args.output_prefix, ".reads_that_failed_QC.txt"])
+  if args.gzip:
+    FAILED_QC = gzip.open(".".join([nfff_prefix, "gz"]), "wb")
+  elif args.bzip2:
+    FAILED_QC = bz2.BZ2File(".".join([nfff_prefix, "bz2"]), "w")
+  else:
+    FAILED_QC = open(nfff_prefix, "w")
 else:
     FAILED_QC = open(os.devnull, "w")
 
