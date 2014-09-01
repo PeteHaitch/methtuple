@@ -100,7 +100,7 @@ The main options to pass `methtuple` are the size of the m-tuple (`-m`); the typ
 
 ### Output
 
-Three output files are created and summary information is written to `STDOUT`. The main output file is a tab-delimited file of all m-tuples, `<in>.<--methylation-type>.<-m>.tsv`, where `<in>` is the prefix of the `<in.bam>` BAM file.
+Three output files are created and summary information is written to `STDOUT`. The main output file is a tab-delimited file of all m-tuples, `<in>.<--methylation-type>.<-m>[ac].tsv`, where `<in>` is the prefix of the `<in.bam>` BAM file and `ac` is added if the `--all-combinations` flag was used, e.g., `SRR949207.CG.2ac.tsv`. Output files may be gzipped (`--gzip`) or bzipped (`--bzip2`).
 
 Here are the first 5 rows (including with the header row) from `data/se_directional.fq.gz_bismark_bt2.CG.2.tsv`, which is created by running the single-end directional example shown below:
 
