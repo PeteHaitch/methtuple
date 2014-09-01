@@ -14,7 +14,7 @@ setup(
   long_description=README + '\n\n' +  CHANGES,
   classifiers=[
     "Programming Language :: Python",
-      "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
+      "License :: OSI Approved :: MIT",
     ],
   author='Peter Hickey',
   author_email='peter.hickey@gmail.com',
