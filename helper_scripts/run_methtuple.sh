@@ -56,7 +56,7 @@
 # flag); in particular, I do not know whether this plays nicely with GNU
 # parallel.
 
-# Required variables
+# Variables that are specified per-samples
 #-------------------------------------------------------------------------------
 # The path of the BAM file, e.g. data/cs_pe_directional.bam.
 # The BAM must be sorted in coordinate order and indexed.
@@ -64,23 +64,42 @@ BAM=
 # The path to the directory used for output, e.g. my_outdir.
 # Multiple subdirectories and files will be created in this folder.
 OUTDIR=
-# A bash array of the "m" in m-tuples, e.g. (1 2 3).
-M=
 # A bash array of the chromosomes to be processed.
 # It is recommended, but not required, that this array be in karyotypic order
 # e.g. (chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13
 #         chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY chrM)
+# Check chromosome names, e.g. chrM vs. chrMt, chrL, etc.
 CHROMS=
-# Additional parameters to be passed to methtuple e.g.
-# "--methylation-type CG --ignore-duplicates --min-mapq 0 --ir1p 1-5,98-100
-#  --ir2p 1-10,98-100 --overlap-filter XM"
-METHTUPLE_OPTIONS=
-# SE (single-end data) or PE (paired-end data).
+# Read positions to ignore based on analysis of M-bias
+# Set IR1P="--ir1p 0" if not ignoring any positions
+IR1P=
+# Not used if data are SE
+IR2P=
+# Single-end (SE) or paired-end (PE)
 SEQ_TYPE=
 # The number of cores to be used by GNU parallel, e.g. 8
 NUM_CORES=
+
+# Variables fixed for all samples analysed in thesis
+#-------------------------------------------------------------------------------
+# A bash array of the "m" in m-tuples, e.g. (1 2 3).
+M=(1 2 3 4 5 6 7 8)
+# --methylation-type
+METHYLATION_TYPE="--methylation-type CG"
+# All of the samples I'm analysing have mapQ set to 255, i.e. unavailable.
+# This is because until recently Bismark didn't supply mapQ, and even now it
+# only does it with Bowtie2.
+MIN_MAPQ="--min-mapq 0"
+OVERLAP_FILTER="--overlap-filter XM_ol"
+# All samples use Phred33 qualities.
+# Not all samples have real base qualities, e.g. most of the Lister data
+MIN_BASE_QUAL="--min-base-qual 3"
+# Additional parameters to be passed to methtuple e.g.
+# "--methylation-type CG --ignore-duplicates --min-mapq 0 --ir1p 1-5,98-100
+#  --ir2p 1-10,98-100 --overlap-filter XM"
+OTHER_METHTUPLE_OPTIONS="--ignore-duplicates"
 # The path to the helper script "tabulate_hist.R"
-TABULATE_HIST=
+TABULATE_HIST=~/methtuple/helper_scripts/tabulate_hist.R
 #-------------------------------------------------------------------------------
 
 # Description of algorithm
@@ -101,15 +120,25 @@ TABULATE_HIST=
 # Step 0
 #-------------------------------------------------------------------------------
 # Check variables
-if [[ -n "${BAM}" && -n "${OUTDIR}" && -n "${M}" && -n "${CHROMS}" \
-  && -n "${METHTUPLE_OPTIONS}" && -n "${SEQ_TYPE}" ]]
+if [[ -n "${BAM}" && -n "${OUTDIR}" && -n "${CHROMS}" && -n "${IR1P}" && \
+   -n "${IR2P}" && -n "${SEQ_TYPE}" && -n "${NUM_CORES}" && -n "${M}" && \
+   -n "${METHYLATION_TYPE}" && -n "${MIN_MAPQ}" && -n "${OVERLAP_FILTER}" && \
+   -n "${OVERLAP_FILTER}" && -n "${MIN_BASE_QUAL}" && \
+   -n "${OTHER_METHTUPLE_OPTIONS}" && -n "${TABULATE_HIST}" ]]
 then
   echo "BAM file = ${BAM}"
-  echo "Output directory = ${OUTDIR}"
-  echo "'m' in m-tuples = ${M[@]}"
-  echo "Chromosomes = ${CHROMS[@]}"
-  echo "Additional methtuple options = ${METHTUPLE_OPTIONS}"
   echo "Sequencing type = ${SEQ_TYPE}"
+  echo "Output directory = ${OUTDIR}"
+  echo "Chromosomes = ${CHROMS[@]}"
+  if [ ${SEQ_TYPE} == 'SE' ]
+  then
+    echo  "methtuple options = ${IR1P} ${METHYLATION_TYPE} ${MIN_MAPQ}\
+    ${OVERLAP_FILTER} ${MIN_BASE_QUAL} ${OTHER_METHTUPLE_OPTIONS}"
+  else [ ${SEQ_TYPE} == 'PE' ]
+    echo  "methtuple options = ${IR1P} ${IR2P} ${METHYLATION_TYPE} ${MIN_MAPQ}\
+    ${OVERLAP_FILTER} ${MIN_BASE_QUAL} ${OTHER_METHTUPLE_OPTIONS}"
+  fi
+  echo "'m' in m-tuples = ${M[@]}"
 else
   echo "Please check all parameters are valid"
   exit
@@ -138,6 +167,7 @@ then
 else
   echo "The sequencing type (SEQ_TYPE parameter) must be one of 'SE' (for \
   single-end sequencing) or 'PE' (paired-end for paired-end sequencing)"
+  # TODO: Don't exit cause that quits a ssh session, but do something else.
   exit
 fi
 #-------------------------------------------------------------------------------
@@ -147,14 +177,40 @@ fi
 # mkdir for output
 parallel -j ${NUM_CORES} "mkdir -p ${OUTDIR}/{1}_tuples/log \
 ${OUTDIR}/{1}_tuples/hist" ::: ${M[@]}
+mkdir -p ${OUTDIR}/2ac_tuples/log ${OUTDIR}/2ac_tuples/hist
 
 # Extract methylation loci m-tuples for each chromosome
 echo "Extracting methylation loci m-tuples for each chromosome..."
-parallel --joblog methtuple.log -j ${NUM_CORES} "methtuple \
-${METHTUPLE_OPTIONS} -m {1} -o {1}_tuples/${SAMPLE_NAME}_{2} \
-${OUTDIR}/${SAMPLE_NAME}_{2}.bam &> \
-${OUTDIR}/{1}_tuples/log/${SAMPLE_NAME}_{1}.{2}.log" ::: ${M[@]} ::: \
-${CHROMS[@]}
+if [ ${SEQ_TYPE} == 'SE' ]
+then
+  parallel --joblog methtuple.log -j ${NUM_CORES} "/usr/bin/time -v methtuple \
+  ${METHYLATION_TYPE} -m {1} ${OTHER_METHTUPLE_OPTIONS} ${MIN_MAPQ} \
+  ${OVERLAP_FILTER} ${IR1P} ${MIN_BASE_QUAL} -o {1}_tuples/${SAMPLE_NAME}_{2} \
+  ${OUTDIR}/${SAMPLE_NAME}_{2}.bam &> \
+  ${OUTDIR}/{1}_tuples/log/${SAMPLE_NAME}_{1}.{2}.log" ::: ${M[@]} ::: \
+  ${CHROMS[@]}
+  # "2ac"
+  parallel --joblog methtuple_2ac.log -j ${NUM_CORES} "/usr/bin/time -v \
+  methtuple ${METHYLATION_TYPE} -m 2 --all-combinations \
+  ${OTHER_METHTUPLE_OPTIONS} ${MIN_MAPQ} ${OVERLAP_FILTER} ${IR1P} \
+  ${MIN_BASE_QUAL} -o 2ac_tuples/${SAMPLE_NAME}_{1} \
+  ${OUTDIR}/${SAMPLE_NAME}_{1}.bam &> \
+  ${OUTDIR}/2ac_tuples/log/${SAMPLE_NAME}_2ac.{1}.log" ::: ${CHROMS[@]}
+else
+  parallel --joblog methtuple.log -j ${NUM_CORES} "/usr/bin/time -v methtuple \
+  ${METHYLATION_TYPE} -m {1} ${OTHER_METHTUPLE_OPTIONS} ${MIN_MAPQ} \
+  ${OVERLAP_FILTER} ${IR1P} ${IR2P} ${MIN_BASE_QUAL} -o \
+  {1}_tuples/${SAMPLE_NAME}_{2} ${OUTDIR}/${SAMPLE_NAME}_{2}.bam &> \
+  ${OUTDIR}/{1}_tuples/log/${SAMPLE_NAME}_{1}.{2}.log" ::: ${M[@]} ::: \
+  ${CHROMS[@]}
+  # "2ac"
+  parallel --joblog methtuple_2ac.log -j ${NUM_CORES} "/usr/bin/time -v \
+  methtuple ${METHYLATION_TYPE} -m 2 --all-combinations \
+  ${OTHER_METHTUPLE_OPTIONS} ${MIN_MAPQ} ${OVERLAP_FILTER} ${IR1P} ${IR2P} \
+  ${MIN_BASE_QUAL} -o 2ac_tuples/${SAMPLE_NAME}_{1} \
+  ${OUTDIR}/${SAMPLE_NAME}_{1}.bam &> \
+  ${OUTDIR}/2ac_tuples/log/${SAMPLE_NAME}_2ac.{1}.log" ::: ${CHROMS[@]}
+fi
 
 # The only chromosome-level files that are retained are the .hist files.
 echo "Concatenating chromosome-level files into genome-level files..."
@@ -163,6 +219,9 @@ echo "Concatenating chromosome-level files into genome-level files..."
 parallel -j ${NUM_CORES} "mv ${OUTDIR}/{1}_tuples/*.hist \
 ${OUTDIR}/{1}_tuples/hist;
 Rscript ${TABULATE_HIST} ${SAMPLE_NAME} ${OUTDIR}/{1}_tuples/hist" ::: ${M[@]}
+# "2ac"
+mv ${OUTDIR}/2ac_tuples/*.hist ${OUTDIR}/2ac_tuples/hist
+Rscript ${TABULATE_HIST} ${SAMPLE_NAME} ${OUTDIR}/2ac_tuples/hist
 
 # Create the header for the genome-wide .tsv file (for given m).
 # Note the need to escape the $ character for variables defined within the
@@ -172,6 +231,11 @@ EXTENSION=\$(basename ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}_${CHROMS[0]}.*.tsv \
 | rev | cut -d '.' -f -3 | rev);
 head -n 1 ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}_${CHROMS[0]}.\${EXTENSION} > \
 ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}.\${EXTENSION}" ::: ${M[@]}
+# "2ac"
+EXTENSION=$(basename ${OUTDIR}/2ac_tuples/${SAMPLE_NAME}_${CHROMS[0]}.*.tsv \
+| rev | cut -d '.' -f -3 | rev)
+head -n 1 ${OUTDIR}/2ac_tuples/${SAMPLE_NAME}_${CHROMS[0]}.${EXTENSION} > \
+${OUTDIR}/2ac_tuples/${SAMPLE_NAME}.${EXTENSION}
 
 # Concatenate the .tsv files and gzip (for given m).
 # Note the need to escape the $ character for variables defined within the
@@ -182,11 +246,21 @@ EXTENSION=\$(basename ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}_${CHROMS[0]}.*.tsv \
 | rev | cut -d '.' -f -3 | rev);
 for CHROM in ${CHROMS[@]}
   do
-		cat ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}_\${CHROM}.\${EXTENSION}  \
+		cat ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}_\${CHROM}.\${EXTENSION} \
     | grep -v -P  '^chr\tstrand' >> \
     ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}.\${EXTENSION}
   done
 gzip ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}.\${EXTENSION}" ::: ${M[@]}
+# "2ac"
+EXTENSION=$(basename ${OUTDIR}/2ac_tuples/${SAMPLE_NAME}_${CHROMS[0]}.*.tsv \
+| rev | cut -d '.' -f -3 | rev)
+for CHROM in ${CHROMS[@]}
+  do
+    cat ${OUTDIR}/2ac_tuples/${SAMPLE_NAME}_${CHROM}.${EXTENSION} \
+    | grep -v -P  '^chr\tstrand' >> \
+    ${OUTDIR}/2ac_tuples/${SAMPLE_NAME}.${EXTENSION}
+  done
+gzip ${OUTDIR}/2ac_tuples/${SAMPLE_NAME}.${EXTENSION}
 
 # Concatenate the reads_that_failed_QC files and gzip (for given m).
 # Note the need to escape the $ character for variables defined within the
@@ -198,6 +272,13 @@ for CHROM in ${CHROMS[@]}
     >> ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}.reads_that_failed_QC.txt
 	done
 gzip ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}.reads_that_failed_QC.txt" ::: ${M[@]}
+# "2ac"
+for CHROM in ${CHROMS[@]}
+  do
+    cat ${OUTDIR}/2ac_tuples/${SAMPLE_NAME}_${CHROM}.reads_that_failed_QC.txt \
+    >> ${OUTDIR}/2ac_tuples/${SAMPLE_NAME}.reads_that_failed_QC.txt
+  done
+gzip ${OUTDIR}/2ac_tuples/${SAMPLE_NAME}.reads_that_failed_QC.txt
 #-------------------------------------------------------------------------------
 
 # Step 3
@@ -208,4 +289,6 @@ parallel -j ${NUM_CORES} "rm ${OUTDIR}/${SAMPLE_NAME}_{1}.bam" ::: ${CHROMS[@]}
 parallel -j ${NUM_CORES} "
 rm ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}_*.tsv;
 rm ${OUTDIR}/{1}_tuples/${SAMPLE_NAME}_*.reads_that_failed_QC.txt" ::: ${M[@]}
+rm ${OUTDIR}/2ac_tuples/${SAMPLE_NAME}_*.tsv
+rm ${OUTDIR}/2ac_tuples/${SAMPLE_NAME}_*.reads_that_failed_QC.txt
 #-------------------------------------------------------------------------------
