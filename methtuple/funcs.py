@@ -205,7 +205,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
 
     return methylation_m_tuples, n_methylation_loci
 
-def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, all_combinations, methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC):
+def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, all_combinations, methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_filter, n_fragment_skipped_due_to_bad_overlap, FAILED_QC):
     """Extracts m-tuples of methylation loci from a readpair and adds the comethylation m-tuple to the methylation_m_tuples object.
 
     Args:
@@ -222,7 +222,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         min_qual: Ignore bases with quality-score less than this value.
         phred_offset: The offset in the Phred scores. Phred33 corresponds to phred_offset = 33 and Phred64 corresponds to phred_offset 64.
         ob_strand_offset: How many bases a methylation loci on the OB-strand must be moved to the left in order to line up with the C on the OT-strand; e.g. ob_strand_offset = 1 for CpGs.
-        overlap_check: The type of check to be performed (listed from most-to-least stringent):
+        overlap_filter: The type of check to be performed (listed from most-to-least stringent):
         1. Check that the entire overlapping sequence is identical; if not identical then do not use any methylation calls from the entire read-pair (sequence_strict).
         2. Check that the entire overlapping sequence is identical; if not identical then do not use any methylation calls from the overlap (sequence).
         3. Check that the XM-tag is identical for the overlapping region; if not identical then do not use any methylation calls from the entire read-pair (XM_strict).
@@ -254,7 +254,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
       sys.exit(exit_msg)
 
     # Process read-pairs to handle overlapping mates.
-    methylation_index_1, methylation_index_2, fragment_skipped = process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, overlap_check, FAILED_QC)
+    methylation_index_1, methylation_index_2, fragment_skipped = process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, overlap_filter, FAILED_QC)
     n_fragment_skipped_due_to_bad_overlap = n_fragment_skipped_due_to_bad_overlap + fragment_skipped
     n_methylation_loci = len(methylation_index_1) + len(methylation_index_2)
 
@@ -412,8 +412,8 @@ def get_positions(read):
   return positions
 
 # TODO: Check that process_overlap() works with soft-clipped reads, particularly that "overlapping" soft-clips are properly handled. Can't check this until I have some data aligned with an aligner that allows soft-clips, e.g. bwa-meth, as Bismark does not allow them.
-def process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, overlap_check, FAILED_QC):
-  """Identify any overlapping bases between read_1 and read_2 and remove these from methylation_index_1 or methylation_index_2 according to the option specified by overlap_check.
+def process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, overlap_filter, FAILED_QC):
+  """Identify any overlapping bases between read_1 and read_2 and remove these from methylation_index_1 or methylation_index_2 according to the option specified by overlap_filter.
 
   Args:
       read_1: A pysam.AlignedRead instance with read.is_read1 == true. Must be paired with read_2.
@@ -424,7 +424,7 @@ def process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, ov
 
       corresponds to read_1 with a methylation locus at the first and sixth positions of the read.
       methylation_index_2: As for methylation_index_1 but informative for read_2.
-      overlap_check: The type of check to be performed (listed from most-to-least stringent):
+      overlap_filter: The type of check to be performed (listed from most-to-least stringent):
       1. Check that the entire overlapping sequence is identical; if not identical then do not use any methylation calls from the entire read-pair (sequence_strict).
       2. Check that the entire overlapping sequence is identical; if not identical then do not use any methylation calls from the overlap (sequence).
       3. Check that the XM-tag is identical for the overlapping region; if not identical then do not use any methylation calls from the entire read-pair (XM_strict).
@@ -441,7 +441,7 @@ def process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, ov
   positions_1 = get_positions(read_1)
   positions_2 = get_positions(read_2)
 
-  # Flag indicating whether the entire fragment was skipped (only used if overlap_check is sequence_strict of XM_strict)
+  # Flag indicating whether the entire fragment was skipped (only used if overlap_filter is sequence_strict of XM_strict)
   fragment_skipped = 0
 
   # Creating the overlap is a two-step process. (1) Find the intersection of positions_1 and positions_2 (excluding None positions); (2) Define the overlap as all positions between the smallest element and largest element of the overlap set.
@@ -476,19 +476,19 @@ def process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, ov
     start_ol_2 = [idx for idx, value in enumerate(positions_2) if value >= start_ol and value is not None][0]
     end_ol_2 = [idx for idx, value in enumerate(positions_2) if value <= end_ol and value is not None][-1]
 
-    if overlap_check == "sequence_strict":
+    if overlap_filter == "sequence_strict":
       if read_1.seq[start_ol_1:(end_ol_1 + 1)] != read_2.seq[start_ol_2:(end_ol_2 + 1)]:
         # Kill the read-pair
         methylation_index_1 = []
         methylation_index_2 = []
         fragment_skipped = 1
-        failed_read_msg = '\t'.join([read_1.qname, ''.join(['failed the --overlap-filter ', overlap_check, '\n'])])
+        failed_read_msg = '\t'.join([read_1.qname, ''.join(['failed the --overlap-filter ', overlap_filter, '\n'])])
         FAILED_QC.write(failed_read_msg)
       else:
         # Retain only those elements of methylation_index_2 that are outside the overlap.
         # Choice of trimming methylation_index_1 or methylation_index_2 is arbitrary because if the seq are identical in the overlap then there is no reason to choose read_1 over read_2 and vice versa.
         methylation_index_2 = [i for i in methylation_index_2 if i < start_ol_2 or i > end_ol_2]
-    elif overlap_check == "sequence":
+    elif overlap_filter == "sequence":
       if read_1.seq[start_ol_1:(end_ol_1 + 1)] != read_2.seq[start_ol_2:(end_ol_2 + 1)]:
         # Retain only those elements of methylation_index_1 and methylation_index_2 that are outside the overlap.
         methylation_index_1 = [i for i in methylation_index_1 if i < start_ol_1 or i > end_ol_1]
@@ -497,19 +497,19 @@ def process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, ov
         # Retain only those elements of methylation_index_2 that are outside the overlap.
         # Choice of trimming methylation_index_1 or methylation_index_2 is arbitrary because if the seq are identical in the overlap then there is no reason to choose read_1 over read_2 and vice versa.
         methylation_index_2 = [i for i in methylation_index_2 if i < start_ol_2 or i > end_ol_2]
-    elif overlap_check == "XM_strict":
+    elif overlap_filter == "XM_strict":
       if read_1.opt('XM')[start_ol_1:(end_ol_1 + 1)] != read_2.opt('XM')[start_ol_2:(end_ol_2 + 1)]:
         # Kill the read-pair
         methylation_index_1 = []
         methylation_index_2 = []
         fragment_skipped = 1
-        failed_read_msg = '\t'.join([read_1.qname, ''.join(['failed the --overlap-filter ', overlap_check, '\n'])])
+        failed_read_msg = '\t'.join([read_1.qname, ''.join(['failed the --overlap-filter ', overlap_filter, '\n'])])
         FAILED_QC.write(failed_read_msg)
       else:
         # Retain only those elements of methylation_index_2 that are outside the overlap.
         # Choice of trimming methylation_index_1 or methylation_index_2 is arbitrary because if the XM-tags are identical in the overlap then there is no reason to choose read_1 over read_2 and vice versa.
         methylation_index_2 = [i for i in methylation_index_2 if i < start_ol_2 or i > end_ol_2]
-    elif overlap_check == "XM":
+    elif overlap_filter == "XM":
       if read_1.opt('XM')[start_ol_1:(end_ol_1 + 1)] != read_2.opt('XM')[start_ol_2:(end_ol_2 + 1)]:
         # Retain only those elements of methylation_index_1 and methylation_index_2 that are outside the overlap.
         methylation_index_1 = [i for i in methylation_index_1 if i < start_ol_1 or i > end_ol_1]
@@ -518,7 +518,7 @@ def process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, ov
         # Retain only those elements of methylation_index_2 that are outside the overlap.
         # Choice of trimming methylation_index_1 or methylation_index_2 is arbitrary because if the XM-tags are identical in the overlap then there is no reason to choose read_1 over read_2 and vice versa.
         methylation_index_2 = [i for i in methylation_index_2 if i < start_ol_2 or i > end_ol_2]
-    elif overlap_check == 'XM_ol':
+    elif overlap_filter == 'XM_ol':
       # Make every methylation call in the overlap a single copy by (1) only retaining those elements of methylation_index_2 that are outside the overlap and (2) only retaining those elements of methylation_index_1 where the XM-tag value agree for read_1 and read_2.
       methylation_index_2 = [i for i in methylation_index_2 if i < start_ol_2 or i > end_ol_2]
       # The check_XM_overlap function is necessary because using positions_2.index(positions_1[i]) will return a ValueError if the positions_1[i] can't be found in positions_2 and so I need an try-except to handle this.
@@ -528,7 +528,7 @@ def process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, ov
          except ValueError:
              return False
       methylation_index_1 = [i for i in methylation_index_1 if i < start_ol_1 or i > end_ol_1 or check_XM_overlap(i, read_1, read_2, positions_1, positions_2)]
-    elif overlap_check == "quality":
+    elif overlap_filter == "quality":
       # Compute the average base quality in the overlap. Can't simply compare sums because one read may have more bases in the overlapping region than the other (e.g. see above example when computing the overlap)
       bqual_1 = bytearray(read_1.qual[start_ol_1:(end_ol_1 + 1)])
       bqual_2 = bytearray(read_2.qual[start_ol_2:(end_ol_2 + 1)])
@@ -538,11 +538,11 @@ def process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, ov
       else:
         # Retain only those elements of methylation_index_1 that are outside the overlap.
         methylation_index_1 = [i for i in methylation_index_1 if i < start_ol_1 or i > end_ol_1]
-    elif overlap_check == "Bismark":
+    elif overlap_filter == "Bismark":
       #  Retain only those elements of methylation_index_2 that are outside the overlap; bismark_methylation_extractor --no_overlap always uses read_1 instead of read_2 when there is an overlap.
       methylation_index_2 = [i for i in methylation_index_2 if i < start_ol_2 or i > end_ol_2]
     else:
-      raise ValueError("process_overlap: 'overlap_check' must be one of 'sequence_strict', 'sequence', 'XM_strict', 'XM', 'XM_ol', 'quality' or 'Bismark'")
+      raise ValueError("process_overlap: 'overlap_filter' must be one of 'sequence_strict', 'sequence', 'XM_strict', 'XM', 'XM_ol', 'quality' or 'Bismark'")
   return methylation_index_1, methylation_index_2, fragment_skipped
 
 __all__ = [

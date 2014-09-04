@@ -284,20 +284,19 @@ Filtering of reads:
                         Ignore reads with a mapping quality score (mapQ) less
                         than <int> (default: 0)
   --of {sequence_strict,sequence,XM_strict,XM,XM_ol,quality,Bismark}, --overlap-filter {sequence_strict,sequence,XM_strict,XM,XM_ol,quality,Bismark}
-                        overlap_check: The type of check to be performed
-                        (listed roughly from most-to-least stringent): Ignore
-                        the read-pair if the sequence in the overlap differs
-                        between mates (sequence_strict); Ignore the
-                        overlapping region if the sequence in the overlap
-                        differs between mates (sequence); Ignore the read-pair
-                        if the XM-tag in the overlap differs (XM_strict);
-                        Ignore the overlapping region if the XM-tag in the
-                        overlap differs between mates (XM); Ignore any
-                        positions in the overlapping region where the XM-tags
-                        differ between the mates (XM_ol); Use the mate with
-                        the higher average quality basecalls in the
-                        overlapping region (quality); Use the first mate of
-                        each read-pair, i.e., the method used by
+                        The type of check to be performed (listed roughly from
+                        most-to-least stringent): Ignore the read-pair if the
+                        sequence in the overlap differs between mates
+                        (sequence_strict); Ignore the overlapping region if the
+                        sequence in the overlap differs between mates
+                        (sequence); Ignore the read-pair if the XM-tag in the
+                        overlap differs (XM_strict); Ignore the overlapping
+                        region if the XM-tag in the overlap differs between
+                        mates (XM); Ignore any positions in the overlapping
+                        region where the XM-tags differ between the mates
+                        (XM_ol); Use the mate with the higher average quality
+                        basecalls in the overlapping region (quality); Use the
+                        first mate of each read-pair, i.e., the method used by
                         bismark_methylation_extractor with the --no_overlap
                         flag (Bismark) (default: XM_ol)
   --uip, --use-improper-pairs

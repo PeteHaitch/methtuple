@@ -127,7 +127,7 @@ read_filtering.add_argument('--mmq', '--min-mapq',
 read_filtering.add_argument('--of', '--overlap-filter',
     choices = ['sequence_strict', 'sequence', 'XM_strict', 'XM', 'XM_ol', 'quality', 'Bismark'],
     default = 'XM_ol',
-    help = "overlap_check: The type of check to be performed (listed roughly from most-to-least stringent): Ignore the read-pair if the sequence in the overlap differs between mates (sequence_strict); Ignore the overlapping region if the sequence in the overlap differs between mates (sequence); Ignore the read-pair if the XM-tag in the overlap differs (XM_strict); Ignore the overlapping region if the XM-tag in the overlap differs between mates (XM); Ignore any positions in the overlapping region where the XM-tags differ between the mates (XM_ol); Use the mate with the higher average quality basecalls in the overlapping region (quality); Use the first mate of each read-pair, i.e., the method used by bismark_methylation_extractor with the --no_overlap flag (Bismark)")
+    help = "The type of check to be performed (listed roughly from most-to-least stringent): Ignore the read-pair if the sequence in the overlap differs between mates (sequence_strict); Ignore the overlapping region if the sequence in the overlap differs between mates (sequence); Ignore the read-pair if the XM-tag in the overlap differs (XM_strict); Ignore the overlapping region if the XM-tag in the overlap differs between mates (XM); Ignore any positions in the overlapping region where the XM-tags differ between the mates (XM_ol); Use the mate with the higher average quality basecalls in the overlapping region (quality); Use the first mate of each read-pair, i.e., the method used by bismark_methylation_extractor with the --no_overlap flag (Bismark)")
 read_filtering.add_argument('--uip', '--use-improper-pairs',
     action = 'store_true',
     default = False,
@@ -237,7 +237,7 @@ methylation_type = '/'.join(sorted(methylation_type))
 all_combinations = args.ac
 ignore_read_1_pos = make_ignores_list(args.ir1p)
 ignore_read_2_pos = make_ignores_list(args.ir2p)
-overlap_check = args.of
+overlap_filter = args.of
 min_qual = args.mbq
 min_mapq = args.mmq
 
@@ -317,19 +317,19 @@ else:
 print('Ignoring methylation calls with base-quality less than', min_qual)
 print('Ignoring reads with mapQ less than', min_mapq)
 
-if overlap_check == 'sequence_strict':
+if overlap_filter == 'sequence_strict':
     print('Ignoring paired-end reads that have overlapping mates if the overlapping sequences are not identical.\n')
-elif overlap_check == 'sequence':
+elif overlap_filter == 'sequence':
     print('Ignoring any overlapping portion of paired-end reads if the sequences in the overlap are not identical.\n')
-elif overlap_check == 'XM_strict':
+elif overlap_filter == 'XM_strict':
     print('Ignoring paired-end reads that have overlapping mates if the XM-tags in the overlap are not identical.\n')
-elif overlap_check == 'XM':
+elif overlap_filter == 'XM':
     print('Ignoring any overlapping portion of paired-end reads if the XM-tags in the overlap are not identical.\n')
-elif overlap_check == 'XM_ol':
+elif overlap_filter == 'XM_ol':
     print('Ignoring any overlapping positions of paired-end reads where the XM-tags disagree and counting once the remaining overlapping positions.\n')
-elif overlap_check == 'quality':
+elif overlap_filter == 'quality':
     print('Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only the mate with the higher quality scores in the overlapping region shall be used.\n')
-elif overlap_check == 'Bismark':
+elif overlap_filter == 'Bismark':
     print("Using all paired-end reads, even those that have overlapping mates. However, for the overlapping sequence, only read_1 shall be used (as done by bismark_methylation_extractor --no_overlap).\n")
 
 if not all_combinations:
@@ -439,7 +439,7 @@ for read in BAM:
           continue
         # Check that read_1 and read_2 have identical read-names. If not, exit because the file probably isn't sorted by queryname.
         if read_1.qname == read_2.qname:
-            methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, all_combinations, methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_check, n_fragment_skipped_due_to_bad_overlap, FAILED_QC)
+            methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, all_combinations, methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_filter, n_fragment_skipped_due_to_bad_overlap, FAILED_QC)
             # Update the n_methylation_loci_per_read dictionary
             if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
                 n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
@@ -513,8 +513,8 @@ print(''.join(['Number of DNA fragments skipped due to the read or its mate bein
 print(''.join(['Number of DNA fragments skipped due to the read-pair being improperly paired = ', str(n_fragment_skipped_due_to_improper_pair)]))
 print(''.join(['Number of DNA fragments skipped due to mates mapping to different chromosomes = ', str(n_fragment_skipped_due_to_diff_chr)]))
 print(''.join(['Number of DNA fragments skipped due to a complicated CIGAR in the read or its mate = ', str(n_fragment_skipped_due_to_complicated_cigar)]))
-if overlap_check == "sequence_strict" or overlap_check == "XM_strict":
-  print(''.join(['Number of DNA fragments skipped due to failing the --overlap-filter ', overlap_check, ' filter = ', str(n_fragment_skipped_due_to_bad_overlap)]))
+if overlap_filter == "sequence_strict" or overlap_filter == "XM_strict":
+  print(''.join(['Number of DNA fragments skipped due to failing the --overlap-filter ', overlap_filter, ' filter = ', str(n_fragment_skipped_due_to_bad_overlap)]))
 n_informative_fragments = 0
 for k, v in n_methylation_loci_per_read.items():
     if k >= m:
