@@ -35,8 +35,8 @@ Suppose we sequence a region of the genome containing five methylation loci with
 ref: 1    2   3 4 5
 A_1: |----->
 A_2:         <------|
-B_1:
-B_2: |----->   <----|
+B_1: |----->
+B_2: |         <----|
 C_1:    |----->
 C_2:      <------|
 ```
