@@ -24,18 +24,18 @@ class TestIgnoreCycles(unittest.TestCase):
 			'''build an example read_1 aligned to OT-strand.
 			'''
 
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_8"
-			read.seq = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
+			read = pysam.AlignedSegment()
+			read.query_name = "ADS-adipose_chr1_8"
+			read.query_sequence = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
 			read.flag = 99
-			read.tid = 0
-			read.pos = 450
-			read.mapq = 255
-			read.cigar = [(0,61)]
-			read.rnext = 1
-			read.pnext = 512
-			read.tlen = 121
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.reference_id = 0
+			read.reference_start= 450
+			read.mapping_quality = 255
+			read.cigartuples = [(0,61)]
+			read.next_reference_id = 1
+			read.next_reference_start = 512
+			read.template_length = 121
+			read.query_qualities = pysam.fromQualityString("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....")] + [("XR", "CT")]
 			return read
 
@@ -43,18 +43,18 @@ class TestIgnoreCycles(unittest.TestCase):
 			'''build an example read_2 aligned to OT-strand.
 			'''
 
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_8"
-			read.seq = "AGAATTGTGTTTCGTTTTTAGAGTATTATCGAAATTTGTGTAGAGGATAACGTAGCTTC"
+			read = pysam.AlignedSegment()
+			read.query_name = "ADS-adipose_chr1_8"
+			read.query_sequence = "AGAATTGTGTTTCGTTTTTAGAGTATTATCGAAATTTGTGTAGAGGATAACGTAGCTTC"
 			read.flag = 147
-			read.tid = 0
-			read.pos = 512
-			read.mapq = 255
-			read.cigar = [(0,59)]
-			read.rnext = 1
-			read.pnext = 450
-			read.tlen = -121
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.reference_id = 0
+			read.reference_start= 512
+			read.mapping_quality = 255
+			read.cigartuples = [(0,59)]
+			read.next_reference_id = 1
+			read.next_reference_start = 450
+			read.template_length = -121
+			read.query_qualities = pysam.fromQualityString("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "....x....h.xZ.hh..x......hh.xZ.....x....x......h..Z.x..H.xZ")] + [("XR", "GA")]
 			return read
 
@@ -62,18 +62,18 @@ class TestIgnoreCycles(unittest.TestCase):
 			'''build an example read_1 aligned to OB-strand
 			'''
 
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_22929891"
-			read.seq = "AACGCAACTCCGCCCTCGCGATACTCTCCGAATCTATACTAAAAAAAACGCAACTCCGCCGAC"
+			read = pysam.AlignedSegment()
+			read.query_name = "ADS-adipose_chr1_22929891"
+			read.query_sequence = "AACGCAACTCCGCCCTCGCGATACTCTCCGAATCTATACTAAAAAAAACGCAACTCCGCCGAC"
 			read.flag = 83
-			read.tid = 0
-			read.pos = 560
-			read.mapq = 255
-			read.cigar = [(0,63)]
-			read.rnext = 1
-			read.pnext = 492
-			read.tlen = -131
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.reference_id = 0
+			read.reference_start= 560
+			read.mapping_quality = 255
+			read.cigartuples = [(0,63)]
+			read.next_reference_id = 1
+			read.next_reference_start = 492
+			read.template_length = -131
+			read.query_qualities = pysam.fromQualityString("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.tags = read.tags + [("XG", "GA")] + [("XM", "...Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx.")] + [("XR", "CT")]
 			return read
 
@@ -81,18 +81,18 @@ class TestIgnoreCycles(unittest.TestCase):
 			'''build an example read_2 aligned to OB-strand.
 			'''
 
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_22929891"
-			read.seq = "CACCCGAATCTAACCTAAAAAAAACTATACTCCGCCTTCAAAATACCACCGAAATCTATACAAAAAA"
+			read = pysam.AlignedSegment()
+			read.query_name = "ADS-adipose_chr1_22929891"
+			read.query_sequence = "CACCCGAATCTAACCTAAAAAAAACTATACTCCGCCTTCAAAATACCACCGAAATCTATACAAAAAA"
 			read.flag = 163
-			read.tid = 0
-			read.pos = 492
-			read.mapq = 255
-			read.cigar = [(0,67)]
-			read.rnext = 1
-			read.pnext = 560
-			read.tlen = 131
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.reference_id = 0
+			read.reference_start= 492
+			read.mapping_quality = 255
+			read.cigartuples = [(0,67)]
+			read.next_reference_id = 1
+			read.next_reference_start = 560
+			read.template_length = 131
+			read.query_qualities = pysam.fromQualityString("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.tags = read.tags + [("XG", "GA")] + [("XM", ".z...Zxh...x....x.hh.h....x.h....Z......x.h.......Z......x.h..x.hh.")] + [("XR", "GA")]
 			return read
 
@@ -116,25 +116,25 @@ class TestIgnoreCycles(unittest.TestCase):
 	def test_n_off_by_one(self):
 		# Shouldn't change methylation indexes: Ignore from "start" of read
 		self.assertEqual(ignore_read_pos(self.otr_1, self.otm_1, [17]), [18, 20, 33, 38, 42, 46])
-		self.assertEqual(ignore_read_pos(self.otr_2, self.otm_2, [self.otr_2.qlen - 59 - 1]), [12, 29, 50, 58])
-		self.assertEqual(ignore_read_pos(self.obr_1, self.obm_1, [self.obr_1.qlen - 61 - 1]), [3, 11, 17, 19, 29, 49, 57, 60])
+		self.assertEqual(ignore_read_pos(self.otr_2, self.otm_2, [self.otr_2.query_alignment_length - 59 - 1]), [12, 29, 50, 58])
+		self.assertEqual(ignore_read_pos(self.obr_1, self.obm_1, [self.obr_1.query_alignment_length - 61 - 1]), [3, 11, 17, 19, 29, 49, 57, 60])
 		self.assertEqual(ignore_read_pos(self.obr_2, self.obm_2, [0]), [1, 5, 33, 50])
 		# Shouldn't change methylation indexes: Ignore from "end" of read
 		self.assertEqual(ignore_read_pos(self.otr_1, self.otm_1, [47]), [18, 20, 33, 38, 42, 46])
-		self.assertEqual(ignore_read_pos(self.otr_2, self.otm_2, [self.otr_2.qlen - 11 - 1]), [12, 29, 50, 58])
-		self.assertEqual(ignore_read_pos(self.obr_1, self.obm_1, [self.obr_1.qlen - 2 - 1]), [3, 11, 17, 19, 29, 49, 57, 60])
+		self.assertEqual(ignore_read_pos(self.otr_2, self.otm_2, [self.otr_2.query_alignment_length - 11 - 1]), [12, 29, 50, 58])
+		self.assertEqual(ignore_read_pos(self.obr_1, self.obm_1, [self.obr_1.query_alignment_length - 2 - 1]), [3, 11, 17, 19, 29, 49, 57, 60])
 		self.assertEqual(ignore_read_pos(self.obr_2, self.obm_2, [51]), [1, 5, 33, 50])
 
 	def test_ignore_one(self):
 		# Should remove one element from methylation indexes in accordance with the strand/orientation of the read
 		self.assertEqual(ignore_read_pos(self.otr_1, self.otm_1, [18]), [20, 33, 38, 42, 46])
-		self.assertEqual(ignore_read_pos(self.otr_2, self.otm_2, [self.otr_2.qlen - 58 - 1]), [12, 29, 50])
-		self.assertEqual(ignore_read_pos(self.obr_1, self.obm_1, [self.obr_1.qlen - 60 - 1]), [3, 11, 17, 19, 29, 49, 57])
+		self.assertEqual(ignore_read_pos(self.otr_2, self.otm_2, [self.otr_2.query_alignment_length - 58 - 1]), [12, 29, 50])
+		self.assertEqual(ignore_read_pos(self.obr_1, self.obm_1, [self.obr_1.query_alignment_length - 60 - 1]), [3, 11, 17, 19, 29, 49, 57])
 		self.assertEqual(ignore_read_pos(self.obr_2, self.obm_2, [1]), [5, 33, 50])
 		# Should remove one element from methylation indexes in accordance with the strand/orientation of the read
 		self.assertEqual(ignore_read_pos(self.otr_1, self.otm_1, [46]), [18, 20, 33, 38, 42])
-		self.assertEqual(ignore_read_pos(self.otr_2, self.otm_2, [self.otr_2.qlen - 12 - 1]), [29, 50, 58])
-		self.assertEqual(ignore_read_pos(self.obr_1, self.obm_1, [self.obr_1.qlen - 3 - 1]), [11, 17, 19, 29, 49, 57, 60])
+		self.assertEqual(ignore_read_pos(self.otr_2, self.otm_2, [self.otr_2.query_alignment_length - 12 - 1]), [29, 50, 58])
+		self.assertEqual(ignore_read_pos(self.obr_1, self.obm_1, [self.obr_1.query_alignment_length - 3 - 1]), [11, 17, 19, 29, 49, 57, 60])
 		self.assertEqual(ignore_read_pos(self.obr_2, self.obm_2, [50]), [1, 5, 33])
 
 	def test_ignore_all(self):
@@ -154,18 +154,18 @@ class TestIgnoreLowQualityBases(unittest.TestCase):
 			'''build an example read_1 aligned to OT-strand.
 			'''
 
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_8"
-			read.seq = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
+			read = pysam.AlignedSegment()
+			read.query_name = "ADS-adipose_chr1_8"
+			read.query_sequence = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
 			read.flag = 99
-			read.tid = 0
-			read.pos = 450
-			read.mapq = 255
-			read.cigar = [(0,61)]
-			read.rnext = 1
-			read.pnext = 512
-			read.tlen = 121
-			read.qual = "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" # Phred33 = 0
+			read.reference_id = 0
+			read.reference_start= 450
+			read.mapping_quality = 255
+			read.cigartuples = [(0,61)]
+			read.next_reference_id = 1
+			read.next_reference_start = 512
+			read.template_length = 121
+			read.query_qualities = pysam.fromQualityString("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!") # Phred33 = 0
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....")] + [("XR", "CT")]
 			return read
 
@@ -173,18 +173,18 @@ class TestIgnoreLowQualityBases(unittest.TestCase):
 			'''build an example read_1 aligned to OT-strand.
 			'''
 
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_8"
-			read.seq = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
+			read = pysam.AlignedSegment()
+			read.query_name = "ADS-adipose_chr1_8"
+			read.query_sequence = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
 			read.flag = 99
-			read.tid = 0
-			read.pos = 450
-			read.mapq = 255
-			read.cigar = [(0,61)]
-			read.rnext = 1
-			read.pnext = 512
-			read.tlen = 121
-			read.qual = "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" # Phred64 = 0
+			read.reference_id = 0
+			read.reference_start= 450
+			read.mapping_quality = 255
+			read.cigartuples = [(0,61)]
+			read.next_reference_id = 1
+			read.next_reference_start = 512
+			read.template_length = 121
+			read.query_qualities = pysam.fromQualityString("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@") # Phred64 = 0
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....")] + [("XR", "CT")]
 			return read
 
@@ -207,8 +207,8 @@ class TestIgnoreLowQualityBases(unittest.TestCase):
 
 	def test_some_fail_low_qual_filter(self):
 		# Should remove all but the first element of the methylation index
-		self.p33.qual = "!!!!!!!!!!!!!!!!!!#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" # Change one base to have Phred33 = 2
-		self.p64.qual = "@@@@@@@@@@@@@@@@@@B@#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" # Change one base to have Phred64 = 2
+		self.p33.query_qualities = pysam.fromQualityString("!!!!!!!!!!!!!!!!!!#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!") # Change one base to have Phred33 = 2
+		self.p64.query_qualities = pysam.fromQualityString("@@@@@@@@@@@@@@@@@@B@#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@") # Change one base to have Phred64 = 2
 		self.assertEqual(ignore_low_quality_bases(self.p33, self.p33m, 2, 33), [18])
 		self.assertEqual(ignore_low_quality_bases(self.p64, self.p64m, 2, 64), [18])
 
@@ -232,18 +232,18 @@ class TestFixOldBismark(unittest.TestCase):
 			'''build an example read_1 aligned to OT-strand.
 			'''
 
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_8"
-			read.seq = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
+			read = pysam.AlignedSegment()
+			read.query_name = "ADS-adipose_chr1_8"
+			read.query_sequence = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
 			read.flag = 99
-			read.tid = 0
-			read.pos = 450
-			read.mapq = 255
-			read.cigar = [(0,61)]
-			read.rnext = 1
-			read.pnext = 512
-			read.tlen = 121
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.reference_id = 0
+			read.reference_start= 450
+			read.mapping_quality = 255
+			read.cigartuples = [(0,61)]
+			read.next_reference_id = 1
+			read.next_reference_start = 512
+			read.template_length = 121
+			read.query_qualities = pysam.fromQualityString("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			#read.tags = read.tags + [("XG", "CT")] + [("XM", "..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....")] + [("XR", "CT")] # Not required for testing fix_old_bismark
 			return read
 
@@ -273,18 +273,18 @@ class TestGetPositions(unittest.TestCase):
 		def buildBasicRead(rl):
 			''' Build a basic read of length rl.
 			'''
-			read = pysam.AlignedRead()
-			read.qname = "test"
-			read.seq = "A" * rl
+			read = pysam.AlignedSegment()
+			read.query_name = "test"
+			read.query_sequence = "A" * rl
 			read.flag = 0
-			read.tid = 1
-			read.pos = 1
-			read.mapq = 255
-			read.cigar = [(0, rl)]
-			read.rnext = 0
-			read.pnext = 0
-			read.tlen = rl
-			read.qual = "B" * rl
+			read.reference_id = 1
+			read.reference_start= 1
+			read.mapping_quality = 255
+			read.cigartuples = [(0, rl)]
+			read.next_reference_id = 0
+			read.next_reference_start = 0
+			read.template_length = rl
+			read.query_qualities = pysam.fromQualityString("B" * rl)
 			return read
 
 		def addInsertionAndDeletion(read, rpi, rpd, li, ld, f):
@@ -292,23 +292,23 @@ class TestGetPositions(unittest.TestCase):
 			WARNING: The read is updated in-place!
 			'''
 
-			if (rpi < 1 and li > 0) or (rpd < 1 and ld > 0) or rpi > len(read.seq) or rpd > len(read.seq):
+			if (rpi < 1 and li > 0) or (rpd < 1 and ld > 0) or rpi > len(read.query_sequence) or rpd > len(read.query_sequence):
 				sys.exit("Can only add 'internal' indels.")
 
 			if li > 0 and ld > 0 and f == 'i':
-				nc = [(0, rpi - 1), (1, li), (0, rpd - rpi - li + 1), (2, ld), (0, read.qlen - rpd)]
+				nc = [(0, rpi - 1), (1, li), (0, rpd - rpi - li + 1), (2, ld), (0, read.query_alignment_length - rpd)]
 			elif li > 0 and ld > 0 and f == 'd':
-				nc = [(0, rpd - 1), (2, ld), (0, rpi - rpd), (1, li), (0, read.qlen - rpi - li + 1)]
+				nc = [(0, rpd - 1), (2, ld), (0, rpi - rpd), (1, li), (0, read.query_alignment_length - rpi - li + 1)]
 			elif ld > 0:
-				nc = [(0, rpd - 1), (2, ld), (0, read.qlen - rpd + 1)]
+				nc = [(0, rpd - 1), (2, ld), (0, read.query_alignment_length - rpd + 1)]
 			elif li > 0:
-				nc = [(0, rpi - 1), (1, li), (0, read.qlen - rpi - li + 1)]
+				nc = [(0, rpi - 1), (1, li), (0, read.query_alignment_length - rpi - li + 1)]
 			elif li == 0 and ld == 0:
-				nc = read.cigar
+				nc = read.cigartuples
 			else:
 				sys.exit("Incompatible parameter combination")
 
-			read.cigar = nc
+			read.cigartuples = nc
 			return read
 
 		def hardClipAndSoftClip(read, sh, eh, ss, es):
@@ -316,18 +316,18 @@ class TestGetPositions(unittest.TestCase):
 			WARNING: The read is updated in-place!
 			'''
 
-			if (sh + ss) > read.cigar[0][1] or (eh + es) > read.cigar[len(read.cigar) - 1][1]:
+			if (sh + ss) > read.cigartuples[0][1] or (eh + es) > read.cigartuples[len(read.cigartuples) - 1][1]:
 				sys.exit("Too much clipping; cannot clip across multiple CIGAR operations.")
-			if (sh + ss + eh + es) > read.qlen:
+			if (sh + ss + eh + es) > read.query_alignment_length:
 				sys.exit("Too much clipping; sum of clipping operations cannot exceed query length.")
 
-			q = read.qual
-			oc = read.cigar
-			read.seq = read.seq[sh:(len(read.seq) - eh)]
-			read.qual = q[sh:(len(q) - eh)]
+			q = read.query_qualities
+			oc = read.cigartuples
+			read.query_sequence = read.query_sequence[sh:(len(read.query_sequence) - eh)]
+			read.query_qualities = q[sh:(len(q) - eh)]
 
 			n = len(oc)
-			if read.cigar[0][0] != 0 or read.cigar[len(read.cigar) - 1][0] != 0 or len(read.cigar) == 2:
+			if read.cigartuples[0][0] != 0 or read.cigartuples[len(read.cigartuples) - 1][0] != 0 or len(read.cigartuples) == 2:
 				sys.exit("Can only clip reads with match operations as first and last CIGAR operations.")
 
 			nc = []
@@ -344,12 +344,12 @@ class TestGetPositions(unittest.TestCase):
 			if eh > 0:
 				nc = nc + [(5, eh)]
 
-			read.cigar = nc
-			read.pos = read.pos + ss + sh
+			read.cigartuples = nc
+			read.reference_start= read.reference_start+ ss + sh
 			return read
 
-	# Basically, what we test test is that the output of get_positions(read) is identical to the output of read.positions with two exceptions:
-	# (1) If the read contains an insertion, then compare against read.aligned_pairs, which returns None for inserted bases
+	# Basically, what we test test is that the output of get_positions(read) is identical to the output of read.get_reference_positions() with two exceptions:
+	# (1) If the read contains an insertion, then compare against read.get_aligned_pairs(), which returns None for inserted bases
 	# (2) If the read contains soft-clipped bases then need to trim those "start/end Nones" from get_positions(read).
 
 	# We test this by creating reads with a variety of indels (including no indels) and then soft-clipping and hard-clipping them in various combinations: (1) hc 2bp from start; (2) hc 1bp from end; (3) hc 2bp from start, 1bp from end; (4) sc 2bp from start; (5) sc 1bp from end; (6) sc 2bp from start, 1bp from end; (7) hc 1bp from start, hc 1bp from end, sc 1bp from start, sc 1bp from end.
@@ -543,18 +543,18 @@ class TestDoesReadContainComplicatedCigar(unittest.TestCase):
 		def buildRead1():
 			'''build an example read_1 aligned to OT-strand.
 			'''
-			read = pysam.AlignedRead()
-			read.qname = "tr"
-			read.seq = "TTTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTG"
+			read = pysam.AlignedSegment()
+			read.query_name = "tr"
+			read.query_sequence = "TTTTTATTATTAAAGATAGTAGTGTTTTAAGTTTAGTGTTAGAGGTATTTGTTTGTAGTCGAAGTATTTTGTTAAAGTTAGGAGGGTTTAATAAGGTTTG"
 			read.flag = 99
-			read.tid = 0
-			read.pos = 853
-			read.mapq = 255
-			read.cigar = [(0,100)]
-			read.rnext = 0
-			read.pnext = 854
-			read.tlen = 100
-			read.qual = "BBCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@"
+			read.reference_id = 0
+			read.reference_start= 853
+			read.mapping_quality = 255
+			read.cigartuples = [(0,100)]
+			read.next_reference_id = 0
+			read.next_reference_start = 854
+			read.template_length = 100
+			read.query_qualities = pysam.fromQualityString("BBCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@")
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "hh..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z.")] + [("XR", "CT")]
 			return read
 
@@ -565,35 +565,35 @@ class TestDoesReadContainComplicatedCigar(unittest.TestCase):
 		self.assertFalse(does_read_contain_complicated_cigar(self.read_1))
 
 	def test_insertion(self):
-		self.read_1.cigar = [(0, 50), (1, 50)]
+		self.read_1.cigartuples = [(0, 50), (1, 50)]
 		self.assertFalse(does_read_contain_complicated_cigar(self.read_1))
 
 	def test_deletion(self):
-		self.read_1.cigar = [(0, 50), (2, 50)]
+		self.read_1.cigartuples = [(0, 50), (2, 50)]
 		self.assertFalse(does_read_contain_complicated_cigar(self.read_1))
 
 	def test_ref_skip(self):
-		self.read_1.cigar = [(0, 50), (3, 50)]
+		self.read_1.cigartuples = [(0, 50), (3, 50)]
 		self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
 
 	def test_soft_clip(self):
-		self.read_1.cigar = [(0, 50), (4, 50)]
+		self.read_1.cigartuples = [(0, 50), (4, 50)]
 		self.assertFalse(does_read_contain_complicated_cigar(self.read_1))
 
 	def test_hard_clip(self):
-		self.read_1.cigar = [(0, 50), (5, 50)]
+		self.read_1.cigartuples = [(0, 50), (5, 50)]
 		self.assertFalse(does_read_contain_complicated_cigar(self.read_1))
 
 	def test_pad(self):
-		self.read_1.cigar = [(0, 50), (6, 50)]
+		self.read_1.cigartuples = [(0, 50), (6, 50)]
 		self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
 
 	def test_equal(self):
-		self.read_1.cigar = [(0, 50), (7, 50)]
+		self.read_1.cigartuples = [(0, 50), (7, 50)]
 		self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
 
 	def test_diff(self):
-		self.read_1.cigar = [(0, 50), (8, 50)]
+		self.read_1.cigartuples = [(0, 50), (8, 50)]
 		self.assertTrue(does_read_contain_complicated_cigar(self.read_1))
 
 class TestProcessOverlap(unittest.TestCase):
@@ -605,248 +605,248 @@ class TestProcessOverlap(unittest.TestCase):
 		def buildNoOverlapRead():
 			'''build an example read-pair with methylation calls but no overlap.
 			'''
-			read_1 = pysam.AlignedRead()
-			read_1.qname = "SRR400564.3818005_HAL:1133:C010EABXX:8:2102:8721:119200_length=101"
-			read_1.seq = "TATGGGTTTGGTTTGTAGGGATTTTGTTATAAAGGTGAAATTTAGGAGAGTGTGGAGTTTAGAGTGTTGTTAGGATTTAGGTATAGGTATTAGTGTTCGTT"
+			read_1 = pysam.AlignedSegment()
+			read_1.query_name = "SRR400564.3818005_HAL:1133:C010EABXX:8:2102:8721:119200_length=101"
+			read_1.query_sequence = "TATGGGTTTGGTTTGTAGGGATTTTGTTATAAAGGTGAAATTTAGGAGAGTGTGGAGTTTAGAGTGTTGTTAGGATTTAGGTATAGGTATTAGTGTTCGTT"
 			read_1.flag = 99
-			read_1.tid = 0
-			read_1.pos = 13546
-			read_1.mapq = 30
-			read_1.cigar = [(0, 101)]
-			read_1.rnext = 0
-			read_1.pnext = 13766
-			read_1.tlen = 321
-			read_1.qual = "11=BA2242323<EFGGHJJFHHIJIHIHIIJJJI?FHIIJIJIJJHIHHFHGHIDHCFHHICFCEHHIHHEHHA;?D@BCAAA>>CACADBCC#######"
+			read_1.reference_id = 0
+			read_1.reference_start= 13546
+			read_1.mapping_quality = 30
+			read_1.cigartuples = [(0, 101)]
+			read_1.next_reference_id = 0
+			read_1.next_reference_start = 13766
+			read_1.template_length = 321
+			read_1.query_qualities = pysam.fromQualityString("11=BA2242323<EFGGHJJFHHIJIHIHIIJJJI?FHIIJIJIJJHIHHFHGHIDHCFHHICFCEHHIHHEHHA;?D@BCAAA>>CACADBCC#######")
 			read_1.tags = read_1.tags + [('NM', 24), ('MD', '0C5C0C4C2C6C0C2C2C10C0C0C15C0C9C0C4C0C0C3C1C3C7C0C4'), ('XM', 'h.....hx....x..x......hx..h..h..........hhx...............hx.........hx....hhx...h.x...h.......hxZ...'), ('XR', 'CT'), ('XG', 'CT')]
-			read_2 = pysam.AlignedRead()
-			read_2.qname = "SRR400564.3818005_HAL:1133:C010EABXX:8:2102:8721:119200_length=101"
-			read_2.seq = "TTTTTTATTGGGTTTTTGTAGGAGGTTGTTATTTGTTTTGTTTATTTTTTTAGAAGCGAGACGGAGTAGATTTATTTGTTATTGTTTTTTTTATAATAATT"
+			read_2 = pysam.AlignedSegment()
+			read_2.query_name = "SRR400564.3818005_HAL:1133:C010EABXX:8:2102:8721:119200_length=101"
+			read_2.query_sequence = "TTTTTTATTGGGTTTTTGTAGGAGGTTGTTATTTGTTTTGTTTATTTTTTTAGAAGCGAGACGGAGTAGATTTATTTGTTATTGTTTTTTTTATAATAATT"
 			read_2.flag = 147
-			read_2.tid = 0
-			read_2.pos = 13766
-			read_2.mapq = 30
-			read_2.cigar = [(0, 101)]
-			read_2.rnext = 0
-			read_2.pnext = 13546
-			read_2.tlen = -321
-			read_2.qual = "DDDDDDDDDDBDDDDDDDDDDCCDDDDDDC@9,,,,,,..C>6.,-.JJGIJJJJJJJJJJIHHHD?20001001JJJJJJJJJJJJJHHHHHFFFFFCCC"
+			read_2.reference_id = 0
+			read_2.reference_start= 13766
+			read_2.mapping_quality = 30
+			read_2.cigartuples = [(0, 101)]
+			read_2.next_reference_id = 0
+			read_2.next_reference_start = 13546
+			read_2.template_length = -321
+			read_2.query_qualities = pysam.fromQualityString("DDDDDDDDDDBDDDDDDDDDDCCDDDDDDC@9,,,,,,..C>6.,-.JJGIJJJJJJJJJJIHHHD?20001001JJJJJJJJJJJJJHHHHHFFFFFCCC")
 			read_2.tags = read_2.tags + [('NM', 31), ('MD', '0C2C1C1C4C0C1C2C6C2C0C6C0C2C0C0C1C0C2C17C3C0C0C2C2C2C2C0C0C3C8C1'), ('XM', 'h..h.h.x....hh.x..x......x..hh......hx..hhh.hh..h.......Z....Z....x...hhh..x..h..x..hhh...h........h.'), ('XR', 'GA'), ('XG', 'CT')]
 			return read_1, read_2
 
 			def buildIdenticalSeqOverlap():
 				'''build an example read-pair with meth calls in overlap and identical sequence in overlap.
 				'''
-				read_1 = pysam.AlignedRead()
-				read_1.qname = "SRR400564.5201451_HAL:1133:C010EABXX:8:2108:13902:150428_length=101"
-				read_1.seq = "ATAGATGTGAAGTTGAGGTTGAAGGAGATTGATGTGGTTTTTTTTTAGTTTTTTTGTGTGGTATTAGGTGGTAGTAGAGGTTAGTAAGGTAAATTTGAGTT"
+				read_1 = pysam.AlignedSegment()
+				read_1.query_name = "SRR400564.5201451_HAL:1133:C010EABXX:8:2108:13902:150428_length=101"
+				read_1.query_sequence = "ATAGATGTGAAGTTGAGGTTGAAGGAGATTGATGTGGTTTTTTTTTAGTTTTTTTGTGTGGTATTAGGTGGTAGTAGAGGTTAGTAAGGTAAATTTGAGTT"
 				read_1.flag = 99
-				read_1.tid = 0
-				read_1.pos = 521475
-				read_1.mapq = 11
-				read_1.cigar = [(0, 101)]
-				read_1.rnext = 0
-				read_1.pnext = 521538
-				read_1.tlen = 164
-				read_1.qual = "@BCFDFFDHFFHHIJGGIHIJJJHIFGCFHIEHHEGHFHIJJJJJJIIJJIIHFDD>A5=@;ACEAC>>AB=ACC>A(+2:<AA>DCCDA@C:@A>CCBDE"
+				read_1.reference_id = 0
+				read_1.reference_start= 521475
+				read_1.mapping_quality = 11
+				read_1.cigartuples = [(0, 101)]
+				read_1.next_reference_id = 0
+				read_1.next_reference_start = 521538
+				read_1.template_length = 164
+				read_1.query_qualities = pysam.fromQualityString("@BCFDFFDHFFHHIJGGIHIJJJHIFGCFHIEHHEGHFHIJJJJJJIIJJIIHFDD>A5=@;ACEAC>>AB=ACC>A(+2:<AA>DCCDA@C:@A>CCBDE")
 				read_1.tags = read_1.tags + [('NM', 24), ('MD', '1C10C5C9C11C1C0C1C5C1C4C2C1C0C6C2C6C2C4C3C0C0C3C0C0'), ('XM', '.x..........x.....x.........x...........h.hh.x.....h.x....z..h.hx......x..x......x..h....h...hxz...hx'), ('XR', 'CT'), ('XG', 'CT')]
-				read_2 = pysam.AlignedRead()
-				read_2.qname = "SRR400564.5201451_HAL:1133:C010EABXX:8:2108:13902:150428_length=101"
-				read_2.seq = "TTAGGTGGTAGTAGAGGTTAGTAAGGTAAATTTGAGTTTGGGGATGTGGGGTGGGGGTAGTTATATTTTTTTTTGAGTTATAGTAGATTTATTTTGTTTTG"
+				read_2 = pysam.AlignedSegment()
+				read_2.query_name = "SRR400564.5201451_HAL:1133:C010EABXX:8:2108:13902:150428_length=101"
+				read_2.query_sequence = "TTAGGTGGTAGTAGAGGTTAGTAAGGTAAATTTGAGTTTGGGGATGTGGGGTGGGGGTAGTTATATTTTTTTTTGAGTTATAGTAGATTTATTTTGTTTTG"
 				read_2.flag = 147
-				read_2.tid = 0
-				read_2.pos = 521538
-				read_2.mapq = 11
-				read_2.cigar = [(0, 101)]
-				read_2.rnext = 0
-				read_2.pnext = 521475
-				read_2.tlen = -164
-				read_2.qual = "@CDDDDDDDCCCCDD@CCACCDDDDEDDDDDDDCDDDDDDDEEEDDFFHHEJJIHIJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJHHHHHFFFFFCCC"
+				read_2.reference_id = 0
+				read_2.reference_start= 521538
+				read_2.mapping_quality = 11
+				read_2.cigartuples = [(0, 101)]
+				read_2.next_reference_id = 0
+				read_2.next_reference_start = 521475
+				read_2.template_length = -164
+				read_2.query_qualities = pysam.fromQualityString("@CDDDDDDDCCCCDD@CCACCDDDDEDDDDDDDCDDDDDDDEEEDDFFHHEJJIHIJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJHHHHHFFFFFCCC")
 				read_2.tags = read_2.tags + [('NM', 29), ('MD', '0C0C6C2C6C2C4C3C0C0C3C0C0C7C10C2C2C0G1C0C1C1C5C2C2C5C1C1C4C2'), ('XM', 'hx......x..x......x..h....h...hxz...hxz.......z..........x..h..z..hh.h.h.....h..x..x.....h.h.x....x..'), ('XR', 'GA'), ('XG', 'CT')]
 				return read_1, read_2
 
 			def buildIdenticalXMDifferentSeqOverlap():
 				'''build an example read-pair with meth calls in overlap and identical XM but different sequence in overlap.
 				'''
-				read_1 = pysam.AlignedRead()
-				read_1.qname = "SRR400564.71_HAL:1133:C010EABXX:8:1101:1825:2253_length=101"
-				read_1.seq = "CCCCCACTAAACGCATAACCTCTATACCTAAACTCACACCTAAAAAACAACGTCTCTCCTCTCNCTACACAATACTACGAAATTACTATTACAAANNATAA"
+				read_1 = pysam.AlignedSegment()
+				read_1.query_name = "SRR400564.71_HAL:1133:C010EABXX:8:1101:1825:2253_length=101"
+				read_1.query_sequence = "CCCCCACTAAACGCATAACCTCTATACCTAAACTCACACCTAAAAAACAACGTCTCTCCTCTCNCTACACAATACTACGAAATTACTATTACAAANNATAA"
 				read_1.flag = 83
-				read_1.tid = 9
-				read_1.pos = 91057649
-				read_1.mapq = 24
-				read_1.cigar = [(0, 101)]
-				read_1.rnext = 9
-				read_1.pnext = 91057589
-				read_1.tlen = -161
-				read_1.qual = "66<<;<:9:<<<==<=<??>=>==>??>=>?>?=?????;>???????????<???=??<?<1#>>?>?:@@>?@?@@@@@???@?>@??@?@<2##@<<<"
+				read_1.reference_id = 9
+				read_1.reference_start= 91057649
+				read_1.mapping_quality = 24
+				read_1.cigartuples = [(0, 101)]
+				read_1.next_reference_id = 9
+				read_1.next_reference_start = 91057589
+				read_1.template_length = -161
+				read_1.query_qualities = pysam.fromQualityString("66<<;<:9:<<<==<=<??>=>==>??>=>?>?=?????;>???????????<???=??<?<1#>>?>?:@@>?@?@@@@@???@?>@??@?@<2##@<<<")
 				read_1.tags = read_1.tags + [('NM', 23), ('MD', '8G0G6G0G5G1G4G0G12G4G13T2G4G1G2G2G0G0G2G8G1G0A2G1'), ('XM', '........xh..Z...hh.....x.h....hh............h....x.Z..............x....x.h..x.Zxhh..h........x.....h.'), ('XR', 'CT'), ('XG', 'GA')]
-				read_2 = pysam.AlignedRead()
-				read_2.qname = "SRR400564.71_HAL:1133:C010EABXX:8:1101:1825:2253_length=101"
-				read_2.seq = "NAAAAGCTAAAACAAAAAAACNAAATNNNNGCCTATCTAATACTATAAATAATAACTNNNCNCCCACTAAACGCATAACCTCTATACCTAAACTNNCACCT"
+				read_2 = pysam.AlignedSegment()
+				read_2.query_name = "SRR400564.71_HAL:1133:C010EABXX:8:1101:1825:2253_length=101"
+				read_2.query_sequence = "NAAAAGCTAAAACAAAAAAACNAAATNNNNGCCTATCTAATACTATAAATAATAACTNNNCNCCCACTAAACGCATAACCTCTATACCTAAACTNNCACCT"
 				read_2.flag = 163
-				read_2.tid = 9
-				read_2.pos = 91057589
-				read_2.mapq = 24
-				read_2.cigar = [(0, 101)]
-				read_2.rnext = 9
-				read_2.pnext = 91057649
-				read_2.tlen = 161
-				read_2.qual = "#1=DFFFFHGHHHJJIJJJJJ#1?FH####00?FHIJJIJJJJJJJJJJJHJJJJJI###-#,,?BDEEEDCDDDDBDDDDDDDDEDDDDDDDD##++8??"
+				read_2.reference_id = 9
+				read_2.reference_start= 91057589
+				read_2.mapping_quality = 24
+				read_2.cigartuples = [(0, 101)]
+				read_2.next_reference_id = 9
+				read_2.next_reference_start = 91057649
+				read_2.template_length = 161
+				read_2.query_qualities = pysam.fromQualityString("#1=DFFFFHGHHHJJIJJJJJ#1?FH####00?FHIJJIJJJJJJJJJJJHJJJJJI###-#,,?BDEEEDCDDDDBDDDDDDDDEDDDDDDDD##++8??")
 				read_2.tags = read_2.tags + [('NM', 41), ('MD', '0C1G1G3G0G0G0G2G0G0G2G1C1G2G0G0C0C4G3G0G1G2G1G1G1G0G1G3G0C0A1C6G0G6G0G5G1G4G0G2C0A5'), ('XM', '..x.hH..xhhh..xhh..h...x......Z...x...xh.h..x.h.h.hh.h..............xh..Z...hh.....x.h....hh.........'), ('XR', 'GA'), ('XG', 'GA')]
 				return read_1, read_2
 
 			def buildSmallXMDifferenceOverlap():
 				'''build an example read-pair with meth calls in overlap but slightly different XM-tags in overlap.
 				'''
-				read_1 = pysam.AlignedRead()
-				read_1.qname = "SRR400564.9511_HAL:1133:C010EABXX:8:1101:20403:11881_length=101"
-				read_1.seq = "ATAATTTTTACATCTTTTATAAAAAAAATAATCTCGAAAAACTAAAATTACAAACGACTACCACCACGCCCGACTAATTTTTACATTTTTAATAAAAACGA"
+				read_1 = pysam.AlignedSegment()
+				read_1.query_name = "SRR400564.9511_HAL:1133:C010EABXX:8:1101:20403:11881_length=101"
+				read_1.query_sequence = "ATAATTTTTACATCTTTTATAAAAAAAATAATCTCGAAAAACTAAAATTACAAACGACTACCACCACGCCCGACTAATTTTTACATTTTTAATAAAAACGA"
 				read_1.flag = 83
-				read_1.tid = 8
-				read_1.pos = 131548740
-				read_1.mapq = 40
-				read_1.cigar = [(0, 101)]
-				read_1.rnext = 8
-				read_1.pnext = 131548707
-				read_1.tlen = -134
-				read_1.qual = "##################@?@B@@@;;((>1551=6=;)..);7;;=7.(;@5-')))=@168?:@AAFC2FA3HCCEH@AC<<EEIIFFFHDDDA44111"
+				read_1.reference_id = 8
+				read_1.reference_start= 131548740
+				read_1.mapping_quality = 40
+				read_1.cigartuples = [(0, 101)]
+				read_1.next_reference_id = 8
+				read_1.next_reference_start = 131548707
+				read_1.template_length = -134
+				read_1.query_qualities = pysam.fromQualityString("##################@?@B@@@;;((>1551=6=;)..);7;;=7.(;@5-')))=@168?:@AAFC2FA3HCCEH@AC<<EEIIFFFHDDDA44111")
 				read_1.tags = read_1.tags + [('NM', 22), ('MD', '0C17G4G2G0G9G0G1G2G0G0G6G0G2C2G12G9G7G0G2G1G3G0'), ('XM', '..................h....h..hh.......Z.hh.h..xhh......xh.Z...x.......Z...Zx.........h.......hh..h.h..Zx'), ('XR', 'CT'), ('XG', 'GA')]
-				read_2 = pysam.AlignedRead()
-				read_2.qname = "SRR400564.9511_HAL:1133:C010EABXX:8:1101:20403:11881_length=101"
-				read_2.seq = "ACAAACGTAAACCACCACGCCCGACCTACTCAACTAATTTTTACATCTTTTATAAAAAAAATAATCTCGAAAAACTAAAATTACAAACGCCTACCACCACA"
+				read_2 = pysam.AlignedSegment()
+				read_2.query_name = "SRR400564.9511_HAL:1133:C010EABXX:8:1101:20403:11881_length=101"
+				read_2.query_sequence = "ACAAACGTAAACCACCACGCCCGACCTACTCAACTAATTTTTACATCTTTTATAAAAAAAATAATCTCGAAAAACTAAAATTACAAACGCCTACCACCACA"
 				read_2.flag = 163
-				read_2.tid = 8
-				read_2.pos = 131548707
-				read_2.mapq = 40
-				read_2.cigar = [(0, 101)]
-				read_2.rnext = 8
-				read_2.pnext = 131548740
-				read_2.tlen = 134
-				read_2.qual = "@B@FFFFDFHHHHJJJJJGJJJIIJJIJJJJJJJJIJJJJJJIJJJJJIHCFIGHIGIHFDDDDEDCDDDDDDDDDDDDDDCCCCCDA>>@?>?AACBA<2"
+				read_2.reference_id = 8
+				read_2.reference_start= 131548707
+				read_2.mapping_quality = 40
+				read_2.cigartuples = [(0, 101)]
+				read_2.next_reference_id = 8
+				read_2.next_reference_start = 131548740
+				read_2.template_length = 134
+				read_2.query_qualities = pysam.fromQualityString("@B@FFFFDFHHHHJJJJJGJJJIIJJIJJJJJJJJIJJJJJJIJJJJJIHCFIGHIGIHFDDDDEDCDDDDDDDDDDDDDDCCCCCDA>>@?>?AACBA<2")
 				read_2.tags = read_2.tags + [('NM', 19), ('MD', '3G0G3G1G12G27G4G2G0G9G0G1G2G0G0G6G0G5G7G0'), ('XM', '...xh.Z.h.h.......Z...Zx...........................h....h..hh.......Z.hh.h..xhh......xh.Z...x.......z'), ('XR', 'GA'), ('XG', 'GA')]
 				return read_1, read_2
 
 			def buildLargeXMDifferenceOverlap():
 				'''build an example read-pair with meth calls in overlap but very different XM-tags in overlap.
 				'''
-				read_1 = pysam.AlignedRead()
-				read_1.qname = "SRR400564.671_HAL:1133:C010EABXX:8:1101:10776:2987_length=101"
-				read_1.seq = "TTGGTTTGTGTGGGAGGATTTTGTTATGGTAAGTAAGAGAGAGGTCGCGTGTGCGTGTGCGTGTGTAGGTGTTTTTGTGTGTGGAAGTAGTGTGGATTATT"
+				read_1 = pysam.AlignedSegment()
+				read_1.query_name = "SRR400564.671_HAL:1133:C010EABXX:8:1101:10776:2987_length=101"
+				read_1.query_sequence = "TTGGTTTGTGTGGGAGGATTTTGTTATGGTAAGTAAGAGAGAGGTCGCGTGTGCGTGTGCGTGTGTAGGTGTTTTTGTGTGTGGAAGTAGTGTGGATTATT"
 				read_1.flag = 99
-				read_1.tid = 8
-				read_1.pos = 37918311
-				read_1.mapq = 23
-				read_1.cigar = [(0, 101)]
-				read_1.rnext = 8
-				read_1.pnext = 37918347
-				read_1.tlen = 136
-				read_1.qual = "=@?=ABDAACFDFHGGHFGIIJJJJIIIIDGGGFHGGDGHGGGHBFHIIFHGHHHEBBDC<AA;?A@CC:@A@CDBBBCCBAB@>:>44>>?:@B3>A###"
+				read_1.reference_id = 8
+				read_1.reference_start= 37918311
+				read_1.mapping_quality = 23
+				read_1.cigartuples = [(0, 101)]
+				read_1.next_reference_id = 8
+				read_1.next_reference_start = 37918347
+				read_1.template_length = 136
+				read_1.query_qualities = pysam.fromQualityString("=@?=ABDAACFDFHGGHFGIIJJJJIIIIDGGGFHGGDGHGGGHBFHIIFHGHHHEBBDC<AA;?A@CC:@A@CDBBBCCBAB@>:>44>>?:@B3>A###")
 				read_1.tags = read_1.tags + [('NM', 14), ('MD', '0C3C0C12C0C0C2C5C3C39C13C8C0C1C1'), ('XM', 'x...hx............hhx..h.....h...h...........Z.Z.....Z.....Z.............h.............x........hh.x.'), ('XR', 'CT'), ('XG', 'CT')]
-				read_2 = pysam.AlignedRead()
-				read_2.qname = "SRR400564.671_HAL:1133:C010EABXX:8:1101:10776:2987_length=101"
-				read_2.seq = "GAGGAGAGGGTGTGTGTGTGTGTGTGTGTGTAGGTGTTTTTGTGTGTGGAAGTAGTGTGGATTATTGAGGGTTGTGTGTGTGTGTGTGTGTGTGTGTAGGT"
+				read_2 = pysam.AlignedSegment()
+				read_2.query_name = "SRR400564.671_HAL:1133:C010EABXX:8:1101:10776:2987_length=101"
+				read_2.query_sequence = "GAGGAGAGGGTGTGTGTGTGTGTGTGTGTGTAGGTGTTTTTGTGTGTGGAAGTAGTGTGGATTATTGAGGGTTGTGTGTGTGTGTGTGTGTGTGTGTAGGT"
 				read_2.flag = 147
-				read_2.tid = 8
-				read_2.pos = 37918347
-				read_2.mapq = 23
-				read_2.cigar = [(0, 4), (1, 1), (0, 96)]
-				read_2.rnext = 8
-				read_2.pnext = 37918311
-				read_2.tlen = -136
-				read_2.qual = "###########@8DDDDB?DDDB@8DDDDC>;?B?BDADDFFFHHHHC@@@GDGHGHGGAGFFEHAAEIHGDEGIIGJJJJJJJJJJJHHGHHFFFFFCCC"
+				read_2.reference_id = 8
+				read_2.reference_start= 37918347
+				read_2.mapping_quality = 23
+				read_2.cigartuples = [(0, 4), (1, 1), (0, 96)]
+				read_2.next_reference_id = 8
+				read_2.next_reference_start = 37918311
+				read_2.template_length = -136
+				read_2.query_qualities = pysam.fromQualityString("###########@8DDDDB?DDDB@8DDDDC>;?B?BDADDFFFHHHHC@@@GDGHGHGGAGFFEHAAEIHGDEGIIGJJJJJJJJJJJHHGHHFFFFFCCC")
 				read_2.tags = read_2.tags + [('NM', 13), ('MD', '3A4T0C1C5C5C13C13C8C0C1C6C29'), ('XM', '..........z.z.....z.....z.............h.............x........hh.x......x.............................'), ('XR', 'GA'), ('XG', 'CT')]
 				return read_1, read_2
 
 			def buildInsertionOutsideOfOverlap():
 				'''build an example read-pair with meth calls in overlap and an insertion outside of the overlap in both reads. Note the sequence is identical in the overlap.
 				'''
-				read_1 = pysam.AlignedRead()
-				read_1.qname = "SRR400564.41106_HAL:1133:C010EABXX:8:1101:16059:44833_length=101"
-				read_1.seq = "AAAAAACTCAACAAAACACCAACAACTCACAAAACAATACATTTTCTTAACTTTCTAACAATACAAAATCATTGTTCAATAAAATTTACATATACACCTTA"
+				read_1 = pysam.AlignedSegment()
+				read_1.query_name = "SRR400564.41106_HAL:1133:C010EABXX:8:1101:16059:44833_length=101"
+				read_1.query_sequence = "AAAAAACTCAACAAAACACCAACAACTCACAAAACAATACATTTTCTTAACTTTCTAACAATACAAAATCATTGTTCAATAAAATTTACATATACACCTTA"
 				read_1.flag = 83
-				read_1.tid = 13
-				read_1.pos = 65347555
-				read_1.mapq = 0
-				read_1.cigar = [(0, 62), (1, 1), (0, 38)]
-				read_1.rnext = 13
-				read_1.pnext = 65347514
-				read_1.tlen = -141
-				read_1.qual = "DDDECCA@AFDBFFHFEDHGHHGFF@@GHGIIIIIIGIGGIIHIGGIIIHIIIIIIIIIIHHF?IIHHBAIIIIIIIIIIIIIIIIIHHHFHHDAA1D@??"
+				read_1.reference_id = 13
+				read_1.reference_start= 65347555
+				read_1.mapping_quality = 0
+				read_1.cigartuples = [(0, 62), (1, 1), (0, 38)]
+				read_1.next_reference_id = 13
+				read_1.next_reference_start = 65347514
+				read_1.template_length = -141
+				read_1.query_qualities = pysam.fromQualityString("DDDECCA@AFDBFFHFEDHGHHGFF@@GHGIIIIIIGIGGIIHIGGIIIHIIIIIIIIIIHHF?IIHHBAIIIIIIIIIIIIIIIIIHHHFHHDAA1D@??")
 				read_1.tags = read_1.tags + [('NM', 24), ('MD', '0G1G8T1G6G0G2G2T0G3G0G2G11G10G5G0G10G3G0G5G1G3G4G0'), ('XM', 'h.h..........h......zx..x...h...hh..x...........h..........z......hh.....H....x...hh.....z.h...z....h'), ('XR', 'CT'), ('XG', 'GA')]
-				read_2 = pysam.AlignedRead()
-				read_2.qname = "SRR400564.41106_HAL:1133:C010EABXX:8:1101:16059:44833_length=101"
-				read_2.seq = "AACCAATAATACCAAAAAAACATCTCCAAATTACCCCCAAAAAAAAAACTCAACAAAACACCAACAACTCACAAAACAATACATTTTCTTAACTTTCTAAC"
+				read_2 = pysam.AlignedSegment()
+				read_2.query_name = "SRR400564.41106_HAL:1133:C010EABXX:8:1101:16059:44833_length=101"
+				read_2.query_sequence = "AACCAATAATACCAAAAAAACATCTCCAAATTACCCCCAAAAAAAAAACTCAACAAAACACCAACAACTCACAAAACAATACATTTTCTTAACTTTCTAAC"
 				read_2.flag = 163
-				read_2.tid = 13
-				read_2.pos = 65347514
-				read_2.mapq = 0
-				read_2.cigar = [(0, 38), (1, 1), (0, 62)]
-				read_2.rnext = 13
-				read_2.pnext = 65347555
-				read_2.tlen = 141
-				read_2.qual = "CCCFFFFFHHHHHJJJIJJJJJJJJJJIJJJJJJJJJJJJJJJJJHFDDC@CDCDDDDABABDD@BDBDCC?CDDDBDDCCCDEEEE@CDCE@CCCCDDE>"
+				read_2.reference_id = 13
+				read_2.reference_start= 65347514
+				read_2.mapping_quality = 0
+				read_2.cigartuples = [(0, 38), (1, 1), (0, 62)]
+				read_2.next_reference_id = 13
+				read_2.next_reference_start = 65347555
+				read_2.template_length = 141
+				read_2.query_qualities = pysam.fromQualityString("CCCFFFFFHHHHHJJJIJJJJJJJJJJIJJJJJJJJJJJJJJJJJHFDDC@CDCDDDDABABDD@BDBDCC?CDDDBDDCCCDEEEE@CDCE@CCCCDDE>")
 				read_2.tags = read_2.tags + [('NM', 25), ('MD', '4G2G0G1G7G0G7G1G2G5G0G1G1G8T1G6G0G2G2T0G3G0G2G11G10'), ('XM', '....z..hh.h.......hh.......z.h..h......xh.h.h..........h......zx..x...h...hh..x...........h..........'), ('XR', 'GA'), ('XG', 'GA')]
 				return read_1, read_2
 
 			def buildIndelicious():
 				'''build an example read-pair with meth calls in overlap, where an insertion means that seq (and XM) aren't identical between reads but they are at positions in common.
 				'''
-				read_1 = pysam.AlignedRead()
-				read_1.qname = "SRR400564.5403_HAL:1133:C010EABXX:8:1101:1870:7806_length=101"
-				read_1.seq = "AAACATATTCTTAATCTTCATAATTCCCTCATCCTCCCTAAAATCAAATCCGAATCAACCACCTTCGATATATTCCAACAAAAACCTCTCCCTCTACCCTA"
+				read_1 = pysam.AlignedSegment()
+				read_1.query_name = "SRR400564.5403_HAL:1133:C010EABXX:8:1101:1870:7806_length=101"
+				read_1.query_sequence = "AAACATATTCTTAATCTTCATAATTCCCTCATCCTCCCTAAAATCAAATCCGAATCAACCACCTTCGATATATTCCAACAAAAACCTCTCCCTCTACCCTA"
 				read_1.flag = 83
-				read_1.tid = 4
-				read_1.pos = 3090709
-				read_1.mapq = 3
-				read_1.cigar = [(0, 101)]
-				read_1.rnext = 4
-				read_1.pnext = 3090675
-				read_1.tlen = -135
-				read_1.qual = "ADDCC@C@CCCCCCAAACCC@CA??BCC@CA;A=;6?>AHHHEADGHHCJJJIHCGIHFB?IIGGGIIGHDHHGJIJIJJIIHGIHFHDFFDFA=2AD@=="
+				read_1.reference_id = 4
+				read_1.reference_start= 3090709
+				read_1.mapping_quality = 3
+				read_1.cigartuples = [(0, 101)]
+				read_1.next_reference_id = 4
+				read_1.next_reference_start = 3090675
+				read_1.template_length = -135
+				read_1.query_qualities = pysam.fromQualityString("ADDCC@C@CCCCCCAAACCC@CA??BCC@CA;A=;6?>AHHHEADGHHCJJJIHCGIHFB?IIGGGIIGHDHHGJIJIJJIIHGIHFHDFFDFA=2AD@==")
 				read_1.tags = read_1.tags + [('NM', 16), ('MD', '0C5G6G7G17G0G0G10G4G9G1G1G5G2G0G18G0'), ('XM', '......h......h.......h.................xhh.........Zx....x........Zx.h.h.....x..xh..................x'), ('XR', 'CT'), ('XG', 'GA')]
-				read_2 = pysam.AlignedRead()
-				read_2.qname = "SRR400564.5403_HAL:1133:C010EABXX:8:1101:1870:7806_length=101"
-				read_2.seq = "CTTCCGATATTATCTAAAAAAATCTCTCACATACCAACTAAACATATTCTTAATCTTCATAATTCCCTCATCCTCCCTAAAATCAAATCCGAATCAACCAC"
+				read_2 = pysam.AlignedSegment()
+				read_2.query_name = "SRR400564.5403_HAL:1133:C010EABXX:8:1101:1870:7806_length=101"
+				read_2.query_sequence = "CTTCCGATATTATCTAAAAAAATCTCTCACATACCAACTAAACATATTCTTAATCTTCATAATTCCCTCATCCTCCCTAAAATCAAATCCGAATCAACCAC"
 				read_2.flag = 163
-				read_2.tid = 4
-				read_2.pos = 3090675
-				read_2.mapq = 3
-				read_2.cigar = [(0, 35), (1, 5), (0, 61)]
-				read_2.rnext = 4
-				read_2.pnext = 3090709
-				read_2.tlen = 135
-				read_2.qual = "CCCFFFFFHHHGHIJIJJIJJJJJJJJJJJJJIJJJIJJIIIJJJJJJHJFHIJHIJJIJIDHH?CHHHFFFFFFEDEEDCDEDDDDDDCDDDDBCDDABD"
+				read_2.reference_id = 4
+				read_2.reference_start= 3090675
+				read_2.mapping_quality = 3
+				read_2.cigartuples = [(0, 35), (1, 5), (0, 61)]
+				read_2.next_reference_id = 4
+				read_2.next_reference_start = 3090709
+				read_2.template_length = 135
+				read_2.query_qualities = pysam.fromQualityString("CCCFFFFFHHHGHIJIJJIJJJJJJJJJJJJJIJJJIJJIIIJJJJJJHJFHIJHIJJIJIDHH?CHHHFFFFFFEDEEDCDEDDDDDDCDDDDBCDDABD")
 				read_2.tags = read_2.tags + [('NM', 21), ('MD', '6G1G2G3G0G0G2G11G7G6G7G17G0G0G10G4G4'), ('XM', '.....Zx.h..h...xhh..h...........h............h......h.......h.................xhh.........Zx....x....'), ('XR', 'GA'), ('XG', 'GA')]
 				return read_1, read_2
 
 			def buildDelAtEndOfOverlap():
 				'''build an example read-pair with meth calls in overlap, where a deletion at the end of the overlap coincides with a CpG, which means the overlap is particularly difficult to calculate.
 				'''
-				read_1 = pysam.AlignedRead()
-				read_1.qname = "SRR400564.2497275_HAL:1133:C010EABXX:8:1204:20661:123404_length=101"
-				read_1.seq = "CATCAACACCACCCATCTAAAACCCAAAAAAAAAAACTTTCCCTCTATCCCCCAACCTTTAAACTATCACCAAACAAACCATTCATTCATCAAATACTTTT"
+				read_1 = pysam.AlignedSegment()
+				read_1.query_name = "SRR400564.2497275_HAL:1133:C010EABXX:8:1204:20661:123404_length=101"
+				read_1.query_sequence = "CATCAACACCACCCATCTAAAACCCAAAAAAAAAAACTTTCCCTCTATCCCCCAACCTTTAAACTATCACCAAACAAACCATTCATTCATCAAATACTTTT"
 				read_1.flag = 83
-				read_1.tid = 7
-				read_1.pos = 12294957
-				read_1.mapq = 7
-				read_1.cigar = [(0, 25), (2, 1), (0, 76)]
-				read_1.rnext = 7
-				read_1.pnext = 12294882
-				read_1.tlen = -177
-				read_1.qual = "###########?@::43<DB??<5-@DDDDDFFED@FFFDHIIEGIGFJJJJIIFIIIJIIIFF??@F?JJIHHGJJJJJIJJIJIJJHGHHHDB=4FCBB"
+				read_1.reference_id = 7
+				read_1.reference_start= 12294957
+				read_1.mapping_quality = 7
+				read_1.cigartuples = [(0, 25), (2, 1), (0, 76)]
+				read_1.next_reference_id = 7
+				read_1.next_reference_start = 12294882
+				read_1.template_length = -177
+				read_1.query_qualities = pysam.fromQualityString("###########?@::43<DB??<5-@DDDDDFFED@FFFDHIIEGIGFJJJJIIFIIIJIIIFF??@F?JJIHHGJJJJJIJJIJIJJHGHHHDB=4FCBB")
 				read_1.tags = read_1.tags + [('NM', 21), ('MD', '5G1G6G3G0G0G0G3^G3G0G1G0G0G1G10G7G5G0G3G11G6G16'), ('XM', '.....x.z......z...xhhh......hh.hhh.h..........x.......x.....hh...x...........h......z................'), ('XR', 'CT'), ('XG', 'GA')]
-				read_2 = pysam.AlignedRead()
-				read_2.qname = "SRR400564.2497275_HAL:1133:C010EABXX:8:1204:20661:123404_length=101"
-				read_2.seq = "TTCAAAAAAATCTTTTCAACAAAAACCTTACAAATACATACTTCAATCCTAAAAACCTTATCCTAACCTCCTCTCCATCAACACCACCCATCTAAAACCCA"
+				read_2 = pysam.AlignedSegment()
+				read_2.query_name = "SRR400564.2497275_HAL:1133:C010EABXX:8:1204:20661:123404_length=101"
+				read_2.query_sequence = "TTCAAAAAAATCTTTTCAACAAAAACCTTACAAATACATACTTCAATCCTAAAAACCTTATCCTAACCTCCTCTCCATCAACACCACCCATCTAAAACCCA"
 				read_2.flag = 163
-				read_2.tid = 7
-				read_2.pos = 12294882
-				read_2.mapq = 7
-				read_2.cigar = [(0, 101)]
-				read_2.rnext = 7
-				read_2.pnext = 12294957
-				read_2.tlen = 177
-				read_2.qual = "BBCFFFFFHGHFHJJJJJJJIJIJJJIJIHGHGHGHJIIJJJJJIIIJJJCGIIJIGHIIJJIHHHHGHFFFFEEEEEEDDDDDDBDDDDDDDDDDDDDD?"
+				read_2.reference_id = 7
+				read_2.reference_start= 12294882
+				read_2.mapping_quality = 7
+				read_2.cigartuples = [(0, 101)]
+				read_2.next_reference_id = 7
+				read_2.next_reference_start = 12294957
+				read_2.template_length = 177
+				read_2.query_qualities = pysam.fromQualityString("BBCFFFFFHGHFHJJJJJJJIJIJJJIJIHGHGHGHJIIJJJJJIIIJJJCGIIJIGHIIJJIHHHHGHFFFFEEEEEEDDDDDDBDDDDDDDDDDDDDD?")
 				read_2.tags = read_2.tags + [('NM', 29), ('MD', '4G0G2G0G8G2G0G0G0G6G0G0G1G3G4G0G4G0G1G0G10G14G1G6G3G0G0G0G3G0'), ('XM', '....xh..hh........x..xhhh......zxh.h...h....zx....xh.hh..........h..............x.z......z...xhhh...z'), ('XR', 'GA'), ('XG', 'GA')]
 				return read_1, read_2
 
@@ -943,45 +943,45 @@ class TestProcessOverlap(unittest.TestCase):
 
 		def test_quality_overlap_filter(self):
 			# Fudge quality scores to test overlap_filter = 'quality'.
-			self.nor_1.qual = 'G' * len(self.nor_1.seq)
-			self.nor_2.qual = 'F' * len(self.nor_2.seq)
+			self.nor_1.query_qualities = pysam.fromQualityString('G' * len(self.nor_1.query_sequence))
+			self.nor_2.query_qualities = pysam.fromQualityString('F' * len(self.nor_2.query_sequence))
 			self.assertEqual(process_overlap(self.nor_1, self.nor_2, self.nor_mi_1, self.nor_mi_2, overlap_filter, self.FAILED_QC), ([97], [56, 61], 0))
-			self.nor_1.qual = 'E' * len(self.nor_1.seq)
+			self.nor_1.query_qualities = pysam.fromQualityString('E' * len(self.nor_1.query_sequence))
 			self.assertEqual(process_overlap(self.nor_1, self.nor_2, self.nor_mi_1, self.nor_mi_2, overlap_filter, self.FAILED_QC), ([97], [56, 61], 0))
-			self.iso_1.qual = 'G' * len(self.iso_1.seq)
-			self.iso_2.qual = 'F' * len(self.iso_2.seq)
+			self.iso_1.query_qualities = pysam.fromQualityString('G' * len(self.iso_1.query_sequence))
+			self.iso_2.query_qualities = pysam.fromQualityString('F' * len(self.iso_2.query_sequence))
 			self.assertEqual(process_overlap(self.iso_1, self.iso_2, self.iso_mi_1, self.iso_mi_2, overlap_filter, self.FAILED_QC), ([58, 95], [38, 46, 63], 0))
-			self.iso_1.qual = 'E' * len(self.iso_1.seq)
+			self.iso_1.query_qualities = pysam.fromQualityString('E' * len(self.iso_1.query_sequence))
 			self.assertEqual(process_overlap(self.iso_1, self.iso_2, self.iso_mi_1, self.iso_mi_2, overlap_filter, self.FAILED_QC), ([58], [32, 38, 46, 63], 0))
-			self.ixmdso_1.qual = 'G' * len(self.ixmdso_1.seq)
-			self.ixmdso_2.qual = 'F' * len(self.ixmdso_2.seq)
+			self.ixmdso_1.query_qualities = pysam.fromQualityString('G' * len(self.ixmdso_1.query_sequence))
+			self.ixmdso_2.query_qualities = pysam.fromQualityString('F' * len(self.ixmdso_2.query_sequence))
 			self.assertEqual(process_overlap(self.ixmdso_1, self.ixmdso_2, self.ixmdso_mi_1, self.ixmdso_mi_2, overlap_filter, self.FAILED_QC), ([12, 51, 78], [72], 0))
-			self.ixmdso_1.qual = 'E' * len(self.ixmdso_1.seq)
+			self.ixmdso_1.query_qualities = pysam.fromQualityString('E' * len(self.ixmdso_1.query_sequence))
 			self.assertEqual(process_overlap(self.ixmdso_1, self.ixmdso_2, self.ixmdso_mi_1, self.ixmdso_mi_2, overlap_filter, self.FAILED_QC), ([51, 78], [30, 72], 0))
-			self.sxmdo_1.qual = 'G' * len(self.sxmdo_1.seq)
-			self.sxmdo_2.qual = 'F' * len(self.sxmdo_2.seq)
+			self.sxmdo_1.query_qualities = pysam.fromQualityString('G' * len(self.sxmdo_1.query_sequence))
+			self.sxmdo_2.query_qualities = pysam.fromQualityString('F' * len(self.sxmdo_2.query_sequence))
 			self.assertEqual(process_overlap(self.sxmdo_1, self.sxmdo_2, self.sxmdo_mi_1, self.sxmdo_mi_2, overlap_filter, self.FAILED_QC), ([35, 55, 67, 71, 99], [6, 18, 22], 0))
-			self.sxmdo_1.qual = 'E' * len(self.sxmdo_1.seq)
+			self.sxmdo_1.query_qualities = pysam.fromQualityString('E' * len(self.sxmdo_1.query_sequence))
 			self.assertEqual(process_overlap(self.sxmdo_1, self.sxmdo_2, self.sxmdo_mi_1, self.sxmdo_mi_2, overlap_filter, self.FAILED_QC), ([71, 99], [6, 18, 22, 68, 88, 100], 0))
-			self.lxmdo_1.qual = 'G' * len(self.lxmdo_1.seq)
-			self.lxmdo_2.qual = 'F' * len(self.lxmdo_2.seq)
+			self.lxmdo_1.query_qualities = pysam.fromQualityString('G' * len(self.lxmdo_1.query_sequence))
+			self.lxmdo_2.query_qualities = pysam.fromQualityString('F' * len(self.lxmdo_2.query_sequence))
 			self.assertEqual(process_overlap(self.lxmdo_1, self.lxmdo_2, self.lxmdo_mi_1, self.lxmdo_mi_2, overlap_filter, self.FAILED_QC), ([45, 47, 53, 59], [], 0))
-			self.lxmdo_1.qual = 'E' * len(self.lxmdo_1.seq)
+			self.lxmdo_1.query_qualities = pysam.fromQualityString('E' * len(self.lxmdo_1.query_sequence))
 			self.assertEqual(process_overlap(self.lxmdo_1, self.lxmdo_2, self.lxmdo_mi_1, self.lxmdo_mi_2, overlap_filter, self.FAILED_QC), ([], [10, 12, 18, 24], 0))
-			self.iooo_1.qual = 'G' * len(self.iooo_1.seq)
-			self.iooo_2.qual = 'F' * len(self.iooo_2.seq)
+			self.iooo_1.query_qualities = pysam.fromQualityString('G' * len(self.iooo_1.query_sequence))
+			self.iooo_2.query_qualities = pysam.fromQualityString('F' * len(self.iooo_2.query_sequence))
 			self.assertEqual(process_overlap(self.iooo_1, self.iooo_2, self.iooo_mi_1, self.iooo_mi_2, overlap_filter, self.FAILED_QC), ([20, 59, 89, 95], [4, 27], 0))
-			self.iooo_1.qual = 'E' * len(self.iooo_1.seq)
+			self.iooo_1.query_qualities = pysam.fromQualityString('E' * len(self.iooo_1.query_sequence))
 			self.assertEqual(process_overlap(self.iooo_1, self.iooo_2, self.iooo_mi_1, self.iooo_mi_2, overlap_filter, self.FAILED_QC), ([59, 89, 95], [4, 27, 62], 0))
-			self.i_1.qual = 'G' * len(self.i_1.seq)
-			self.i_2.qual = 'F' * len(self.i_2.seq)
+			self.i_1.query_qualities = pysam.fromQualityString('G' * len(self.i_1.query_sequence))
+			self.i_2.query_qualities = pysam.fromQualityString('F' * len(self.i_2.query_sequence))
 			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.iooo_mi_2, overlap_filter, self.FAILED_QC), ([51, 66], [5], 0))
-			self.i_1.qual = 'E' * len(self.i_1.seq)
+			self.i_1.query_qualities = pysam.fromQualityString('E' * len(self.i_1.query_sequence))
 			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.i_mi_2, overlap_filter, self.FAILED_QC), ([66], [5, 90], 0))
-			self.daeoo_1.qual = 'G' * len(self.daeoo_1.seq)
-			self.daeoo_2.qual = 'F' * len(self.daeoo_2.seq)
+			self.daeoo_1.query_qualities = pysam.fromQualityString('G' * len(self.daeoo_1.query_sequence))
+			self.daeoo_2.query_qualities = pysam.fromQualityString('F' * len(self.daeoo_2.query_sequence))
 			self.assertEqual(process_overlap(self.daeoo_1, self.daeoo_2, self.daeoo_mi_1, self.daeoo_mi_2, overlap_filter, self.FAILED_QC), ([7, 14, 84], [31, 44], 0))
-			self.daeoo_1.qual = 'E' * len(self.daeoo_1.seq)
+			self.daeoo_1.query_qualities = pysam.fromQualityString('E' * len(self.daeoo_1.query_sequence))
 			self.assertEqual(process_overlap(self.daeoo_1, self.daeoo_2, self.daeoo_mi_1, self.daeoo_mi_2, overlap_filter, self.FAILED_QC), ([84], [31, 44, 82, 89], 0))
 
 		def test_Bismark_overlap_filter(self):
@@ -1007,36 +1007,36 @@ class TestExtractAndUpdateMethylationIndexFromSingleEndRead(unittest.TestCase):
 		def buildOTRead():
 			'''build an example read aligned to OT-strand.
 			'''
-			read = pysam.AlignedRead()
-			read.qname = "@SALK_2077_FC6295TAAXX:2:107:9396:15019#0/1"
-			read.seq = "GGGGAAGGTGTTATGGAGTTTTTTACGATTTTTAGTCGTTTTCGTTTTTTTTTGTTTGTGGTTGTTGCGGTGGCGGTAGAGGAGGG"
+			read = pysam.AlignedSegment()
+			read.query_name = "@SALK_2077_FC6295TAAXX:2:107:9396:15019#0/1"
+			read.query_sequence = "GGGGAAGGTGTTATGGAGTTTTTTACGATTTTTAGTCGTTTTCGTTTTTTTTTGTTTGTGGTTGTTGCGGTGGCGGTAGAGGAGGG"
 			read.flag = 0
-			read.tid = 0
-			read.pos = 4536
-			read.mapq = 255
-			read.cigar = [(0,86)]
-			read.rnext = 0
-			read.pnext = 0
-			read.tlen = 0
-			read.qual = "DBDB2;@>)@@F?EFG@GBGGGGDDBG@DGGGGEEFHHEGHHHHEFHHHHFHHHFHHHGHGBCEAA@?@?/A@>@3,.6,AA,@>="
+			read.reference_id = 0
+			read.reference_start= 4536
+			read.mapping_quality = 255
+			read.cigartuples = [(0,86)]
+			read.next_reference_id = 0
+			read.next_reference_start = 0
+			read.template_length = 0
+			read.query_qualities = pysam.fromQualityString("DBDB2;@>)@@F?EFG@GBGGGGDDBG@DGGGGEEFHHEGHHHHEFHHHHFHHHFHHHGHGBCEAA@?@?/A@>@3,.6,AA,@>=")
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "...........h......hhhhh..Z....hhx...Z..hh.Z..hh.hh.x..hx.....x..x..Z.....Z..x.........")] + [("XR", "CT")]
 			return read
 
 		def buildOBRead():
 			'''build an example read aligned to OB-strand.
 			'''
-			read = pysam.AlignedRead()
-			read.qname = "@ECKER_1116_FC623CNAAXX:2:21:18515:1127#0/1"
-			read.seq = "CTTCCTAACAAACAACTACACCACTACCTAACGCTATACCCTTCCTTTACTCTACCCACTAAAAACAATATTTATCATAAACCT"
+			read = pysam.AlignedSegment()
+			read.query_name = "@ECKER_1116_FC623CNAAXX:2:21:18515:1127#0/1"
+			read.query_sequence = "CTTCCTAACAAACAACTACACCACTACCTAACGCTATACCCTTCCTTTACTCTACCCACTAAAAACAATATTTATCATAAACCT"
 			read.flag = 16
-			read.tid = 0
-			read.pos = 3334
-			read.mapq = 255
-			read.cigar = [(0,84)]
-			read.rnext = 0
-			read.pnext = 0
-			read.tlen = 0
-			read.qual = "G7@G@BGB@GGGGGDIEEBIBA<AHEGEEEGGGDDEDFFEIIHIIGGDGGGGGGGGGGDGDBED<FAAFEGGGGGIHIFIGBDG"
+			read.reference_id = 0
+			read.reference_start = 3334
+			read.mapping_quality = 255
+			read.cigartuples = [(0,84)]
+			read.next_reference_id = 0
+			read.next_reference_start = 0
+			read.template_length = 0
+			read.query_qualities = pysam.fromQualityString("G7@G@BGB@GGGGGDIEEBIBA<AHEGEEEGGGDDEDFFEIIHIIGGDGGGGGGGGGGDGDBED<FAAFEGGGGGIHIFIGBDG")
 			read.tags = read.tags + [("XG", "GA")] + [("XM", "......x...xh..x..x.......x...xh.Z..x.h..........h....x...z..xh.h..zx.h...h....hhh...")] + [("XR", "CT")]
 			return read
 
@@ -1045,7 +1045,7 @@ class TestExtractAndUpdateMethylationIndexFromSingleEndRead(unittest.TestCase):
 			'''
 			header = { 'HD': {'VN': '1.0'}, 'SQ': [{'LN': 10000, 'SN': 'chr1'}, {'LN': 20000, 'SN': 'chr2'}] }
 			tempfile_path = tempfile.mkstemp()[1]
-			BAM = pysam.Samfile(tempfile_path, "wb", header = header)
+			BAM = pysam.AlignmentFile(tempfile_path, "wb", header = header)
 			return BAM
 
 		# Create the reads, BAM file and methylation m-tuples
@@ -1056,7 +1056,7 @@ class TestExtractAndUpdateMethylationIndexFromSingleEndRead(unittest.TestCase):
 		self.BAM.write(self.obr)
 		self.filename = self.BAM.filename
 		self.BAM.close()
-		self.BAM = pysam.Samfile(self.filename, 'rb')
+		self.BAM = pysam.AlignmentFile(self.filename, 'rb')
 		self.m1ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', all_combinations = False, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
 		self.m1otac, self.nmlifotac = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', all_combinations = True, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
 		self.m2ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, BAM = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2,  methylation_type = 'CG', all_combinations = False, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
@@ -1140,18 +1140,18 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 			'''build an example read_1 aligned to OT-strand.
 			'''
 
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_8"
-			read.seq = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
+			read = pysam.AlignedSegment()
+			read.query_name = "ADS-adipose_chr1_8"
+			read.query_sequence = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
 			read.flag = 99
-			read.tid = 0
-			read.pos = 450
-			read.mapq = 255
-			read.cigar = [(0,61)]
-			read.rnext = 1
-			read.pnext = 512
-			read.tlen = 121
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.reference_id = 0
+			read.reference_start= 450
+			read.mapping_quality = 255
+			read.cigartuples = [(0,61)]
+			read.next_reference_id = 1
+			read.next_reference_start = 512
+			read.template_length = 121
+			read.query_qualities = pysam.fromQualityString("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....")] + [("XR", "CT")]
 			return read
 
@@ -1159,18 +1159,18 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 			'''build an example read_2 aligned to OT-strand.
 			'''
 
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_8"
-			read.seq = "AGAATTGTGTTTCGTTTTTAGAGTATTATCGAAATTTGTGTAGAGGATAACGTAGCTTC"
+			read = pysam.AlignedSegment()
+			read.query_name = "ADS-adipose_chr1_8"
+			read.query_sequence = "AGAATTGTGTTTCGTTTTTAGAGTATTATCGAAATTTGTGTAGAGGATAACGTAGCTTC"
 			read.flag = 147
-			read.tid = 0
-			read.pos = 512
-			read.mapq = 255
-			read.cigar = [(0,59)]
-			read.rnext = 1
-			read.pnext = 450
-			read.tlen = -121
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.reference_id = 0
+			read.reference_start= 512
+			read.mapping_quality = 255
+			read.cigartuples = [(0,59)]
+			read.next_reference_id = 1
+			read.next_reference_start = 450
+			read.template_length = -121
+			read.query_qualities = pysam.fromQualityString("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "....x....h.xZ.hh..x......hh.xZ.....x....x......h..Z.x..H.xZ")] + [("XR", "GA")]
 			return read
 
@@ -1178,18 +1178,18 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 			'''build an example read_1 aligned to OB-strand
 			'''
 
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_22929891"
-			read.seq = "AACGCAACTCCGCCCTCGCGATACTCTCCGAATCTATACTAAAAAAAACGCAACTCCGCCGAC"
+			read = pysam.AlignedSegment()
+			read.query_name = "ADS-adipose_chr1_22929891"
+			read.query_sequence = "AACGCAACTCCGCCCTCGCGATACTCTCCGAATCTATACTAAAAAAAACGCAACTCCGCCGAC"
 			read.flag = 83
-			read.tid = 0
-			read.pos = 560
-			read.mapq = 255
-			read.cigar = [(0,63)]
-			read.rnext = 1
-			read.pnext = 492
-			read.tlen = -131
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.reference_id = 0
+			read.reference_start= 560
+			read.mapping_quality = 255
+			read.cigartuples = [(0,63)]
+			read.next_reference_id = 1
+			read.next_reference_start = 492
+			read.template_length = -131
+			read.query_qualities = pysam.fromQualityString("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.tags = read.tags + [("XG", "GA")] + [("XM", "...Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx.")] + [("XR", "CT")]
 			return read
 
@@ -1197,18 +1197,18 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 			'''build an example read_2 aligned to OB-strand.
 			'''
 
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_22929891"
-			read.seq = "CACCCGAATCTAACCTAAAAAAAACTATACTCCGCCTTCAAAATACCACCGAAATCTATACAAAAAA"
+			read = pysam.AlignedSegment()
+			read.query_name = "ADS-adipose_chr1_22929891"
+			read.query_sequence = "CACCCGAATCTAACCTAAAAAAAACTATACTCCGCCTTCAAAATACCACCGAAATCTATACAAAAAA"
 			read.flag = 163
-			read.tid = 0
-			read.pos = 492
-			read.mapq = 255
-			read.cigar = [(0,67)]
-			read.rnext = 1
-			read.pnext = 560
-			read.tlen = 131
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.reference_id = 0
+			read.reference_start= 492
+			read.mapping_quality = 255
+			read.cigartuples = [(0,67)]
+			read.next_reference_id = 1
+			read.next_reference_start = 560
+			read.template_length = 131
+			read.query_qualities = pysam.fromQualityString("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.tags = read.tags + [("XG", "GA")] + [("XM", ".z...Zxh...x....x.hh.h....x.h....Z......x.h.......Z......x.h..x.hh.")] + [("XR", "GA")]
 			return read
 
@@ -1218,7 +1218,7 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 
 			header = { 'HD': {'VN': '1.0'}, 'SQ': [{'LN': 10000, 'SN': 'chr1'}, {'LN': 20000, 'SN': 'chr2'}] }
 			tempfile_path = tempfile.mkstemp()[1]
-			BAM = pysam.Samfile(tempfile_path, "wb", header = header)
+			BAM = pysam.AlignmentFile(tempfile_path, "wb", header = header)
 			return BAM
 
 		# Create the reads, BAM file and methylation m-tuples
@@ -1233,7 +1233,7 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 		self.BAM.write(self.obr_2)
 		self.filename = self.BAM.filename
 		self.BAM.close()
-		self.BAM = pysam.Samfile(self.filename, 'rb')
+		self.BAM = pysam.AlignmentFile(self.filename, 'rb')
 		self.FAILED_QC = open(tempfile.mkstemp()[1], 'w')
 		self.m1ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', all_combinations = False, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_filter = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
 		self.m1otac, self.nmlifotac, self.nfsdtboca = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, BAM = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', all_combinations = True, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_filter = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
@@ -1388,108 +1388,108 @@ class TestMTuple(unittest.TestCase):
 		def buildOTRead():
 			'''build an example read aligned to OT-strand.
 			'''
-			read = pysam.AlignedRead()
-			read.qname = "@SALK_2077_FC6295TAAXX:2:107:9396:15019#0/1"
-			read.seq = "GGGGAAGGTGTTATGGAGTTTTTTACGATTTTTAGTCGTTTTCGTTTTTTTTTGTTTGTGGTTGTTGCGGTGGCGGTAGAGGAGGG"
+			read = pysam.AlignedSegment()
+			read.query_name = "@SALK_2077_FC6295TAAXX:2:107:9396:15019#0/1"
+			read.query_sequence = "GGGGAAGGTGTTATGGAGTTTTTTACGATTTTTAGTCGTTTTCGTTTTTTTTTGTTTGTGGTTGTTGCGGTGGCGGTAGAGGAGGG"
 			read.flag = 0
-			read.tid = 0
-			read.pos = 4536
-			read.mapq = 255
-			read.cigar = [(0,86)]
-			read.rnext = 0
-			read.pnext = 0
-			read.tlen = 0
-			read.qual = "DBDB2;@>)@@F?EFG@GBGGGGDDBG@DGGGGEEFHHEGHHHHEFHHHHFHHHFHHHGHGBCEAA@?@?/A@>@3,.6,AA,@>="
+			read.reference_id = 0
+			read.reference_start= 4536
+			read.mapping_quality = 255
+			read.cigartuples = [(0,86)]
+			read.next_reference_id = 0
+			read.next_reference_start = 0
+			read.template_length = 0
+			read.query_qualities = pysam.fromQualityString("DBDB2;@>)@@F?EFG@GBGGGGDDBG@DGGGGEEFHHEGHHHHEFHHHHFHHHFHHHGHGBCEAA@?@?/A@>@3,.6,AA,@>=")
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "...........h......hhhhh..Z....hhx...Z..hh.Z..hh.hh.x..hx.....x..x..Z.....Z..x.........")] + [("XR", "CT")]
 			return read
 
 		def buildOBRead():
 			'''build an example read aligned to OB-strand.
 			'''
-			read = pysam.AlignedRead()
-			read.qname = "@ECKER_1116_FC623CNAAXX:2:21:18515:1127#0/1"
-			read.seq = "CTTCCTAACAAACAACTACACCACTACCTAACGCTATACCCTTCCTTTACTCTACCCACTAAAAACAATATTTATCATAAACCT"
+			read = pysam.AlignedSegment()
+			read.query_name = "@ECKER_1116_FC623CNAAXX:2:21:18515:1127#0/1"
+			read.query_sequence = "CTTCCTAACAAACAACTACACCACTACCTAACGCTATACCCTTCCTTTACTCTACCCACTAAAAACAATATTTATCATAAACCT"
 			read.flag = 16
-			read.tid = 0
-			read.pos = 3334
-			read.mapq = 255
-			read.cigar = [(0,84)]
-			read.rnext = 0
-			read.pnext = 0
-			read.tlen = 0
-			read.qual = "G7@G@BGB@GGGGGDIEEBIBA<AHEGEEEGGGDDEDFFEIIHIIGGDGGGGGGGGGGDGDBED<FAAFEGGGGGIHIFIGBDG"
+			read.reference_id = 0
+			read.reference_start= 3334
+			read.mapping_quality = 255
+			read.cigartuples = [(0,84)]
+			read.next_reference_id = 0
+			read.next_reference_start = 0
+			read.template_length = 0
+			read.query_qualities = pysam.fromQualityString("G7@G@BGB@GGGGGDIEEBIBA<AHEGEEEGGGDDEDFFEIIHIIGGDGGGGGGGGGGDGDBED<FAAFEGGGGGIHIFIGBDG")
 			read.tags = read.tags + [("XG", "GA")] + [("XM", "......x...xh..x..x.......x...xh.Z..x.h..........h....x...z..xh.h..zx.h...h....hhh...")] + [("XR", "CT")]
 			return read
 
 		def buildOTRead1():
 			'''build an example read_1 aligned to OT-strand.
 			'''
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_8"
-			read.seq = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
+			read = pysam.AlignedSegment()
+			read.query_name = "ADS-adipose_chr1_8"
+			read.query_sequence = "AATTTTAATTTTAATTTTTGCGGTATTTTTAGTCGGTTCGTTCGTTCGGGTTTGATTTGAG"
 			read.flag = 99
-			read.tid = 0
-			read.pos = 450
-			read.mapq = 255
-			read.cigar = [(0,61)]
-			read.rnext = 1
-			read.pnext = 512
-			read.tlen = 121
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.reference_id = 0
+			read.reference_start= 450
+			read.mapping_quality = 255
+			read.cigartuples = [(0,61)]
+			read.next_reference_id = 1
+			read.next_reference_start = 512
+			read.template_length = 121
+			read.query_qualities = pysam.fromQualityString("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx....")] + [("XR", "CT")]
 			return read
 
 		def buildOTRead2():
 			'''build an example read_2 aligned to OT-strand.
 			'''
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_8"
-			read.seq = "AGAATTGTGTTTCGTTTTTAGAGTATTATCGAAATTTGTGTAGAGGATAACGTAGCTTC"
+			read = pysam.AlignedSegment()
+			read.query_name = "ADS-adipose_chr1_8"
+			read.query_sequence = "AGAATTGTGTTTCGTTTTTAGAGTATTATCGAAATTTGTGTAGAGGATAACGTAGCTTC"
 			read.flag = 147
-			read.tid = 0
-			read.pos = 512
-			read.mapq = 255
-			read.cigar = [(0,59)]
-			read.rnext = 1
-			read.pnext = 450
-			read.tlen = -121
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.reference_id = 0
+			read.reference_start= 512
+			read.mapping_quality = 255
+			read.cigartuples = [(0,59)]
+			read.next_reference_id = 1
+			read.next_reference_start = 450
+			read.template_length = -121
+			read.query_qualities = pysam.fromQualityString("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.tags = read.tags + [("XG", "CT")] + [("XM", "....x....h.xZ.hh..x......hh.xZ.....x....x......h..Z.x..H.xZ")] + [("XR", "GA")]
 			return read
 
 		def buildOBRead1():
 			'''build an example read_1 aligned to OB-strand
 			'''
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_22929891"
-			read.seq = "AACGCAACTCCGCCCTCGCGATACTCTCCGAATCTATACTAAAAAAAACGCAACTCCGCCGAC"
+			read = pysam.AlignedSegment()
+			read.query_name = "ADS-adipose_chr1_22929891"
+			read.query_sequence = "AACGCAACTCCGCCCTCGCGATACTCTCCGAATCTATACTAAAAAAAACGCAACTCCGCCGAC"
 			read.flag = 83
-			read.tid = 0
-			read.pos = 560
-			read.mapq = 255
-			read.cigar = [(0,63)]
-			read.rnext = 1
-			read.pnext = 492
-			read.tlen = -131
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.reference_id = 0
+			read.reference_start= 560
+			read.mapping_quality = 255
+			read.cigartuples = [(0,63)]
+			read.next_reference_id = 1
+			read.next_reference_start = 492
+			read.template_length = -131
+			read.query_qualities = pysam.fromQualityString("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.tags = read.tags + [("XG", "GA")] + [("XM", "...Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx.")] + [("XR", "CT")]
 			return read
 
 		def buildOBRead2():
 			'''build an example read_2 aligned to OB-strand.
 			'''
-			read = pysam.AlignedRead()
-			read.qname = "ADS-adipose_chr1_22929891"
-			read.seq = "CACCCGAATCTAACCTAAAAAAAACTATACTCCGCCTTCAAAATACCACCGAAATCTATACAAAAAA"
+			read = pysam.AlignedSegment()
+			read.query_name = "ADS-adipose_chr1_22929891"
+			read.query_sequence = "CACCCGAATCTAACCTAAAAAAAACTATACTCCGCCTTCAAAATACCACCGAAATCTATACAAAAAA"
 			read.flag = 163
-			read.tid = 0
-			read.pos = 492
-			read.mapq = 255
-			read.cigar = [(0,67)]
-			read.rnext = 1
-			read.pnext = 560
-			read.tlen = 131
-			read.qual = "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+			read.reference_id = 0
+			read.reference_start= 492
+			read.mapping_quality = 255
+			read.cigartuples = [(0,67)]
+			read.next_reference_id = 1
+			read.next_reference_start = 560
+			read.template_length = 131
+			read.query_qualities = pysam.fromQualityString("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.tags = read.tags + [("XG", "GA")] + [("XM", ".z...Zxh...x....x.hh.h....x.h....Z......x.h.......Z......x.h..x.hh.")] + [("XR", "GA")]
 			return read
 
@@ -1498,7 +1498,7 @@ class TestMTuple(unittest.TestCase):
 			'''
 			header = { 'HD': {'VN': '1.0'}, 'SQ': [{'LN': 10000, 'SN': 'chr1'}, {'LN': 20000, 'SN': 'chr2'}] }
 			tempfile_path = tempfile.mkstemp()[1]
-			BAM = pysam.Samfile(tempfile_path, "wb", header = header)
+			BAM = pysam.AlignmentFile(tempfile_path, "wb", header = header)
 			return BAM
 
 		# Create the reads, BAM file and methylation m-tuples
@@ -1510,7 +1510,7 @@ class TestMTuple(unittest.TestCase):
 		self.BAM.write(self.obr)
 		self.filename = self.BAM.filename
 		self.BAM.close()
-		self.BAM = pysam.Samfile(self.filename, 'rb')
+		self.BAM = pysam.AlignmentFile(self.filename, 'rb')
 		self.wfotr = MTuple('test', 2, 'CG', {'chr1': 0})
 		self.wfotr.increment_count(('chr1', 4562, 4573), 'ZZ', self.otr, None)
 		self.wfobr = MTuple('test', 2, 'CG', {'chr1': 0})
@@ -1530,7 +1530,7 @@ class TestMTuple(unittest.TestCase):
 		self.BAMPE.write(self.obr_2)
 		self.filename = self.BAMPE.filename
 		self.BAMPE.close()
-		self.BAMPE = pysam.Samfile(self.filename, 'rb')
+		self.BAMPE = pysam.AlignmentFile(self.filename, 'rb')
 		self.wfotrpe = MTuple('test', 2, 'CG', {'chr1': 0})
 		self.wfotrpe.increment_count(('chr1', 497, 525), 'ZZ', self.otr_1, self.otr_2)
 		self.wfobrpe = MTuple('test', 2, 'CG', {'chr1': 0})
@@ -1732,182 +1732,182 @@ class TestGetStrand(unittest.TestCase):
 
 	def setUp(self):
 		def buildOTSE():
-			read = pysam.AlignedRead()
-			read.qname = "SRR020138.15030048_SALK_2029:7:100:1740:1801_length=86"
-			read.seq = "CGAATGTTTTTTATTATGAATGAGAGTTTGTTAAATTAGTTGGTTTTAGG"
+			read = pysam.AlignedSegment()
+			read.query_name = "SRR020138.15030048_SALK_2029:7:100:1740:1801_length=86"
+			read.query_sequence = "CGAATGTTTTTTATTATGAATGAGAGTTTGTTAAATTAGTTGGTTTTAGG"
 			read.flag = 0
-			read.tid = 0
-			read.pos = 245746845
-			read.mapq = 255
-			read.cigar = [(0, 50)]
-			read.rnext = 0
-			read.pnext = 0
-			read.tlen = 0
-			read.qual = "BC?BBBBBCCCCAA@BCB?AB@AB>CABB@@BB@?BB497@@B:@@B5>@"
+			read.reference_id = 0
+			read.reference_start= 245746845
+			read.mapping_quality = 255
+			read.cigartuples = [(0, 50)]
+			read.next_reference_id = 0
+			read.next_reference_start = 0
+			read.template_length = 0
+			read.query_qualities = pysam.fromQualityString("BC?BBBBBCCCCAA@BCB?AB@AB>CABB@@BB@?BB497@@B:@@B5>@")
 			read.tags = read.tags + [("XM", "Z........h....h.............z.......x..x.....h....")] + [('XR', 'CT')] + [('XG', 'CT')]
 			return read
 
 		def buildOBSE():
-			read = pysam.AlignedRead()
-			read.qname = "SRR020138.15033460_SALK_2029:7:100:1783:2004_length=86"
-			read.seq = "GTATACGCTAATTTTATAACCTAAAAATTTACTAAATTCATTAATCAAAT"
+			read = pysam.AlignedSegment()
+			read.query_name = "SRR020138.15033460_SALK_2029:7:100:1783:2004_length=86"
+			read.query_sequence = "GTATACGCTAATTTTATAACCTAAAAATTTACTAAATTCATTAATCAAAT"
 			read.flag = 16
-			read.tid = 0
-			read.pos = 96804459
-			read.mapq = 255
-			read.cigar = [(0, 50)]
-			read.rnext = 0
-			read.pnext = 0
-			read.tlen = 0
-			read.qual = "CCBCACCBBCCCAACBBCAB@CCCCCCBBCCCCCCCCCBBBBCBCACBCB"
+			read.reference_id = 0
+			read.reference_start= 96804459
+			read.mapping_quality = 255
+			read.cigartuples = [(0, 50)]
+			read.next_reference_id = 0
+			read.next_reference_start = 0
+			read.template_length = 0
+			read.query_qualities = pysam.fromQualityString("CCBCACCBBCCCAACBBCAB@CCCCCCBBCCCCCCCCCBBBBCBCACBCB")
 			read.tags = read.tags + [('XM', "Z.h...Z..x.....h.......hh.h......x........h....x..")] + [('XR', 'CT')] + [('XG', 'GA')]
 			return read
 
 		def buildCTOTSE():
-			read = pysam.AlignedRead()
-			read.qname = "SRR020138.15026483_SALK_2029:7:100:1698:1069_length=86"
-			read.seq = "CCTCCATCATCATTCCTAATTTCTCCTTCCTCCCTTTCTACTTCCTCCTT"
+			read = pysam.AlignedSegment()
+			read.query_name = "SRR020138.15026483_SALK_2029:7:100:1698:1069_length=86"
+			read.query_sequence = "CCTCCATCATCATTCCTAATTTCTCCTTCCTCCCTTTCTACTTCCTCCTT"
 			read.flag = 0
-			read.tid = 0
-			read.pos = 69393512
-			read.mapq = 255
-			read.cigar = [(0, 50)]
-			read.rnext = 0
-			read.pnext = 0
-			read.tlen = 0
-			read.qual = "1)9<)@96'3%6@5:0=3::;;:89*;:@AA@=;A=3)2)1@>*9;-4:A"
+			read.reference_id = 0
+			read.reference_start= 69393512
+			read.mapping_quality = 255
+			read.cigartuples = [(0, 50)]
+			read.next_reference_id = 0
+			read.next_reference_start = 0
+			read.template_length = 0
+			read.query_qualities = pysam.fromQualityString("1)9<)@96'3%6@5:0=3::;;:89*;:@AA@=;A=3)2)1@>*9;-4:A")
 			read.tags = read.tags + [('XM', 'H.h...h...H...HHh.................................')] + [('XR', 'GA')] + [('XG', 'CT')]
 			return read
 
 		def buildCTOBSE():
-			read = pysam.AlignedRead()
-			read.qname = "SRR020138.15034119_SALK_2029:7:100:1792:1889_length=86"
-			read.seq = "ATGGAATGGAAAGGAAGGGAATTTAATGGAATGGAATGGAATGGAATGGA"
+			read = pysam.AlignedSegment()
+			read.query_name = "SRR020138.15034119_SALK_2029:7:100:1792:1889_length=86"
+			read.query_sequence = "ATGGAATGGAAAGGAAGGGAATTTAATGGAATGGAATGGAATGGAATGGA"
 			read.flag = 16
-			read.tid = 0
-			read.pos = 10784296
-			read.mapq = 255
-			read.cigar = [(0, 50)]
-			read.rnext = 0
-			read.pnext = 0
-			read.tlen = 0
-			read.qual = "BCBBBBCCBCAA=@?B?A?@@BCCBCCAAA=B9@B?A=9?BBB??AC@2="
+			read.reference_id = 0
+			read.reference_start= 10784296
+			read.mapping_quality = 255
+			read.cigartuples = [(0, 50)]
+			read.next_reference_id = 0
+			read.next_reference_start = 0
+			read.template_length = 0
+			read.query_qualities = pysam.fromQualityString("BCBBBBCCBCAA=@?B?A?@@BCCBCCAAA=B9@B?A=9?BBB??AC@2=")
 			read.tags = read.tags + [('XM', '..HH...HHhh.HH...HH........HH.h.H..h.H..h.HH.h.HH.')] + [('XR', 'GA')] + [('XG', 'GA')]
 			return read
 
 		def buildOTPE():
-			read_1 = pysam.AlignedRead()
-			read_1.qname = "SRR400564.1684335_HAL:1133:C010EABXX:8:1108:18844:132483_length=101"
-			read_1.seq = "CGAGTTCGTTTAAAGAGTAATTAGTTATTTTTGTAAGGTTTGGTTAGGGTTATAGAAGGTTTTTTTGGATGGTAATTTTGGTTGCGTTTTGTATTTGAATA"
+			read_1 = pysam.AlignedSegment()
+			read_1.query_name = "SRR400564.1684335_HAL:1133:C010EABXX:8:1108:18844:132483_length=101"
+			read_1.query_sequence = "CGAGTTCGTTTAAAGAGTAATTAGTTATTTTTGTAAGGTTTGGTTAGGGTTATAGAAGGTTTTTTTGGATGGTAATTTTGGTTGCGTTTTGTATTTGAATA"
 			read_1.flag = 99
-			read_1.tid = 0
-			read_1.pos = 19978967
-			read_1.mapq = 255
-			read_1.cigar = [(0, 101)]
-			read_1.rnext = 0
-			read_1.pnext = 19979235
-			read_1.tlen = 369
-			read_1.qual = "BC@FDFFFHHHHHJIHICHHHIIJJIGGJJJJJHGIF11?CGHIJIIJJHHHIIJIHHG9BFHIJFFDAC@?6;;-;AC@?DD<98@BDBDD>CDD#####"
+			read_1.reference_id = 0
+			read_1.reference_start= 19978967
+			read_1.mapping_quality = 255
+			read_1.cigartuples = [(0, 101)]
+			read_1.next_reference_id = 0
+			read_1.next_reference_start = 19979235
+			read_1.template_length = 369
+			read_1.query_qualities = pysam.fromQualityString("BC@FDFFFHHHHHJIHICHHHIIJJIGGJJJJJHGIF11?CGHIJIIJJHHHIIJIHHG9BFHIJFFDAC@?6;;-;AC@?DD<98@BDBDD>CDD#####")
 			read_1.tags = read_1.tags + [('XM', 'Z...h.Z.h.h......h..hx..hh.hh.x..h.....x...hx....h..x......hhhhhx...........hx...x..Z...x..h.hx....h.')] + [('XR', 'CT')] + [('XG', 'CT')]
-			read_2 = pysam.AlignedRead()
-			read_2.qname = "SRR400564.1684335_HAL:1133:C010EABXX:8:1108:18844:132483_length=101"
-			read_2.seq = "TATTGAGTTGTGTGTATGTCAGGTAAAGTTAGGTTGGTTTAAAGAGTAATTAGTTATTTTTGTAAGGTTGGGTTAGGAGAAGGCGGATTAGTTATTAATTT"
+			read_2 = pysam.AlignedSegment()
+			read_2.query_name = "SRR400564.1684335_HAL:1133:C010EABXX:8:1108:18844:132483_length=101"
+			read_2.query_sequence = "TATTGAGTTGTGTGTATGTCAGGTAAAGTTAGGTTGGTTTAAAGAGTAATTAGTTATTTTTGTAAGGTTGGGTTAGGAGAAGGCGGATTAGTTATTAATTT"
 			read_2.flag = 147
-			read_2.tid = 0
-			read_2.pos = 19979235
-			read_2.mapq = 255
-			read_2.cigar = [(0, 101)]
-			read_2.rnext = 0
-			read_2.pnext = 19978967
-			read_2.tlen = -369
-			read_2.qual = "EDDDDDDBBDDDDDDDCDEEEEEFFFFFHHGHIIFJJJIJJJJIJJJJJIHIJJIJJJJJIJJJJJJJJJJJJJJJJJJJJJJJJJJJHHHHHFFFFFCCC"
+			read_2.reference_id = 0
+			read_2.reference_start= 19979235
+			read_2.mapping_quality = 255
+			read_2.cigartuples = [(0, 101)]
+			read_2.next_reference_id = 0
+			read_2.next_reference_start = 19978967
+			read_2.template_length = -369
+			read_2.query_qualities = pysam.fromQualityString("EDDDDDDBBDDDDDDDCDEEEEEFFFFFHHGHIIFJJJIJJJJIJJJJJIHIJJIJJJJJIJJJJJJJJJJJJJJJJJJJJJJJJJJJHHHHHFFFFFCCC")
 			read_2.tags = read_2.tags + [('XM', 'h.x....x......h.z.hX...h....hx...x...h.h......h..hx..hh.hh.x..h....x....hx.........Z...hx..hh.hh..hh.')] + [('XR', 'GA')] + [('XG', 'CT')]
 			return read_1, read_2
 
 		def buildOBPE():
-			read_1 = pysam.AlignedRead()
-			read_1.qname = "SRR400564.241291_HAL:1133:C010EABXX:8:1102:8553:52618_length=101"
-			read_1.seq = "GATCACCTAAATCGAAAATTAAAAACCAACCTAACCAACACGATAAAACCCCATCTCTACTAAAATACAAAAACTAACCAAACGTAATAACAAACACCTAT"
+			read_1 = pysam.AlignedSegment()
+			read_1.query_name = "SRR400564.241291_HAL:1133:C010EABXX:8:1102:8553:52618_length=101"
+			read_1.query_sequence = "GATCACCTAAATCGAAAATTAAAAACCAACCTAACCAACACGATAAAACCCCATCTCTACTAAAATACAAAAACTAACCAAACGTAATAACAAACACCTAT"
 			read_1.flag = 83
-			read_1.tid = 0
-			read_1.pos = 19195980
-			read_1.mapq = 255
-			read_1.cigar = [(0, 101)]
-			read_1.rnext = 0
-			read_1.pnext = 19195917
-			read_1.tlen = -164
-			read_1.qual = "#####@:4B@;(85DDD@:;DDBBAACD?FD@HHHFIIJIIIHFJIFDJJIIFBGFGIGIGJIHFFDEJJJGIIGJIJJJJIJJHJIHHHHHHFDDDF@@@"
+			read_1.reference_id = 0
+			read_1.reference_start= 19195980
+			read_1.mapping_quality = 255
+			read_1.cigartuples = [(0, 101)]
+			read_1.next_reference_id = 0
+			read_1.next_reference_start = 19195917
+			read_1.template_length = -164
+			read_1.query_qualities = pysam.fromQualityString("#####@:4B@;(85DDD@:;DDBBAACD?FD@HHHFIIJIIIHFJIFDJJIIFBGFGIGIGJIHFFDEJJJGIIGJIJJJJIJJHJIHHHHHHFDDDF@@@")
 			read_1.tags = read_1.tags + [('XM', 'Z.......xhh..Zxh.h..h..h....x...xh.......Zx.h...............................h...xh.Z.hh.hh..x......x.')] + [('XR', 'CT')] + [('XG', 'GA')]
-			read_2 = pysam.AlignedRead()
-			read_2.qname = "SRR400564.241291_HAL:1133:C010EABXX:8:1102:8553:52618_length=101"
-			read_2.seq = "TATAAAACAAAACATAATAACTCATACCTATAATCCCAACACTTTAAAAATCTAAAACAAACCGATCACCTAAATCGAAAATTAAAAACCAACCTAACCAA"
+			read_2 = pysam.AlignedSegment()
+			read_2.query_name = "SRR400564.241291_HAL:1133:C010EABXX:8:1102:8553:52618_length=101"
+			read_2.query_sequence = "TATAAAACAAAACATAATAACTCATACCTATAATCCCAACACTTTAAAAATCTAAAACAAACCGATCACCTAAATCGAAAATTAAAAACCAACCTAACCAA"
 			read_2.flag = 163
-			read_2.tid = 0
-			read_2.pos = 19195917
-			read_2.mapq = 255
-			read_2.cigar = [(0, 101)]
-			read_2.rnext = 0
-			read_2.pnext = 19195980
-			read_2.tlen = 164
-			read_2.qual = "CCCFFFFFHHHHHJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJEHHIJJJJJJIJJIIJHHHFFFFFEEDEEDDDDDDDDDDDDDDDDDDDDDD"
+			read_2.reference_id = 0
+			read_2.reference_start= 19195917
+			read_2.mapping_quality = 255
+			read_2.cigartuples = [(0, 101)]
+			read_2.next_reference_id = 0
+			read_2.next_reference_start = 19195980
+			read_2.template_length = 164
+			read_2.query_qualities = pysam.fromQualityString("CCCFFFFFHHHHHJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJEHHIJJJJJJIJJIIJHHHFFFFFEEDEEDDDDDDDDDDDDDDDDDDDDDD")
 			read_2.tags = read_2.tags + [("XM", ".x...hh..xh..z.hh.hh.....h...x........x......hhh.h...x.hh...h..Z.......xhh..Zxh.h..h..h....x...xh....")] + [('XR', 'GA')] + [('XG', 'GA')]
 			return read_1, read_2
 
 		def buildCTOTPE():
-			read_1 = pysam.AlignedRead()
-			read_1.qname = "SRR400564.6667900_HAL:1133:C010EABXX:8:2207:16412:102567_length=101"
-			read_1.seq = "CGACCCCCCATCTATTCATCCATCCACCCCCCCCCCCACCCATCCATTAATTTATTCATCCATCCACCCACCCATCCACCATCCATTCAACCATCCATCCA"
+			read_1 = pysam.AlignedSegment()
+			read_1.query_name = "SRR400564.6667900_HAL:1133:C010EABXX:8:2207:16412:102567_length=101"
+			read_1.query_sequence = "CGACCCCCCATCTATTCATCCATCCACCCCCCCCCCCACCCATCCATTAATTTATTCATCCATCCACCCACCCATCCACCATCCATTCAACCATCCATCCA"
 			read_1.flag = 99
-			read_1.tid = 0
-			read_1.pos = 3287553
-			read_1.mapq = 255
-			read_1.cigar = [(0, 101)]
-			read_1.rnext = 0
-			read_1.pnext = 3287383
-			read_1.tlen = -271
-			read_1.qual = "#########################################73GE@CEGECGDFAFAB@IGD?FB0HF?1JHGF@HFAJIHFJJIHGEA22222224B@:4"
+			read_1.reference_id = 0
+			read_1.reference_start= 3287553
+			read_1.mapping_quality = 255
+			read_1.cigartuples = [(0, 101)]
+			read_1.next_reference_id = 0
+			read_1.next_reference_start = 3287383
+			read_1.template_length = -271
+			read_1.query_qualities = pysam.fromQualityString("#########################################73GE@CEGECGDFAFAB@IGD?FB0HF?1JHGF@HFAJIHFJJIHGEA22222224B@:4")
 			read_1.tags = read_1.tags + [('XM', 'Z...HH.HH..H....H..HH..HH..HH.HHH.HHH..HH..HH...........H..HH..HH.HHH.HHH..HH.HH..HH...H..HH..HH..HH.')] + [('XR', 'GA')] + [('XG', 'CT')]
-			read_2 = pysam.AlignedRead()
-			read_2.qname = "SRR400564.6667900_HAL:1133:C010EABXX:8:2207:16412:102567_length=101"
-			read_2.seq = "ATCCACCATCTATTCATCCATCCGTCCACCCACCCATCCATCCATTAATTATCCATCCACCCACCCATCCACCATCCATTCATCCATCCATCCATCCATAC"
+			read_2 = pysam.AlignedSegment()
+			read_2.query_name = "SRR400564.6667900_HAL:1133:C010EABXX:8:2207:16412:102567_length=101"
+			read_2.query_sequence = "ATCCACCATCTATTCATCCATCCGTCCACCCACCCATCCATCCATTAATTATCCATCCACCCACCCATCCACCATCCATTCATCCATCCATCCATCCATAC"
 			read_2.flag = 147
-			read_2.tid = 0
-			read_2.pos = 3287383
-			read_2.mapq = 255
-			read_2.cigar = [(0, 101)]
-			read_2.rnext = 0
-			read_2.pnext = 3287553
-			read_2.tlen = 271
-			read_2.qual = "CCCFFFFFHHHHHJJJJJJJJJJIIJIGHIJIJJJJJJJJJJJJJJJJJJGGCBFHCHGGCHIIJHHHFFFFECEDEDDDDE@>@CD:ACCDDD>>?::@C"
+			read_2.reference_id = 0
+			read_2.reference_start= 3287383
+			read_2.mapping_quality = 255
+			read_2.cigartuples = [(0, 101)]
+			read_2.next_reference_id = 0
+			read_2.next_reference_start = 3287553
+			read_2.template_length = 271
+			read_2.query_qualities = pysam.fromQualityString("CCCFFFFFHHHHHJJJJJJJJJJIIJIGHIJIJJJJJJJJJJJJJJJJJJGGCBFHCHGGCHIIJHHHFFFFECEDEDDDDE@>@CD:ACCDDD>>?::@C")
 			read_2.tags = read_2.tags + [('XM', '..HH.HH..H....H..HH..XZ..HH.HHH.HHH..HH..HH.........HH..HH.HHH.HHH..HH.HH..HH...H..HH..HH..HH..HH...H')] + [('XR', 'CT')] + [('XG', 'CT')]
 			return read_1, read_2
 
 		def buildCTOBPE():
-			read_1 = pysam.AlignedRead()
-			read_1.qname = "SRR400564.4547217_HAL:1133:C010EABXX:8:2105:21225:192741_length=101"
-			read_1.seq = "AAGGAAGGAGGGAAGGAAGGAAATAAAGAAAGGAAAAAAGGAAAGAAAGAAAAATAAAGAAATAAAGGAAGGAGGGAAGGAAGGAAAGAATGAAAGAAAGA"
+			read_1 = pysam.AlignedSegment()
+			read_1.query_name = "SRR400564.4547217_HAL:1133:C010EABXX:8:2105:21225:192741_length=101"
+			read_1.query_sequence = "AAGGAAGGAGGGAAGGAAGGAAATAAAGAAAGGAAAAAAGGAAAGAAAGAAAAATAAAGAAATAAAGGAAGGAGGGAAGGAAGGAAAGAATGAAAGAAAGA"
 			read_1.flag = 83
-			read_1.tid = 0
-			read_1.pos = 55291120
-			read_1.mapq = 255
-			read_1.cigar = [(0, 101)]
-			read_1.rnext = 0
-			read_1.pnext = 55291173
-			read_1.tlen = 154
-			read_1.qual = "1:BD42222300<CGHIIIJIIJJIIJGIIIIIIIJJIIJIJIIIIIGHIIIIHHGGGFFFFFFDECCDCBBDB@BBA<?BC<0<AC?CB@:@CC@CBC:>"
+			read_1.reference_id = 0
+			read_1.reference_start= 55291120
+			read_1.mapping_quality = 255
+			read_1.cigartuples = [(0, 101)]
+			read_1.next_reference_id = 0
+			read_1.next_reference_start = 55291173
+			read_1.template_length = 154
+			read_1.query_qualities = pysam.fromQualityString("1:BD42222300<CGHIIIJIIJJIIJGIIIIIIIJJIIJIJIIIIIGHIIIIHHGGGFFFFFFDECCDCBBDB@BBA<?BC<0<AC?CB@:@CC@CBC:>")
 			read_1.tags = read_1.tags + [('XM', 'z..Hh.HHh..Hh..Hh...h...h...h...H.h..hh..h...h..Hh...h...h.....hh......Hh...h...h..........H..hH.hhH.')] + [('XR', 'GA')] + [('XG', 'GA')]
-			read_2 = pysam.AlignedRead()
-			read_2.qname = "SRR400564.4547217_HAL:1133:C010EABXX:8:2105:21225:192741_length=101"
-			read_2.seq = "AAAAGAAAAAGGAAAAAAGGAAAGAAAGAAAAATAAATGAAGGAGGGAAGGAAGGAAAGAAAGAAGGGAAGAAAGAAAAGTAAATGAAGGAGGGAAAGAAG"
+			read_2 = pysam.AlignedSegment()
+			read_2.query_name = "SRR400564.4547217_HAL:1133:C010EABXX:8:2105:21225:192741_length=101"
+			read_2.query_sequence = "AAAAGAAAAAGGAAAAAAGGAAAGAAAGAAAAATAAATGAAGGAGGGAAGGAAGGAAAGAAAGAAGGGAAGAAAGAAAAGTAAATGAAGGAGGGAAAGAAG"
 			read_2.flag = 163
-			read_2.tid = 0
-			read_2.pos = 55291173
-			read_2.mapq = 255
-			read_2.cigar = [(0, 101)]
-			read_2.rnext = 0
-			read_2.pnext = 55291120
-			read_2.tlen = -154
-			read_2.qual = "5DDA;DDEC@66DHHHHC=GJJIGJJIGJJJJIIJIHGHIHHHGFFFFBIIJHHGJJIGJJJJJIIHHJIGJJJGJJJJJJJJJIJJJHHHHHFFFDDBBB"
+			read_2.reference_id = 0
+			read_2.reference_start= 55291173
+			read_2.mapping_quality = 255
+			read_2.cigartuples = [(0, 101)]
+			read_2.next_reference_id = 0
+			read_2.next_reference_start = 55291120
+			read_2.template_length = -154
+			read_2.query_qualities = pysam.fromQualityString("5DDA;DDEC@66DHHHHC=GJJIGJJIGJJJJIIJIHGHIHHHGFFFFBIIJHHGJJIGJJJJJIIHHJIGJJJGJJJJJJJJJIJJJHHHHHFFFDDBBB")
 			read_2.tags = read_2.tags + [('XM', 'h...H.....HH......HH...H...H..........H..HH.HHH..HH..HH...H...H..HHH......H..........H..HH.HHH...H..H')] + [('XR', 'CT')] + [('XG', 'GA')]
 			return read_1, read_2
 

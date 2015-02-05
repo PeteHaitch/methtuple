@@ -1,3 +1,15 @@
+# Version 1.5.0
+
+`methtuple` now requires `pysam v0.8.1` or greater.
+
+## Bug fixes
+
+* Fixed Python 3 compatibility issues due to changes in the `pysam` API (closes [#94](https://github.com/PeteHaitch/methtuple/issues/94)).
+
+## Internal
+
+Moved to the new `pysam` API. As a result, `methtuple` now requires `pysam v0.8.1` or greater.
+
 # Version 1.4.0
 
 This version of the software changes the name from `comethylation` to `methtuple` to better reflect what it actually does.

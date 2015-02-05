@@ -82,7 +82,9 @@ python setup.py install
 ```
 in the root `methtuple` directory should work for most systems.
 
-`methtuple` is written in Python and relies upon the `pysam` module. Running `python setup.py install` will attempt to install `pysam` if it isn't found on your system. Alternatively, instructions for installing `pysam` are available from [https://github.com/pysam-developers/pysam](https://github.com/pysam-developers/pysam).
+`methtuple` is written in Python and relies upon the `pysam` module. __NOTE: `methtuple` now requires `pysam v0.8.1` or greater.__
+
+Running `python setup.py install` will attempt to install `pysam` if it isn't found on your system. Alternatively, instructions for installing `pysam` are available from [https://github.com/pysam-developers/pysam](https://github.com/pysam-developers/pysam).
 
 `pysam` is currently undergoing an extensive re-design. I have tested and used `methtuple` with Python 2.7 and `pysam` version >= 0.7.5. It should also work on Python 3.2, 3.3 and 3.4 with the current version of `pysam` (`v0.8.0`), as indicated by the [Travis-CI builds](https://travis-ci.org/PeteHaitch/methtuple).
 

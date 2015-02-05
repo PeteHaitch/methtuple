@@ -239,11 +239,11 @@ ignore_read_1_pos = make_ignores_list(args.ir1p)
 ignore_read_2_pos = make_ignores_list(args.ir2p)
 overlap_filter = args.of
 min_qual = args.mbq
-min_mapq = args.mmq
+min_mapping_quality = args.mmq
 
 #### The main program. Loops over the BAM file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or read-pair. ####
 # Open SAM/BAM file and output files
-BAM = pysam.Samfile(args.BAM, 'rb')
+BAM = pysam.AlignmentFile(args.BAM, 'rb')
 if all_combinations:
   out_prefix = ".".join([args.output_prefix, '_'.join(methylation_type.split('/')), ''.join([str(args.m), 'ac']), "tsv"])
 else:
@@ -272,7 +272,7 @@ else:
 
 n_fragment = 0 # The number of DNA fragments. One single-end read contributes one to the count and each half of a read-pair contributes half a count.
 n_fragment_skipped_due_to_bad_overlap = 0 # The number of DNA fragments skipped due to the overlapping sequencing not passing the appropriate filter
-n_fragment_skipped_due_to_low_mapq = 0 # The number of DNA fragments skipped due to low mapQ
+n_fragment_skipped_due_to_low_mapping_quality = 0 # The number of DNA fragments skipped due to low mapQ
 n_fragment_skipped_due_to_duplicate = 0 # The number of DNA fragments skipped due to them being marked as duplicates
 n_fragment_skipped_due_to_diff_chr = 0  # The number of DNA fragments skipped due to the mates being aligned to different chromosomes
 n_fragment_skipped_due_to_unmapped_read_or_mate = 0 # The number of DNA fragments skipped due to the read or its mate being unmapped
@@ -315,7 +315,7 @@ if ignore_read_2_pos:
 else:
     print("Using all positions of each read_2 (if data are paired-end).")
 print('Ignoring methylation calls with base-quality less than', min_qual)
-print('Ignoring reads with mapQ less than', min_mapq)
+print('Ignoring reads with mapQ less than', min_mapping_quality)
 
 if overlap_filter == 'sequence_strict':
     print('Ignoring paired-end reads that have overlapping mates if the overlapping sequences are not identical.\n')
@@ -382,25 +382,25 @@ for read in BAM:
         n_fragment += 1
         # Skip duplicate reads if command line parameter --ignore-duplicates is set and read is marked as a duplicate
         if args.id and read.is_duplicate:
-            failed_read_msg = '\t'.join([read_1.qname, 'marked as duplicate\n'])
+            failed_read_msg = '\t'.join([read_1.query_name, 'marked as duplicate\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_duplicate += 1
             # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
             read_1 = None
             read_2 = None
             continue
-        # Skip read-pairs if either mate's mapQ is less than min_mapq
-        if read_1.mapq < min_mapq or read_2.mapq < min_mapq:
-            failed_read_msg = '\t'.join([read_1.qname, 'mapQ < --min-mapq\n'])
+        # Skip read-pairs if either mate's mapQ is less than min_mapping_quality
+        if read_1.mapping_quality < min_mapping_quality or read_2.mapping_quality < min_mapping_quality:
+            failed_read_msg = '\t'.join([read_1.query_name, 'mapQ < --min-mapq\n'])
             FAILED_QC.write(failed_read_msg)
-            n_fragment_skipped_due_to_low_mapq += 1
+            n_fragment_skipped_due_to_low_mapping_quality += 1
             # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
             read_1 = None
             read_2 = None
             continue
         # Skip read if either mate is unmapped
         if read_1.is_unmapped or read_2.is_unmapped:
-            failed_read_msg = '\t'.join([read_1.qname, 'read or its mate is unmapped\n'])
+            failed_read_msg = '\t'.join([read_1.query_name, 'read or its mate is unmapped\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_unmapped_read_or_mate += 1
             # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
@@ -409,7 +409,7 @@ for read in BAM:
             continue
         # Skip improperly paired-reads unless --use-improper-pairs flag is set
         if not args.uip and not read.is_proper_pair:
-            failed_read_msg = '\t'.join([read_1.qname, 'read is not mapped in proper pair\n'])
+            failed_read_msg = '\t'.join([read_1.query_name, 'read is not mapped in proper pair\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_improper_pair += 1
             # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
@@ -417,8 +417,8 @@ for read in BAM:
             read_2 = None
             continue
         # Skip read if mates are mapped to different chromosomes
-        if read_1.tid != read_2.tid:
-            failed_read_msg = '\t'.join([read_1.qname, 'mates map to different chromosomes\n'])
+        if read_1.reference_id != read_2.reference_id:
+            failed_read_msg = '\t'.join([read_1.query_name, 'mates map to different chromosomes\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_diff_chr += 1
             # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
@@ -428,9 +428,9 @@ for read in BAM:
         # Skip reads containing complicated CIGAR strings, i.e. anything except 'M', 'I', 'D', 'S' or 'H'.
         if does_read_contain_complicated_cigar(read_1) or does_read_contain_complicated_cigar(read_2):
           if does_read_contain_complicated_cigar(read_1):
-            failed_read_msg = '\t'.join([read_1.qname, 'read has complicated CIGAR', read_1.cigar, '\n'])
+            failed_read_msg = '\t'.join([read_1.query_name, 'read has complicated CIGAR', read_1.cigartuples, '\n'])
           elif does_read_contain_complicated_cigar(read_2):
-            failed_read_msg = '\t'.join([read_2.qname, 'read has complicated CIGAR', read_2.cigar, '\n'])
+            failed_read_msg = '\t'.join([read_2.query_name, 'read has complicated CIGAR', read_2.cigartuples, '\n'])
           FAILED_QC.write(failed_read_msg)
           n_fragment_skipped_due_to_complicated_cigar += 1
           # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
@@ -438,7 +438,7 @@ for read in BAM:
           read_2 = None
           continue
         # Check that read_1 and read_2 have identical read-names. If not, exit because the file probably isn't sorted by queryname.
-        if read_1.qname == read_2.qname:
+        if read_1.query_name == read_2.query_name:
             methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, all_combinations, methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_filter, n_fragment_skipped_due_to_bad_overlap, FAILED_QC)
             # Update the n_methylation_loci_per_read dictionary
             if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
@@ -448,32 +448,32 @@ for read in BAM:
             read_1 = None
             read_2 = None
         else:
-            exit_msg = ''.join(["ERROR: The name of read_1 is not identical to to that of read_2 for read-pair ", read_1.qname, read_2.qname, ". Please sort your paired-end BAM file in queryname order with Picard's SortSam function."])
+            exit_msg = ''.join(["ERROR: The name of read_1 is not identical to to that of read_2 for read-pair ", read_1.query_name, read_2.query_name, ". Please sort your paired-end BAM file in queryname order with Picard's SortSam function."])
             sys.exit(exit_msg)
     # Read is single-end
     elif not read.is_paired:
         n_fragment += 1
         # Skip duplicates reads if command line parameter --ignore-duplicates is set and read is marked as a duplicate
         if args.id and read.is_duplicate:
-            failed_read_msg = '\t'.join([read.qname, 'marked as duplicate\n'])
+            failed_read_msg = '\t'.join([read.query_name, 'marked as duplicate\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_duplicate += 1
             # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
             read_1 = None
             read_2 = None
             continue
-        # Skip read if read's mapQ is less than min_mapq
-        if read.mapq < min_mapq:
-            failed_read_msg = '\t'.join([read.qname, 'mapQ < --min-mapq\n'])
+        # Skip read if read's mapQ is less than min_mapping_quality
+        if read.mapping_quality < min_mapping_quality:
+            failed_read_msg = '\t'.join([read.query_name, 'mapQ < --min-mapq\n'])
             FAILED_QC.write(failed_read_msg)
-            n_fragment_skipped_due_to_low_mapq += 1
+            n_fragment_skipped_due_to_low_mapping_quality += 1
             # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
             read_1 = None
             read_2 = None
             continue
         # Skip read if it is unmapped
         if read.is_unmapped:
-            failed_read_msg = '\t'.join([read.qname, 'read is unmapped\n'])
+            failed_read_msg = '\t'.join([read.query_name, 'read is unmapped\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_unmapped_read_or_mate += 1
             # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
@@ -482,7 +482,7 @@ for read in BAM:
             continue
         # Skip reads containing complicated CIGAR strings, i.e. anything except 'M', 'I', 'D', 'S' or 'H'.
         if does_read_contain_complicated_cigar(read):
-            '\t'.join([read.qname, 'read has complicated CIGAR', read.cigar, '\n'])
+            '\t'.join([read.query_name, 'read has complicated CIGAR', read.cigartuples, '\n'])
             FAILED_QC.write(failed_read_msg)
             n_fragment_skipped_due_to_complicated_cigar += 1
             # Set both read_1 and read_2 as the None object to ensure that old values don't accidentally carry over to when I process the next read-pair
@@ -496,7 +496,7 @@ for read in BAM:
         n_methylation_loci_per_read[n_methylation_loci_in_fragment] += 1
     # Read is neither single-end nor a mate from a read-pair. This shouldn't happen.
     else:
-        exit_msg = ''.join(['ERROR: Read ', read.qname, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. methtuplePlease log an issue at www.github.com/PeteHaitch/methtuple describing the error..'])
+        exit_msg = ''.join(['ERROR: Read ', read.query_name, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. methtuplePlease log an issue at www.github.com/PeteHaitch/methtuple describing the error..'])
         sys.exit(exit_msg)
 
 # Write results to disk
@@ -508,7 +508,7 @@ write_methylation_m_tuples_to_file(methylation_m_tuples, OUT)
 print('Summary of the number of DNA fragments processed by methtuple')
 print(''.join(['Number of DNA fragments in file = ', str(n_fragment)]))
 print(''.join(['Number of DNA fragments skipped due to being marked as PCR duplicates = ', str(n_fragment_skipped_due_to_duplicate)]))
-print(''.join(['Number of DNA fragments skipped due to failing the --min-mapq filter = ', str(n_fragment_skipped_due_to_low_mapq)]))
+print(''.join(['Number of DNA fragments skipped due to failing the --min-mapq filter = ', str(n_fragment_skipped_due_to_low_mapping_quality)]))
 print(''.join(['Number of DNA fragments skipped due to the read or its mate being unmapped = ' , str(n_fragment_skipped_due_to_unmapped_read_or_mate)]))
 print(''.join(['Number of DNA fragments skipped due to the read-pair being improperly paired = ', str(n_fragment_skipped_due_to_improper_pair)]))
 print(''.join(['Number of DNA fragments skipped due to mates mapping to different chromosomes = ', str(n_fragment_skipped_due_to_diff_chr)]))

@@ -9,7 +9,7 @@ CHANGES = '' # open(os.path.join(here, 'CHANGES.md')).read()
 
 setup(
   name='methtuple',
-  version='1.4.1',
+  version='1.5.0',
   description='methtuple',
   long_description=README + '\n\n' +  CHANGES,
   classifiers=[
@@ -23,7 +23,7 @@ setup(
   packages=find_packages(),
   include_package_data=True,
   zip_safe=False,
-  install_requires=['pysam'],
+  install_requires=['pysam >= 0.8.1'],
   test_suite="methtuple.tests",
   scripts = [
     'methtuple/scripts/methtuple'
