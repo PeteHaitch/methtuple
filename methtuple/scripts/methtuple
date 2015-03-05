@@ -347,15 +347,15 @@ for read in BAM:
     if read.is_unmapped:
         continue
     # Check XR-tag
-    if not 'XR' in [x[0] for x in read.tags]:
+    if not read.has_tag('XR'):
         exit_msg = "ERROR: The first mapped read does not contain an XR-tag. Currently, methtuple can only process BAM files created by Bismark, sorry."
         sys.exit(exit_msg)
     # Check XG-tag
-    if not 'XG' in [x[0] for x in read.tags]:
+    if not read.has_tag('XG'):
         exit_msg = "ERROR: The first mapped read does not contain an XG-tag. Currently, methtuple can only process BAM files created by Bismark, sorry."
         sys.exit(exit_msg)
     # Check XM-tag
-    if not 'XM' in [x[0] for x in read.tags]:
+    if not read.has_tag('XM'):
         exit_msg = "ERROR: The first mapped read does not contain an XM-tag. Currently, methtuple can only process BAM files created by Bismark, sorry."
         sys.exit(exit_msg)
     else:

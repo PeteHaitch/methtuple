@@ -173,7 +173,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
         n_methylation_loci: The number of methylation loci extracted from the read.
     """
     # Identify methylation events in read, e.g. CpGs or CHHs. The methylation_pattern is specified by a command line argument (e.g. Z/z corresponds to CpG)
-    methylation_index = [midx.start() for midx in re.finditer(methylation_pattern, read.opt('XM'))]
+    methylation_index = [midx.start() for midx in re.finditer(methylation_pattern, read.get_tag('XM'))]
     # Ignore any read positions specified in ignore_read_1_pos
     methylation_index = ignore_read_pos(read, methylation_index, ignore_read_1_pos)
     # Ignore any positions with a base quality less than min_qual
@@ -189,7 +189,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
       positions = get_positions(read)
       if strand == '-':
         positions = [x if x is None else x - ob_strand_offset for x in positions]
-      XM = read.opt('XM')
+      XM = read.get_tag('XM')
       meth_calls = sorted(zip([positions[i] + 1 for i in methylation_index], [XM[i] for i in methylation_index]), key = lambda x: x[0])
       this_chr = BAM.getrname(read.reference_id)
       if ob_strand_offset != 0:
@@ -238,8 +238,8 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
         n_methylation_loci: The number of methylation loci extracted from the read.
     """
     # Identify methylation events in read, e.g. CpGs or CHHs. The methylation_pattern is specified by a command line argument (e.g. Z/z corresponds to CpG)
-    methylation_index_1 = [midx.start() for midx in re.finditer(methylation_pattern, read_1.opt('XM'))]
-    methylation_index_2 = [midx.start() for midx in re.finditer(methylation_pattern, read_2.opt('XM'))]
+    methylation_index_1 = [midx.start() for midx in re.finditer(methylation_pattern, read_1.get_tag('XM'))]
+    methylation_index_2 = [midx.start() for midx in re.finditer(methylation_pattern, read_2.get_tag('XM'))]
 
     # Ignore any read-positions specified in ignore_read_1_pos or ignore_read_1_pos
     methylation_index_1 = ignore_read_pos(read_1, methylation_index_1, ignore_read_1_pos)
@@ -269,8 +269,8 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
       if strand_1 == '-':
         positions_1 = [x if x is None else x - ob_strand_offset for x in positions_1]
         positions_2 = [x if x is None else x - ob_strand_offset for x in positions_2]
-      XM_1 = read_1.opt('XM')
-      XM_2 = read_2.opt('XM')
+      XM_1 = read_1.get_tag('XM')
+      XM_2 = read_2.get_tag('XM')
       meth_calls = sorted(zip([positions_1[i] + 1 for i in methylation_index_1] + [positions_2[i] + 1 for i in methylation_index_2], [XM_1[i] for i in methylation_index_1] + [XM_2[i] for i in methylation_index_2]), key = lambda x: x[0])
       this_chr = BAM.getrname(read_1.reference_id)
       if ob_strand_offset != 0:
@@ -322,12 +322,12 @@ def get_strand(read):
     ## Single-end
     if not read.is_paired:
         ## Check if aligned to OT- or CTOT-strand, i.e., informative for OT-strand.
-        if (read.opt('XR') == 'CT' and read.opt('XG') == 'CT') or (read.opt('XR') == 'GA' and read.opt('XG') == 'CT'):
-        # if read_1.opt('XG') == 'CT'
+        if (read.get_tag('XR') == 'CT' and read.get_tag('XG') == 'CT') or (read.get_tag('XR') == 'GA' and read.get_tag('XG') == 'CT'):
+        # if read_1.get_tag('XG') == 'CT'
             strand = '+'
         ## Else, check if aligned to OB- or CTOB-strand, i.e., informative for OB-strand.
-        elif (read.opt('XR') == 'CT' and read.opt('XG') == 'GA') or (read.opt('XR') == 'GA' and read.opt('XG') == 'GA'):
-        # elif read_1.opt('XG') == 'GA'
+        elif (read.get_tag('XR') == 'CT' and read.get_tag('XG') == 'GA') or (read.get_tag('XR') == 'GA' and read.get_tag('XG') == 'GA'):
+        # elif read_1.get_tag('XG') == 'GA'
             strand = '-'
         ## Else, something odd about this read
         else:
@@ -337,12 +337,12 @@ def get_strand(read):
     elif read.is_paired:
         if read.is_read1:
             ## Check if aligned to CT- or CTOT-strand, i.e., informative for OT-strand.
-            if (read.opt('XR') == 'CT' and read.opt('XG') == 'CT') or (read.opt('XR') == 'GA' and read.opt('XG') == 'CT'):
-            #if read.opt('XG') == 'CT':
+            if (read.get_tag('XR') == 'CT' and read.get_tag('XG') == 'CT') or (read.get_tag('XR') == 'GA' and read.get_tag('XG') == 'CT'):
+            #if read.get_tag('XG') == 'CT':
                 strand = '+'
             ## Else, check if aligned to OB- or CTOB-strand, i.e., informative for OB-strand.
-            elif (read.opt('XR') == 'CT' and read.opt('XG') == 'GA') or (read.opt('XR') == 'GA' and read.opt('XG') == 'GA'):
-            #elif read.opt('XG') == 'GA':
+            elif (read.get_tag('XR') == 'CT' and read.get_tag('XG') == 'GA') or (read.get_tag('XR') == 'GA' and read.get_tag('XG') == 'GA'):
+            #elif read.get_tag('XG') == 'GA':
                 strand = '-'
             ## Else, something odd about this read
             else:
@@ -350,10 +350,10 @@ def get_strand(read):
                 sys.exit(exit_msg)
         elif read.is_read2:
             ## Check if aligned CT or CTOT-strand, i.e., informative for OT-strand.
-            if (read.opt('XR') == 'GA' and read.opt('XG') == 'CT') or (read.opt('XR') == 'CT' and read.opt('XG') == 'CT'):
+            if (read.get_tag('XR') == 'GA' and read.get_tag('XG') == 'CT') or (read.get_tag('XR') == 'CT' and read.get_tag('XG') == 'CT'):
                 strand = '+'
             ## Else, check if aligned OB- or CTOB-strand, i.e., informative for OB-strand.
-            elif (read.opt('XR') == 'GA' and read.opt('XG') == 'GA') or (read.opt('XR') == 'CT' and read.opt('XG') == 'GA'):
+            elif (read.get_tag('XR') == 'GA' and read.get_tag('XG') == 'GA') or (read.get_tag('XR') == 'CT' and read.get_tag('XG') == 'GA'):
                 strand = '-'
             ## Else, something odd about this read
             else:
@@ -363,7 +363,7 @@ def get_strand(read):
         exit_msg = ''.join(['ERROR: Read ', read.query_name, ' is neither a single-end read nor part of a paired-end read. Please log an issue at www.github.com/PeteHaitch/methtuple describing the error.'])
     return strand
 
-# TODO: Check that get_positions() works with soft-clipped reads. If this function handles soft-clipped reads correctly then methtuple can process soft-clipped reads (provided the XM-tag is has '.' for soft-clipped positions and read.query_sequence, read.query_qualities, read.opt('XM') and get_positions(read) are all of the same length and equal to the sequence length).
+# TODO: Check that get_positions() works with soft-clipped reads. If this function handles soft-clipped reads correctly then methtuple can process soft-clipped reads (provided the XM-tag is has '.' for soft-clipped positions and read.query_sequence, read.query_qualities, read.get_tag('XM') and get_positions(read) are all of the same length and equal to the sequence length).
 # TODO: It should be possible to write a faster version of this using C-level (via Cython?) operations, e.g., see how get_aligned_pairs() is defined. Awaiting reply to issue posted to pysam GitHub issue tracker (16/07/2014).
 def get_positions(read):
   """Get reference-based positions of all bases in a read, whether aligned or not, and allowing for inserted and soft-clipped bases.
@@ -499,7 +499,7 @@ def process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, ov
         # Choice of trimming methylation_index_1 or methylation_index_2 is arbitrary because if the seq are identical in the overlap then there is no reason to choose read_1 over read_2 and vice versa.
         methylation_index_2 = [i for i in methylation_index_2 if i < start_ol_2 or i > end_ol_2]
     elif overlap_filter == "XM_strict":
-      if read_1.opt('XM')[start_ol_1:(end_ol_1 + 1)] != read_2.opt('XM')[start_ol_2:(end_ol_2 + 1)]:
+      if read_1.get_tag('XM')[start_ol_1:(end_ol_1 + 1)] != read_2.get_tag('XM')[start_ol_2:(end_ol_2 + 1)]:
         # Kill the read-pair
         methylation_index_1 = []
         methylation_index_2 = []
@@ -511,7 +511,7 @@ def process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, ov
         # Choice of trimming methylation_index_1 or methylation_index_2 is arbitrary because if the XM-tags are identical in the overlap then there is no reason to choose read_1 over read_2 and vice versa.
         methylation_index_2 = [i for i in methylation_index_2 if i < start_ol_2 or i > end_ol_2]
     elif overlap_filter == "XM":
-      if read_1.opt('XM')[start_ol_1:(end_ol_1 + 1)] != read_2.opt('XM')[start_ol_2:(end_ol_2 + 1)]:
+      if read_1.get_tag('XM')[start_ol_1:(end_ol_1 + 1)] != read_2.get_tag('XM')[start_ol_2:(end_ol_2 + 1)]:
         # Retain only those elements of methylation_index_1 and methylation_index_2 that are outside the overlap.
         methylation_index_1 = [i for i in methylation_index_1 if i < start_ol_1 or i > end_ol_1]
         methylation_index_2 = [i for i in methylation_index_2 if i < start_ol_2 or i > end_ol_2]
@@ -525,7 +525,7 @@ def process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, ov
       # The check_XM_overlap function is necessary because using positions_2.index(positions_1[i]) will return a ValueError if the positions_1[i] can't be found in positions_2 and so I need an try-except to handle this.
       def check_XM_overlap(i, read_1, read_2, positions_1, positions_2):
          try:
-             return read_1.opt('XM')[i] == read_2.opt('XM')[positions_2.index(positions_1[i])]
+             return read_1.get_tag('XM')[i] == read_2.get_tag('XM')[positions_2.index(positions_1[i])]
          except ValueError:
              return False
       methylation_index_1 = [i for i in methylation_index_1 if i < start_ol_1 or i > end_ol_1 or check_XM_overlap(i, read_1, read_2, positions_1, positions_2)]
