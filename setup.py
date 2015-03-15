@@ -9,7 +9,7 @@ CHANGES = '' # open(os.path.join(here, 'CHANGES.md')).read()
 
 setup(
   name='methtuple',
-  version='1.5.1',
+  version='1.5.2',
   description='methtuple',
   long_description=README + '\n\n' +  CHANGES,
   classifiers=[
