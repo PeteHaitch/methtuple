@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/PeteHaitch/methtuple.png?branch=master)](https://travis-ci.org/PeteHaitch/methtuple)
+[![Coverage Status](https://coveralls.io/repos/PeteHaitch/methtuple/badge.svg?branch=master)](https://coveralls.io/r/PeteHaitch/methtuple?branch=master)
 # methtuple
 
 ## Overview
