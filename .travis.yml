@@ -8,5 +8,9 @@ python:
 
 install:
     - python setup.py install
+    - pip install coveralls
 script:
     - python setup.py test
+    coverage run --source=methtuple setup.py test
+after_success:
+    coveralls
