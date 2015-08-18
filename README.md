@@ -91,7 +91,7 @@ The simplest way:
 pip install methtuple
 ```
 
-### Using source
+`methtuple` is written in Python and requires the `pysam` module. __NOTE: `methtuple` now requires `pysam v0.8.3` or greater.__
 
 Alternatively, after cloning or downloading the `methtuple` git repositority, simply run:
 
