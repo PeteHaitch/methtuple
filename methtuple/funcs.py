@@ -364,7 +364,6 @@ def get_strand(read):
     return strand
 
 # TODO: Check that get_positions() works with soft-clipped reads. If this function handles soft-clipped reads correctly then methtuple can process soft-clipped reads (provided the XM-tag is has '.' for soft-clipped positions and read.query_sequence, read.query_qualities, read.get_tag('XM') and get_positions(read) are all of the same length and equal to the sequence length).
-# TODO: It should be possible to write a faster version of this using C-level (via Cython?) operations, e.g., see how get_aligned_pairs() is defined. Awaiting reply to issue posted to pysam GitHub issue tracker (16/07/2014).
 def get_positions(read):
   """Get reference-based positions of all bases in a read, whether aligned or not, and allowing for inserted and soft-clipped bases.
 
@@ -372,42 +371,12 @@ def get_positions(read):
       read: A pysam.AlignedSegment instance.
 
   Returns:
-      A list of positions equal in length to read.query_sequence. The result is identical to read.get_reference_positions() if the read does not contain any insertions or soft-clips. Read-positions that are insertions or soft-clips have None as the corresponding entry in the returned list.
+      A list of positions equal in length to read.query_sequence. The result is identical to read.get_reference_positions() if the read does not contain any insertions or soft-clips.
   """
-  # Check read actually has CIGAR
-  if read.cigartuples is None:
-    # No CIGAR string so positions must be [] because there is no alignment.
-    positions = []
-  else:
-    # From the SAM spec (http://samtools.github.io/hts-specs/SAMv1.pdf), "S may only have H operations between them and the ends of the CIGAR string".
-    n = len(read.cigartuples)
-    # If first CIGAR operation is H (5), check whether second is S (4).
-    if read.cigartuples[0][0] == 5:
-      if n > 1:
-        if read.cigartuples[1][0] == 4:
-          positions = [None] * read.cigartuples[1][1]
-        else:
-          positions = []
-    # Check if first CIGAR operation is S (4).
-    elif read.cigartuples[0][0] == 4:
-      positions = [None] * read.cigartuples[0][1]
-    # Otherwise there can't be any leftmost soft-clipping.
-    else:
-      positions = []
-    # Add "internal" read-positions, which are only made up of positions with M/I/D CIGAR operations and so can be extracted from read.get_aligned_pairs()
-    positions = positions + [y[1] for y in read.get_aligned_pairs() if y[0] is not None]
-    # If last CIGAR operation is H (5), check whether second-last is S (4).
-    if read.cigartuples[n - 1][0] == 5:
-      if n > 1:
-        # If second-last positions is S (4), then need to pad but otherwise nothing to do (and also no need for "closing" else).
-        if read.cigartuples[n - 2][0] == 4:
-          positions = positions + [None] * read.cigartuples[n - 2][1]
-    # Check if last CIGAR operation is S (4).
-    elif read.cigartuples[n - 1][0] == 4:
-      positions = positions + [None] * read.cigartuples[n - 1][1]
+  positions = [y[1] for y in read.get_aligned_pairs() if y[0] is not None]
 
-    # Sanity check that length of positions is equal to length of read.query_sequence
-    if (len(read.query_sequence) != len(positions)):
+  # A sanity check
+  if (len(read.query_sequence) != len(positions)):
       exit_msg = ''.join(['Length of positions (', str(len(positions)), ') does not equal length of read.query_sequence (', str(len(read.query_sequence)), ') for read: ', read.query_name, '\nThis should never happen. Please log an issue at www.github.com/PeteHaitch/methtuple describing the error..'])
       sys.exit(exit_msg)
   return positions

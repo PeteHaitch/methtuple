@@ -83,7 +83,7 @@ python setup.py install
 ```
 in the root `methtuple` directory should work for most systems.
 
-`methtuple` is written in Python and relies upon the `pysam` module. __NOTE: `methtuple` now requires `pysam v0.8.1` or greater.__
+`methtuple` is written in Python and relies upon the `pysam` module. __NOTE: `methtuple` now requires `pysam v0.8.3` or greater.__
 
 Running `python setup.py install` will attempt to install `pysam` if it isn't found on your system. Alternatively, instructions for installing `pysam` are available from [https://github.com/pysam-developers/pysam](https://github.com/pysam-developers/pysam).
 
