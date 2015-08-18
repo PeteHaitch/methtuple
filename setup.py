@@ -28,6 +28,7 @@ setup(
     "Programming Language :: Python :: 3.4",
     'Programming Language :: Python :: 3.4',
     "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
     ],
   author='Peter Hickey',
   author_email='peter.hickey@gmail.com',
