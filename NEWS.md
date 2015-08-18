@@ -1,3 +1,7 @@
+# Version 1.5.3
+
+`methtuple` now requires `pysam v0.8.3` or greater.
+
 # Version 1.5.0
 
 `methtuple` now requires `pysam v0.8.1` or greater.

@@ -10,6 +10,10 @@
 
 - Upgrade to pysam v0.8.2 [\#95](https://github.com/PeteHaitch/methtuple/issues/95)
 
+**Fixed bugs:**
+
+- Tests failing under pysam v0.8.3 [\#98](https://github.com/PeteHaitch/methtuple/issues/98)
+
 ## [v1.5](https://github.com/PeteHaitch/methtuple/tree/v1.5) (2015-02-05)
 
 [Full Changelog](https://github.com/PeteHaitch/methtuple/compare/v1.4.1...v1.5)

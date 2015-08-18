@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/PeteHaitch/methtuple.png?branch=master)](https://travis-ci.org/PeteHaitch/methtuple)
 [![Coverage Status](https://coveralls.io/repos/PeteHaitch/methtuple/badge.svg?branch=master)](https://coveralls.io/r/PeteHaitch/methtuple?branch=master)
+
 # methtuple
 
 ## Overview
@@ -76,18 +77,29 @@ C: {2, 3, 4}
 
 ## Installation and dependencies
 
-Simply running
+`methtuple` is written in Python and relies upon the `pysam` module. __NOTE: `methtuple` now requires `pysam v0.8.3` or greater.__
+
+Running `python setup.py install` will attempt to install `pysam` if it isn't found on your system. Alternatively, instructions for installing `pysam` are available from [https://github.com/pysam-developers/pysam](https://github.com/pysam-developers/pysam).
+
+I have extensively used and tested `methtuple` with Python 2.7. It should also work on Python 3.2, 3.3 and 3.4 with the current version of `pysam` (`v0.8.3`), as indicated by the [Travis-CI builds](https://travis-ci.org/PeteHaitch/methtuple).
+
+### Using `pip`
+
+The simplest way:
+
+```
+pip install methtuple
+```
+
+### Using source
+
+Alternatively, after cloning or downloading the `methtuple` git repositority, simply run:
 
 ```
 python setup.py install
 ```
+
 in the root `methtuple` directory should work for most systems.
-
-`methtuple` is written in Python and relies upon the `pysam` module. __NOTE: `methtuple` now requires `pysam v0.8.1` or greater.__
-
-Running `python setup.py install` will attempt to install `pysam` if it isn't found on your system. Alternatively, instructions for installing `pysam` are available from [https://github.com/pysam-developers/pysam](https://github.com/pysam-developers/pysam).
-
-`pysam` is currently undergoing an extensive re-design. I have tested and used `methtuple` with Python 2.7 and `pysam` version >= 0.7.5. It should also work on Python 3.2, 3.3 and 3.4 with the current version of `pysam` (`v0.8.0`), as indicated by the [Travis-CI builds](https://travis-ci.org/PeteHaitch/methtuple).
 
 ## Usage
 
