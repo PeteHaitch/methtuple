@@ -1,6 +1,14 @@
 # Version 1.5.3
 
-`methtuple` now requires `pysam v0.8.3` or greater.
+methtuple now requires pysam `v0.8.3` or greater.
+
+## Bug fixes
+
+- Fixed failing tests due to changes between pysam v0.8.2 and v0.8.3.
+
+## Internal
+
+- `methtuple` now requires pysam `v0.8.3` or greater
 
 # Version 1.5.0
 

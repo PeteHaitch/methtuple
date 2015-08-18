@@ -1,8 +1,8 @@
 # Change Log
 
-## [Unreleased](https://github.com/PeteHaitch/methtuple/tree/HEAD)
+## [v1.5.3](https://github.com/PeteHaitch/methtuple/tree/v1.5.3) (2015-08-18)
 
-[Full Changelog](https://github.com/PeteHaitch/methtuple/compare/v1.5...HEAD)
+[Full Changelog](https://github.com/PeteHaitch/methtuple/compare/v1.5...v1.5.3)
 
 **Implemented enhancements:**
 
