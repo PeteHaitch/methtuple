@@ -35,7 +35,7 @@ class TestIgnoreCycles(unittest.TestCase):
 			read.next_reference_id = 1
 			read.next_reference_start = 512
 			read.template_length = 121
-			read.query_qualities = pysam.qualitystring_to_array("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+			read.query_qualities = pysam.qualitystring_to_array(b"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.set_tags([("XG", b"CT"), ("XM", b"..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx...."), ("XR", b"CT")])
 			return read
 
@@ -54,7 +54,7 @@ class TestIgnoreCycles(unittest.TestCase):
 			read.next_reference_id = 1
 			read.next_reference_start = 450
 			read.template_length = -121
-			read.query_qualities = pysam.qualitystring_to_array("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+			read.query_qualities = pysam.qualitystring_to_array(b"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.set_tags([("XG", b"CT"), ("XM", b"....x....h.xZ.hh..x......hh.xZ.....x....x......h..Z.x..H.xZ"), ("XR", b"GA")])
 			return read
 
@@ -73,7 +73,7 @@ class TestIgnoreCycles(unittest.TestCase):
 			read.next_reference_id = 1
 			read.next_reference_start = 492
 			read.template_length = -131
-			read.query_qualities = pysam.qualitystring_to_array("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+			read.query_qualities = pysam.qualitystring_to_array(b"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.set_tags([("XG", b"GA"), ("XM", b"...Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx."), ("XR", b"CT")])
 			return read
 
@@ -92,7 +92,7 @@ class TestIgnoreCycles(unittest.TestCase):
 			read.next_reference_id = 1
 			read.next_reference_start = 560
 			read.template_length = 131
-			read.query_qualities = pysam.qualitystring_to_array("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+			read.query_qualities = pysam.qualitystring_to_array(b"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.set_tags([("XG", b"GA"), ("XM", b".z...Zxh...x....x.hh.h....x.h....Z......x.h.......Z......x.h..x.hh."), ("XR", b"GA")])
 			return read
 
@@ -165,7 +165,7 @@ class TestIgnoreLowQualityBases(unittest.TestCase):
 			read.next_reference_id = 1
 			read.next_reference_start = 512
 			read.template_length = 121
-			read.query_qualities = pysam.qualitystring_to_array("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!") # Phred33 = 0
+			read.query_qualities = pysam.qualitystring_to_array(b"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!") # Phred33 = 0
 			read.set_tags([("XG", b"CT"), ("XM", b"..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx...."), ("XR", b"CT")])
 			return read
 
@@ -184,7 +184,7 @@ class TestIgnoreLowQualityBases(unittest.TestCase):
 			read.next_reference_id = 1
 			read.next_reference_start = 512
 			read.template_length = 121
-			read.query_qualities = pysam.qualitystring_to_array("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@") # Phred64 = 0
+			read.query_qualities = pysam.qualitystring_to_array(b"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@") # Phred64 = 0
 			read.set_tags([("XG", b"CT"), ("XM", b"..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx...."), ("XR", b"CT")])
 			return read
 
@@ -206,8 +206,8 @@ class TestIgnoreLowQualityBases(unittest.TestCase):
 
 	def test_some_fail_low_qual_filter(self):
 		# Should remove all but the first element of the methylation index
-		self.p33.query_qualities = pysam.qualitystring_to_array("!!!!!!!!!!!!!!!!!!#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!") # Change one base to have Phred33 = 2
-		self.p64.query_qualities = pysam.qualitystring_to_array("@@@@@@@@@@@@@@@@@@B@#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@") # Change one base to have Phred64 = 2
+		self.p33.query_qualities = pysam.qualitystring_to_array(b"!!!!!!!!!!!!!!!!!!#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!") # Change one base to have Phred33 = 2
+		self.p64.query_qualities = pysam.qualitystring_to_array(b"@@@@@@@@@@@@@@@@@@B@#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@") # Change one base to have Phred64 = 2
 		self.assertEqual(ignore_low_quality_bases(self.p33, self.p33m, 2, 33), [18])
 		self.assertEqual(ignore_low_quality_bases(self.p64, self.p64m, 2, 64), [18])
 
@@ -242,7 +242,7 @@ class TestFixOldBismark(unittest.TestCase):
 			read.next_reference_id = 1
 			read.next_reference_start = 512
 			read.template_length = 121
-			read.query_qualities = pysam.qualitystring_to_array("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+			read.query_qualities = pysam.qualitystring_to_array(b"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			return read
 
 		# Create the read
@@ -282,7 +282,7 @@ class TestGetPositions(unittest.TestCase):
 			read.next_reference_id = 0
 			read.next_reference_start = 0
 			read.template_length = rl
-			read.query_qualities = pysam.qualitystring_to_array("B" * rl)
+			read.query_qualities = pysam.qualitystring_to_array(b"B" * rl)
 			return read
 
 		def addInsertionAndDeletion(read, rpi, rpd, li, ld, f):
@@ -552,7 +552,7 @@ class TestDoesReadContainComplicatedCigar(unittest.TestCase):
 			read.next_reference_id = 0
 			read.next_reference_start = 854
 			read.template_length = 100
-			read.query_qualities = pysam.qualitystring_to_array("BBCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@")
+			read.query_qualities = pysam.qualitystring_to_array(b"BBCFFBDEHH2AFHIGHIJFHIIIJJJJHHIIIJGIHHJJIJIJJDHIIIJIIJJHIJJJJJJJHIIJJJJJJGIGGJGGGFFHGFBACA@CCCCDCCD@")
 			read.set_tags([("XG", b"CT"), ("XM", b"hh..h.....x........x....hh.h....h......x.....h..x...x..x..xZ....h.h.....h.....x.......h.........h.z."), ("XR", b"CT")])
 			return read
 
@@ -614,7 +614,7 @@ class TestProcessOverlap(unittest.TestCase):
 			read_1.next_reference_id = 0
 			read_1.next_reference_start = 13766
 			read_1.template_length = 321
-			read_1.query_qualities = pysam.qualitystring_to_array("11=BA2242323<EFGGHJJFHHIJIHIHIIJJJI?FHIIJIJIJJHIHHFHGHIDHCFHHICFCEHHIHHEHHA;?D@BCAAA>>CACADBCC#######")
+			read_1.query_qualities = pysam.qualitystring_to_array(b"11=BA2242323<EFGGHJJFHHIJIHIHIIJJJI?FHIIJIJIJJHIHHFHGHIDHCFHHICFCEHHIHHEHHA;?D@BCAAA>>CACADBCC#######")
 			read_1.set_tags([('NM', 24), ('MD', '0C5C0C4C2C6C0C2C2C10C0C0C15C0C9C0C4C0C0C3C1C3C7C0C4'), ('XM', b'h.....hx....x..x......hx..h..h..........hhx...............hx.........hx....hhx...h.x...h.......hxZ...'), ('XR', b'CT'), ('XG', b'CT')])
 			read_2 = pysam.AlignedSegment()
 			read_2.query_name = "SRR400564.3818005_HAL:1133:C010EABXX:8:2102:8721:119200_length=101"
@@ -627,7 +627,7 @@ class TestProcessOverlap(unittest.TestCase):
 			read_2.next_reference_id = 0
 			read_2.next_reference_start = 13546
 			read_2.template_length = -321
-			read_2.query_qualities = pysam.qualitystring_to_array("DDDDDDDDDDBDDDDDDDDDDCCDDDDDDC@9,,,,,,..C>6.,-.JJGIJJJJJJJJJJIHHHD?20001001JJJJJJJJJJJJJHHHHHFFFFFCCC")
+			read_2.query_qualities = pysam.qualitystring_to_array(b"DDDDDDDDDDBDDDDDDDDDDCCDDDDDDC@9,,,,,,..C>6.,-.JJGIJJJJJJJJJJIHHHD?20001001JJJJJJJJJJJJJHHHHHFFFFFCCC")
 			read_2.set_tags([('NM', 31), ('MD', '0C2C1C1C4C0C1C2C6C2C0C6C0C2C0C0C1C0C2C17C3C0C0C2C2C2C2C0C0C3C8C1'), ('XM', b'h..h.h.x....hh.x..x......x..hh......hx..hhh.hh..h.......Z....Z....x...hhh..x..h..x..hhh...h........h.'), ('XR', b'GA'), ('XG', b'CT')])
 			return read_1, read_2
 
@@ -645,7 +645,7 @@ class TestProcessOverlap(unittest.TestCase):
 				read_1.next_reference_id = 0
 				read_1.next_reference_start = 521538
 				read_1.template_length = 164
-				read_1.query_qualities = pysam.qualitystring_to_array("@BCFDFFDHFFHHIJGGIHIJJJHIFGCFHIEHHEGHFHIJJJJJJIIJJIIHFDD>A5=@;ACEAC>>AB=ACC>A(+2:<AA>DCCDA@C:@A>CCBDE")
+				read_1.query_qualities = pysam.qualitystring_to_array(b"@BCFDFFDHFFHHIJGGIHIJJJHIFGCFHIEHHEGHFHIJJJJJJIIJJIIHFDD>A5=@;ACEAC>>AB=ACC>A(+2:<AA>DCCDA@C:@A>CCBDE")
 				read_1.set_tags([('NM', 24), ('MD', '1C10C5C9C11C1C0C1C5C1C4C2C1C0C6C2C6C2C4C3C0C0C3C0C0'), ('XM', b'.x..........x.....x.........x...........h.hh.x.....h.x....z..h.hx......x..x......x..h....h...hxz...hx'), ('XR', b'CT'), ('XG', b'CT')])
 				read_2 = pysam.AlignedSegment()
 				read_2.query_name = "SRR400564.5201451_HAL:1133:C010EABXX:8:2108:13902:150428_length=101"
@@ -658,7 +658,7 @@ class TestProcessOverlap(unittest.TestCase):
 				read_2.next_reference_id = 0
 				read_2.next_reference_start = 521475
 				read_2.template_length = -164
-				read_2.query_qualities = pysam.qualitystring_to_array("@CDDDDDDDCCCCDD@CCACCDDDDEDDDDDDDCDDDDDDDEEEDDFFHHEJJIHIJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJHHHHHFFFFFCCC")
+				read_2.query_qualities = pysam.qualitystring_to_array(b"@CDDDDDDDCCCCDD@CCACCDDDDEDDDDDDDCDDDDDDDEEEDDFFHHEJJIHIJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJHHHHHFFFFFCCC")
 				read_2.set_tags([('NM', 29), ('MD', '0C0C6C2C6C2C4C3C0C0C3C0C0C7C10C2C2C0G1C0C1C1C5C2C2C5C1C1C4C2'), ('XM', b'hx......x..x......x..h....h...hxz...hxz.......z..........x..h..z..hh.h.h.....h..x..x.....h.h.x....x..'), ('XR', b'GA'), ('XG', b'CT')])
 				return read_1, read_2
 
@@ -676,7 +676,7 @@ class TestProcessOverlap(unittest.TestCase):
 				read_1.next_reference_id = 9
 				read_1.next_reference_start = 91057589
 				read_1.template_length = -161
-				read_1.query_qualities = pysam.qualitystring_to_array("66<<;<:9:<<<==<=<??>=>==>??>=>?>?=?????;>???????????<???=??<?<1#>>?>?:@@>?@?@@@@@???@?>@??@?@<2##@<<<")
+				read_1.query_qualities = pysam.qualitystring_to_array(b"66<<;<:9:<<<==<=<??>=>==>??>=>?>?=?????;>???????????<???=??<?<1#>>?>?:@@>?@?@@@@@???@?>@??@?@<2##@<<<")
 				read_1.set_tags([('NM', 23), ('MD', '8G0G6G0G5G1G4G0G12G4G13T2G4G1G2G2G0G0G2G8G1G0A2G1'), ('XM', b'........xh..Z...hh.....x.h....hh............h....x.Z..............x....x.h..x.Zxhh..h........x.....h.'), ('XR', b'CT'), ('XG', b'GA')])
 				read_2 = pysam.AlignedSegment()
 				read_2.query_name = "SRR400564.71_HAL:1133:C010EABXX:8:1101:1825:2253_length=101"
@@ -689,7 +689,7 @@ class TestProcessOverlap(unittest.TestCase):
 				read_2.next_reference_id = 9
 				read_2.next_reference_start = 91057649
 				read_2.template_length = 161
-				read_2.query_qualities = pysam.qualitystring_to_array("#1=DFFFFHGHHHJJIJJJJJ#1?FH####00?FHIJJIJJJJJJJJJJJHJJJJJI###-#,,?BDEEEDCDDDDBDDDDDDDDEDDDDDDDD##++8??")
+				read_2.query_qualities = pysam.qualitystring_to_array(b"#1=DFFFFHGHHHJJIJJJJJ#1?FH####00?FHIJJIJJJJJJJJJJJHJJJJJI###-#,,?BDEEEDCDDDDBDDDDDDDDEDDDDDDDD##++8??")
 				read_2.set_tags([('NM', 41), ('MD', '0C1G1G3G0G0G0G2G0G0G2G1C1G2G0G0C0C4G3G0G1G2G1G1G1G0G1G3G0C0A1C6G0G6G0G5G1G4G0G2C0A5'), ('XM', b'..x.hH..xhhh..xhh..h...x......Z...x...xh.h..x.h.h.hh.h..............xh..Z...hh.....x.h....hh.........'), ('XR', b'GA'), ('XG', b'GA')])
 				return read_1, read_2
 
@@ -707,7 +707,7 @@ class TestProcessOverlap(unittest.TestCase):
 				read_1.next_reference_id = 8
 				read_1.next_reference_start = 131548707
 				read_1.template_length = -134
-				read_1.query_qualities = pysam.qualitystring_to_array("##################@?@B@@@;;((>1551=6=;)..);7;;=7.(;@5-')))=@168?:@AAFC2FA3HCCEH@AC<<EEIIFFFHDDDA44111")
+				read_1.query_qualities = pysam.qualitystring_to_array(b"##################@?@B@@@;;((>1551=6=;)..);7;;=7.(;@5-')))=@168?:@AAFC2FA3HCCEH@AC<<EEIIFFFHDDDA44111")
 				read_1.set_tags([('NM', 22), ('MD', '0C17G4G2G0G9G0G1G2G0G0G6G0G2C2G12G9G7G0G2G1G3G0'), ('XM', b'..................h....h..hh.......Z.hh.h..xhh......xh.Z...x.......Z...Zx.........h.......hh..h.h..Zx'), ('XR', b'CT'), ('XG', b'GA')])
 				read_2 = pysam.AlignedSegment()
 				read_2.query_name = "SRR400564.9511_HAL:1133:C010EABXX:8:1101:20403:11881_length=101"
@@ -720,7 +720,7 @@ class TestProcessOverlap(unittest.TestCase):
 				read_2.next_reference_id = 8
 				read_2.next_reference_start = 131548740
 				read_2.template_length = 134
-				read_2.query_qualities = pysam.qualitystring_to_array("@B@FFFFDFHHHHJJJJJGJJJIIJJIJJJJJJJJIJJJJJJIJJJJJIHCFIGHIGIHFDDDDEDCDDDDDDDDDDDDDDCCCCCDA>>@?>?AACBA<2")
+				read_2.query_qualities = pysam.qualitystring_to_array(b"@B@FFFFDFHHHHJJJJJGJJJIIJJIJJJJJJJJIJJJJJJIJJJJJIHCFIGHIGIHFDDDDEDCDDDDDDDDDDDDDDCCCCCDA>>@?>?AACBA<2")
 				read_2.set_tags([('NM', 19), ('MD', '3G0G3G1G12G27G4G2G0G9G0G1G2G0G0G6G0G5G7G0'), ('XM', b'...xh.Z.h.h.......Z...Zx...........................h....h..hh.......Z.hh.h..xhh......xh.Z...x.......z'), ('XR', b'GA'), ('XG', b'GA')])
 				return read_1, read_2
 
@@ -738,7 +738,7 @@ class TestProcessOverlap(unittest.TestCase):
 				read_1.next_reference_id = 8
 				read_1.next_reference_start = 37918347
 				read_1.template_length = 136
-				read_1.query_qualities = pysam.qualitystring_to_array("=@?=ABDAACFDFHGGHFGIIJJJJIIIIDGGGFHGGDGHGGGHBFHIIFHGHHHEBBDC<AA;?A@CC:@A@CDBBBCCBAB@>:>44>>?:@B3>A###")
+				read_1.query_qualities = pysam.qualitystring_to_array(b"=@?=ABDAACFDFHGGHFGIIJJJJIIIIDGGGFHGGDGHGGGHBFHIIFHGHHHEBBDC<AA;?A@CC:@A@CDBBBCCBAB@>:>44>>?:@B3>A###")
 				read_1.set_tags([('NM', 14), ('MD', '0C3C0C12C0C0C2C5C3C39C13C8C0C1C1'), ('XM', b'x...hx............hhx..h.....h...h...........Z.Z.....Z.....Z.............h.............x........hh.x.'), ('XR', b'CT'), ('XG', b'CT')])
 				read_2 = pysam.AlignedSegment()
 				read_2.query_name = "SRR400564.671_HAL:1133:C010EABXX:8:1101:10776:2987_length=101"
@@ -751,7 +751,7 @@ class TestProcessOverlap(unittest.TestCase):
 				read_2.next_reference_id = 8
 				read_2.next_reference_start = 37918311
 				read_2.template_length = -136
-				read_2.query_qualities = pysam.qualitystring_to_array("###########@8DDDDB?DDDB@8DDDDC>;?B?BDADDFFFHHHHC@@@GDGHGHGGAGFFEHAAEIHGDEGIIGJJJJJJJJJJJHHGHHFFFFFCCC")
+				read_2.query_qualities = pysam.qualitystring_to_array(b"###########@8DDDDB?DDDB@8DDDDC>;?B?BDADDFFFHHHHC@@@GDGHGHGGAGFFEHAAEIHGDEGIIGJJJJJJJJJJJHHGHHFFFFFCCC")
 				read_2.set_tags([('NM', 13), ('MD', '3A4T0C1C5C5C13C13C8C0C1C6C29'), ('XM', b'..........z.z.....z.....z.............h.............x........hh.x......x.............................'), ('XR', b'GA'), ('XG', b'CT')])
 				return read_1, read_2
 
@@ -769,7 +769,7 @@ class TestProcessOverlap(unittest.TestCase):
 				read_1.next_reference_id = 13
 				read_1.next_reference_start = 65347514
 				read_1.template_length = -141
-				read_1.query_qualities = pysam.qualitystring_to_array("DDDECCA@AFDBFFHFEDHGHHGFF@@GHGIIIIIIGIGGIIHIGGIIIHIIIIIIIIIIHHF?IIHHBAIIIIIIIIIIIIIIIIIHHHFHHDAA1D@??")
+				read_1.query_qualities = pysam.qualitystring_to_array(b"DDDECCA@AFDBFFHFEDHGHHGFF@@GHGIIIIIIGIGGIIHIGGIIIHIIIIIIIIIIHHF?IIHHBAIIIIIIIIIIIIIIIIIHHHFHHDAA1D@??")
 				read_1.set_tags([('NM', 24), ('MD', '0G1G8T1G6G0G2G2T0G3G0G2G11G10G5G0G10G3G0G5G1G3G4G0'), ('XM', b'h.h..........h......zx..x...h...hh..x...........h..........z......hh.....H....x...hh.....z.h...z....h'), ('XR', b'CT'), ('XG', b'GA')])
 				read_2 = pysam.AlignedSegment()
 				read_2.query_name = "SRR400564.41106_HAL:1133:C010EABXX:8:1101:16059:44833_length=101"
@@ -782,7 +782,7 @@ class TestProcessOverlap(unittest.TestCase):
 				read_2.next_reference_id = 13
 				read_2.next_reference_start = 65347555
 				read_2.template_length = 141
-				read_2.query_qualities = pysam.qualitystring_to_array("CCCFFFFFHHHHHJJJIJJJJJJJJJJIJJJJJJJJJJJJJJJJJHFDDC@CDCDDDDABABDD@BDBDCC?CDDDBDDCCCDEEEE@CDCE@CCCCDDE>")
+				read_2.query_qualities = pysam.qualitystring_to_array(b"CCCFFFFFHHHHHJJJIJJJJJJJJJJIJJJJJJJJJJJJJJJJJHFDDC@CDCDDDDABABDD@BDBDCC?CDDDBDDCCCDEEEE@CDCE@CCCCDDE>")
 				read_2.set_tags([('NM', 25), ('MD', '4G2G0G1G7G0G7G1G2G5G0G1G1G8T1G6G0G2G2T0G3G0G2G11G10'), ('XM', b'....z..hh.h.......hh.......z.h..h......xh.h.h..........h......zx..x...h...hh..x...........h..........'), ('XR', b'GA'), ('XG', b'GA')])
 				return read_1, read_2
 
@@ -800,7 +800,7 @@ class TestProcessOverlap(unittest.TestCase):
 				read_1.next_reference_id = 4
 				read_1.next_reference_start = 3090675
 				read_1.template_length = -135
-				read_1.query_qualities = pysam.qualitystring_to_array("ADDCC@C@CCCCCCAAACCC@CA??BCC@CA;A=;6?>AHHHEADGHHCJJJIHCGIHFB?IIGGGIIGHDHHGJIJIJJIIHGIHFHDFFDFA=2AD@==")
+				read_1.query_qualities = pysam.qualitystring_to_array(b"ADDCC@C@CCCCCCAAACCC@CA??BCC@CA;A=;6?>AHHHEADGHHCJJJIHCGIHFB?IIGGGIIGHDHHGJIJIJJIIHGIHFHDFFDFA=2AD@==")
 				read_1.set_tags([('NM', 16), ('MD', '0C5G6G7G17G0G0G10G4G9G1G1G5G2G0G18G0'), ('XM', b'......h......h.......h.................xhh.........Zx....x........Zx.h.h.....x..xh..................x'), ('XR', b'CT'), ('XG', b'GA')])
 				read_2 = pysam.AlignedSegment()
 				read_2.query_name = "SRR400564.5403_HAL:1133:C010EABXX:8:1101:1870:7806_length=101"
@@ -813,7 +813,7 @@ class TestProcessOverlap(unittest.TestCase):
 				read_2.next_reference_id = 4
 				read_2.next_reference_start = 3090709
 				read_2.template_length = 135
-				read_2.query_qualities = pysam.qualitystring_to_array("CCCFFFFFHHHGHIJIJJIJJJJJJJJJJJJJIJJJIJJIIIJJJJJJHJFHIJHIJJIJIDHH?CHHHFFFFFFEDEEDCDEDDDDDDCDDDDBCDDABD")
+				read_2.query_qualities = pysam.qualitystring_to_array(b"CCCFFFFFHHHGHIJIJJIJJJJJJJJJJJJJIJJJIJJIIIJJJJJJHJFHIJHIJJIJIDHH?CHHHFFFFFFEDEEDCDEDDDDDDCDDDDBCDDABD")
 				read_2.set_tags([('NM', 21), ('MD', '6G1G2G3G0G0G2G11G7G6G7G17G0G0G10G4G4'), ('XM', b'.....Zx.h..h...xhh..h...........h............h......h.......h.................xhh.........Zx....x....'), ('XR', b'GA'), ('XG', b'GA')])
 				return read_1, read_2
 
@@ -831,7 +831,7 @@ class TestProcessOverlap(unittest.TestCase):
 				read_1.next_reference_id = 7
 				read_1.next_reference_start = 12294882
 				read_1.template_length = -177
-				read_1.query_qualities = pysam.qualitystring_to_array("###########?@::43<DB??<5-@DDDDDFFED@FFFDHIIEGIGFJJJJIIFIIIJIIIFF??@F?JJIHHGJJJJJIJJIJIJJHGHHHDB=4FCBB")
+				read_1.query_qualities = pysam.qualitystring_to_array(b"###########?@::43<DB??<5-@DDDDDFFED@FFFDHIIEGIGFJJJJIIFIIIJIIIFF??@F?JJIHHGJJJJJIJJIJIJJHGHHHDB=4FCBB")
 				read_1.set_tags([('NM', 21), ('MD', '5G1G6G3G0G0G0G3^G3G0G1G0G0G1G10G7G5G0G3G11G6G16'), ('XM', b'.....x.z......z...xhhh......hh.hhh.h..........x.......x.....hh...x...........h......z................'), ('XR', b'CT'), ('XG', b'GA')])
 				read_2 = pysam.AlignedSegment()
 				read_2.query_name = "SRR400564.2497275_HAL:1133:C010EABXX:8:1204:20661:123404_length=101"
@@ -844,7 +844,7 @@ class TestProcessOverlap(unittest.TestCase):
 				read_2.next_reference_id = 7
 				read_2.next_reference_start = 12294957
 				read_2.template_length = 177
-				read_2.query_qualities = pysam.qualitystring_to_array("BBCFFFFFHGHFHJJJJJJJIJIJJJIJIHGHGHGHJIIJJJJJIIIJJJCGIIJIGHIIJJIHHHHGHFFFFEEEEEEDDDDDDBDDDDDDDDDDDDDD?")
+				read_2.query_qualities = pysam.qualitystring_to_array(b"BBCFFFFFHGHFHJJJJJJJIJIJJJIJIHGHGHGHJIIJJJJJIIIJJJCGIIJIGHIIJJIHHHHGHFFFFEEEEEEDDDDDDBDDDDDDDDDDDDDD?")
 				read_2.set_tags([('NM', 29), ('MD', '4G0G2G0G8G2G0G0G0G6G0G0G1G3G4G0G4G0G1G0G10G14G1G6G3G0G0G0G3G0'), ('XM', b'....xh..hh........x..xhhh......zxh.h...h....zx....xh.hh..........h..............x.z......z...xhhh...z'), ('XR', b'GA'), ('XG', b'GA')])
 				return read_1, read_2
 
@@ -941,45 +941,45 @@ class TestProcessOverlap(unittest.TestCase):
 
 		def test_quality_overlap_filter(self):
 			# Fudge quality scores to test overlap_filter = 'quality'.
-			self.nor_1.query_qualities = pysam.qualitystring_to_array('G' * len(self.nor_1.query_sequence))
-			self.nor_2.query_qualities = pysam.qualitystring_to_array('F' * len(self.nor_2.query_sequence))
+			self.nor_1.query_qualities = pysam.qualitystring_to_array(b'G' * len(self.nor_1.query_sequence))
+			self.nor_2.query_qualities = pysam.qualitystring_to_array(b'F' * len(self.nor_2.query_sequence))
 			self.assertEqual(process_overlap(self.nor_1, self.nor_2, self.nor_mi_1, self.nor_mi_2, overlap_filter, self.FAILED_QC), ([97], [56, 61], 0))
-			self.nor_1.query_qualities = pysam.qualitystring_to_array('E' * len(self.nor_1.query_sequence))
+			self.nor_1.query_qualities = pysam.qualitystring_to_array(b'E' * len(self.nor_1.query_sequence))
 			self.assertEqual(process_overlap(self.nor_1, self.nor_2, self.nor_mi_1, self.nor_mi_2, overlap_filter, self.FAILED_QC), ([97], [56, 61], 0))
-			self.iso_1.query_qualities = pysam.qualitystring_to_array('G' * len(self.iso_1.query_sequence))
-			self.iso_2.query_qualities = pysam.qualitystring_to_array('F' * len(self.iso_2.query_sequence))
+			self.iso_1.query_qualities = pysam.qualitystring_to_array(b'G' * len(self.iso_1.query_sequence))
+			self.iso_2.query_qualities = pysam.qualitystring_to_array(b'F' * len(self.iso_2.query_sequence))
 			self.assertEqual(process_overlap(self.iso_1, self.iso_2, self.iso_mi_1, self.iso_mi_2, overlap_filter, self.FAILED_QC), ([58, 95], [38, 46, 63], 0))
-			self.iso_1.query_qualities = pysam.qualitystring_to_array('E' * len(self.iso_1.query_sequence))
+			self.iso_1.query_qualities = pysam.qualitystring_to_array(b'E' * len(self.iso_1.query_sequence))
 			self.assertEqual(process_overlap(self.iso_1, self.iso_2, self.iso_mi_1, self.iso_mi_2, overlap_filter, self.FAILED_QC), ([58], [32, 38, 46, 63], 0))
-			self.ixmdso_1.query_qualities = pysam.qualitystring_to_array('G' * len(self.ixmdso_1.query_sequence))
-			self.ixmdso_2.query_qualities = pysam.qualitystring_to_array('F' * len(self.ixmdso_2.query_sequence))
+			self.ixmdso_1.query_qualities = pysam.qualitystring_to_array(b'G' * len(self.ixmdso_1.query_sequence))
+			self.ixmdso_2.query_qualities = pysam.qualitystring_to_array(b'F' * len(self.ixmdso_2.query_sequence))
 			self.assertEqual(process_overlap(self.ixmdso_1, self.ixmdso_2, self.ixmdso_mi_1, self.ixmdso_mi_2, overlap_filter, self.FAILED_QC), ([12, 51, 78], [72], 0))
-			self.ixmdso_1.query_qualities = pysam.qualitystring_to_array('E' * len(self.ixmdso_1.query_sequence))
+			self.ixmdso_1.query_qualities = pysam.qualitystring_to_array(b'E' * len(self.ixmdso_1.query_sequence))
 			self.assertEqual(process_overlap(self.ixmdso_1, self.ixmdso_2, self.ixmdso_mi_1, self.ixmdso_mi_2, overlap_filter, self.FAILED_QC), ([51, 78], [30, 72], 0))
-			self.sxmdo_1.query_qualities = pysam.qualitystring_to_array('G' * len(self.sxmdo_1.query_sequence))
-			self.sxmdo_2.query_qualities = pysam.qualitystring_to_array('F' * len(self.sxmdo_2.query_sequence))
+			self.sxmdo_1.query_qualities = pysam.qualitystring_to_array(b'G' * len(self.sxmdo_1.query_sequence))
+			self.sxmdo_2.query_qualities = pysam.qualitystring_to_array(b'F' * len(self.sxmdo_2.query_sequence))
 			self.assertEqual(process_overlap(self.sxmdo_1, self.sxmdo_2, self.sxmdo_mi_1, self.sxmdo_mi_2, overlap_filter, self.FAILED_QC), ([35, 55, 67, 71, 99], [6, 18, 22], 0))
-			self.sxmdo_1.query_qualities = pysam.qualitystring_to_array('E' * len(self.sxmdo_1.query_sequence))
+			self.sxmdo_1.query_qualities = pysam.qualitystring_to_array(b'E' * len(self.sxmdo_1.query_sequence))
 			self.assertEqual(process_overlap(self.sxmdo_1, self.sxmdo_2, self.sxmdo_mi_1, self.sxmdo_mi_2, overlap_filter, self.FAILED_QC), ([71, 99], [6, 18, 22, 68, 88, 100], 0))
-			self.lxmdo_1.query_qualities = pysam.qualitystring_to_array('G' * len(self.lxmdo_1.query_sequence))
-			self.lxmdo_2.query_qualities = pysam.qualitystring_to_array('F' * len(self.lxmdo_2.query_sequence))
+			self.lxmdo_1.query_qualities = pysam.qualitystring_to_array(b'G' * len(self.lxmdo_1.query_sequence))
+			self.lxmdo_2.query_qualities = pysam.qualitystring_to_array(b'F' * len(self.lxmdo_2.query_sequence))
 			self.assertEqual(process_overlap(self.lxmdo_1, self.lxmdo_2, self.lxmdo_mi_1, self.lxmdo_mi_2, overlap_filter, self.FAILED_QC), ([45, 47, 53, 59], [], 0))
-			self.lxmdo_1.query_qualities = pysam.qualitystring_to_array('E' * len(self.lxmdo_1.query_sequence))
+			self.lxmdo_1.query_qualities = pysam.qualitystring_to_array(b'E' * len(self.lxmdo_1.query_sequence))
 			self.assertEqual(process_overlap(self.lxmdo_1, self.lxmdo_2, self.lxmdo_mi_1, self.lxmdo_mi_2, overlap_filter, self.FAILED_QC), ([], [10, 12, 18, 24], 0))
-			self.iooo_1.query_qualities = pysam.qualitystring_to_array('G' * len(self.iooo_1.query_sequence))
-			self.iooo_2.query_qualities = pysam.qualitystring_to_array('F' * len(self.iooo_2.query_sequence))
+			self.iooo_1.query_qualities = pysam.qualitystring_to_array(b'G' * len(self.iooo_1.query_sequence))
+			self.iooo_2.query_qualities = pysam.qualitystring_to_array(b'F' * len(self.iooo_2.query_sequence))
 			self.assertEqual(process_overlap(self.iooo_1, self.iooo_2, self.iooo_mi_1, self.iooo_mi_2, overlap_filter, self.FAILED_QC), ([20, 59, 89, 95], [4, 27], 0))
-			self.iooo_1.query_qualities = pysam.qualitystring_to_array('E' * len(self.iooo_1.query_sequence))
+			self.iooo_1.query_qualities = pysam.qualitystring_to_array(b'E' * len(self.iooo_1.query_sequence))
 			self.assertEqual(process_overlap(self.iooo_1, self.iooo_2, self.iooo_mi_1, self.iooo_mi_2, overlap_filter, self.FAILED_QC), ([59, 89, 95], [4, 27, 62], 0))
-			self.i_1.query_qualities = pysam.qualitystring_to_array('G' * len(self.i_1.query_sequence))
-			self.i_2.query_qualities = pysam.qualitystring_to_array('F' * len(self.i_2.query_sequence))
+			self.i_1.query_qualities = pysam.qualitystring_to_array(b'G' * len(self.i_1.query_sequence))
+			self.i_2.query_qualities = pysam.qualitystring_to_array(b'F' * len(self.i_2.query_sequence))
 			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.iooo_mi_2, overlap_filter, self.FAILED_QC), ([51, 66], [5], 0))
-			self.i_1.query_qualities = pysam.qualitystring_to_array('E' * len(self.i_1.query_sequence))
+			self.i_1.query_qualities = pysam.qualitystring_to_array(b'E' * len(self.i_1.query_sequence))
 			self.assertEqual(process_overlap(self.i_1, self.i_2, self.i_mi_1, self.i_mi_2, overlap_filter, self.FAILED_QC), ([66], [5, 90], 0))
-			self.daeoo_1.query_qualities = pysam.qualitystring_to_array('G' * len(self.daeoo_1.query_sequence))
-			self.daeoo_2.query_qualities = pysam.qualitystring_to_array('F' * len(self.daeoo_2.query_sequence))
+			self.daeoo_1.query_qualities = pysam.qualitystring_to_array(b'G' * len(self.daeoo_1.query_sequence))
+			self.daeoo_2.query_qualities = pysam.qualitystring_to_array(b'F' * len(self.daeoo_2.query_sequence))
 			self.assertEqual(process_overlap(self.daeoo_1, self.daeoo_2, self.daeoo_mi_1, self.daeoo_mi_2, overlap_filter, self.FAILED_QC), ([7, 14, 84], [31, 44], 0))
-			self.daeoo_1.query_qualities = pysam.qualitystring_to_array('E' * len(self.daeoo_1.query_sequence))
+			self.daeoo_1.query_qualities = pysam.qualitystring_to_array(b'E' * len(self.daeoo_1.query_sequence))
 			self.assertEqual(process_overlap(self.daeoo_1, self.daeoo_2, self.daeoo_mi_1, self.daeoo_mi_2, overlap_filter, self.FAILED_QC), ([84], [31, 44, 82, 89], 0))
 
 		def test_Bismark_overlap_filter(self):
@@ -1016,7 +1016,7 @@ class TestExtractAndUpdateMethylationIndexFromSingleEndRead(unittest.TestCase):
 			read.next_reference_id = 0
 			read.next_reference_start = 0
 			read.template_length = 0
-			read.query_qualities = pysam.qualitystring_to_array("DBDB2;@>)@@F?EFG@GBGGGGDDBG@DGGGGEEFHHEGHHHHEFHHHHFHHHFHHHGHGBCEAA@?@?/A@>@3,.6,AA,@>=")
+			read.query_qualities = pysam.qualitystring_to_array(b"DBDB2;@>)@@F?EFG@GBGGGGDDBG@DGGGGEEFHHEGHHHHEFHHHHFHHHFHHHGHGBCEAA@?@?/A@>@3,.6,AA,@>=")
 			read.set_tags([("XG", b"CT"), ("XM", b"...........h......hhhhh..Z....hhx...Z..hh.Z..hh.hh.x..hx.....x..x..Z.....Z..x........."), ("XR", b"CT")])
 			return read
 
@@ -1034,7 +1034,7 @@ class TestExtractAndUpdateMethylationIndexFromSingleEndRead(unittest.TestCase):
 			read.next_reference_id = 0
 			read.next_reference_start = 0
 			read.template_length = 0
-			read.query_qualities = pysam.qualitystring_to_array("G7@G@BGB@GGGGGDIEEBIBA<AHEGEEEGGGDDEDFFEIIHIIGGDGGGGGGGGGGDGDBED<FAAFEGGGGGIHIFIGBDG")
+			read.query_qualities = pysam.qualitystring_to_array(b"G7@G@BGB@GGGGGDIEEBIBA<AHEGEEEGGGDDEDFFEIIHIIGGDGGGGGGGGGGDGDBED<FAAFEGGGGGIHIFIGBDG")
 			read.set_tags([("XG", b"GA"), ("XM", b"......x...xh..x..x.......x...xh.Z..x.h..........h....x...z..xh.h..zx.h...h....hhh..."), ("XR", b"CT")])
 			return read
 
@@ -1149,7 +1149,7 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 			read.next_reference_id = 1
 			read.next_reference_start = 512
 			read.template_length = 121
-			read.query_qualities = pysam.qualitystring_to_array("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+			read.query_qualities = pysam.qualitystring_to_array(b"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.set_tags([("XG", b"CT"), ("XM", b"..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx...."), ("XR", b"CT")])
 			return read
 
@@ -1168,7 +1168,7 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 			read.next_reference_id = 1
 			read.next_reference_start = 450
 			read.template_length = -121
-			read.query_qualities = pysam.qualitystring_to_array("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+			read.query_qualities = pysam.qualitystring_to_array(b"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.set_tags([("XG", b"CT"), ("XM", b"....x....h.xZ.hh..x......hh.xZ.....x....x......h..Z.x..H.xZ"), ("XR", b"GA")])
 			return read
 
@@ -1187,7 +1187,7 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 			read.next_reference_id = 1
 			read.next_reference_start = 492
 			read.template_length = -131
-			read.query_qualities = pysam.qualitystring_to_array("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+			read.query_qualities = pysam.qualitystring_to_array(b"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.set_tags([("XG", b"GA"), ("XM", b"...Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx."), ("XR", b"CT")])
 			return read
 
@@ -1206,7 +1206,7 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 			read.next_reference_id = 1
 			read.next_reference_start = 560
 			read.template_length = 131
-			read.query_qualities = pysam.qualitystring_to_array("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+			read.query_qualities = pysam.qualitystring_to_array(b"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.set_tags([("XG", b"GA"), ("XM", b".z...Zxh...x....x.hh.h....x.h....Z......x.h.......Z......x.h..x.hh."), ("XR", b"GA")])
 			return read
 
@@ -1397,7 +1397,7 @@ class TestMTuple(unittest.TestCase):
 			read.next_reference_id = 0
 			read.next_reference_start = 0
 			read.template_length = 0
-			read.query_qualities = pysam.qualitystring_to_array("DBDB2;@>)@@F?EFG@GBGGGGDDBG@DGGGGEEFHHEGHHHHEFHHHHFHHHFHHHGHGBCEAA@?@?/A@>@3,.6,AA,@>=")
+			read.query_qualities = pysam.qualitystring_to_array(b"DBDB2;@>)@@F?EFG@GBGGGGDDBG@DGGGGEEFHHEGHHHHEFHHHHFHHHFHHHGHGBCEAA@?@?/A@>@3,.6,AA,@>=")
 			read.set_tags([("XG", b"CT"), ("XM", b"...........h......hhhhh..Z....hhx...Z..hh.Z..hh.hh.x..hx.....x..x..Z.....Z..x........."), ("XR", b"CT")])
 			return read
 
@@ -1415,7 +1415,7 @@ class TestMTuple(unittest.TestCase):
 			read.next_reference_id = 0
 			read.next_reference_start = 0
 			read.template_length = 0
-			read.query_qualities = pysam.qualitystring_to_array("G7@G@BGB@GGGGGDIEEBIBA<AHEGEEEGGGDDEDFFEIIHIIGGDGGGGGGGGGGDGDBED<FAAFEGGGGGIHIFIGBDG")
+			read.query_qualities = pysam.qualitystring_to_array(b"G7@G@BGB@GGGGGDIEEBIBA<AHEGEEEGGGDDEDFFEIIHIIGGDGGGGGGGGGGDGDBED<FAAFEGGGGGIHIFIGBDG")
 			read.set_tags([("XG", b"GA"), ("XM", b"......x...xh..x..x.......x...xh.Z..x.h..........h....x...z..xh.h..zx.h...h....hhh..."), ("XR", b"CT")])
 			return read
 
@@ -1433,7 +1433,7 @@ class TestMTuple(unittest.TestCase):
 			read.next_reference_id = 1
 			read.next_reference_start = 512
 			read.template_length = 121
-			read.query_qualities = pysam.qualitystring_to_array("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+			read.query_qualities = pysam.qualitystring_to_array(b"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.set_tags([("XG", b"CT"), ("XM", b"..hhh...hhh...hhh.z.Z....hhh.x..xZ..hxZ.hxZ.hxZ....x...hx...."), ("XR", b"CT")])
 			return read
 
@@ -1451,7 +1451,7 @@ class TestMTuple(unittest.TestCase):
 			read.next_reference_id = 1
 			read.next_reference_start = 450
 			read.template_length = -121
-			read.query_qualities = pysam.qualitystring_to_array("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+			read.query_qualities = pysam.qualitystring_to_array(b"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.set_tags([("XG", b"CT"), ("XM", b"....x....h.xZ.hh..x......hh.xZ.....x....x......h..Z.x..H.xZ"), ("XR", b"GA")])
 			return read
 
@@ -1469,7 +1469,7 @@ class TestMTuple(unittest.TestCase):
 			read.next_reference_id = 1
 			read.next_reference_start = 492
 			read.template_length = -131
-			read.query_qualities = pysam.qualitystring_to_array("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+			read.query_qualities = pysam.qualitystring_to_array(b"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.set_tags([("XG", b"GA"), ("XM", b"...Z..x....Z.....Z.Zx.h......Zxh...x.h..x.hh.h...Z.......Z..Zx."), ("XR", b"CT")])
 			return read
 
@@ -1487,7 +1487,7 @@ class TestMTuple(unittest.TestCase):
 			read.next_reference_id = 1
 			read.next_reference_start = 560
 			read.template_length = 131
-			read.query_qualities = pysam.qualitystring_to_array("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+			read.query_qualities = pysam.qualitystring_to_array(b"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 			read.set_tags([("XG", b"GA"), ("XM", b".z...Zxh...x....x.hh.h....x.h....Z......x.h.......Z......x.h..x.hh."), ("XR", b"GA")])
 			return read
 
@@ -1735,7 +1735,7 @@ class TestGetStrand(unittest.TestCase):
 			read.next_reference_id = 0
 			read.next_reference_start = 0
 			read.template_length = 0
-			read.query_qualities = pysam.qualitystring_to_array("BC?BBBBBCCCCAA@BCB?AB@AB>CABB@@BB@?BB497@@B:@@B5>@")
+			read.query_qualities = pysam.qualitystring_to_array(b"BC?BBBBBCCCCAA@BCB?AB@AB>CABB@@BB@?BB497@@B:@@B5>@")
 			read.set_tags([("XM", b"Z........h....h.............z.......x..x.....h...."), ('XR', b'CT'), ('XG', b'CT')])
 			return read
 
@@ -1751,7 +1751,7 @@ class TestGetStrand(unittest.TestCase):
 			read.next_reference_id = 0
 			read.next_reference_start = 0
 			read.template_length = 0
-			read.query_qualities = pysam.qualitystring_to_array("CCBCACCBBCCCAACBBCAB@CCCCCCBBCCCCCCCCCBBBBCBCACBCB")
+			read.query_qualities = pysam.qualitystring_to_array(b"CCBCACCBBCCCAACBBCAB@CCCCCCBBCCCCCCCCCBBBBCBCACBCB")
 			read.set_tags([('XM', b'Z.h...Z..x.....h.......hh.h......x........h....x..'), ('XR', b'CT'), ('XG', b'GA')])
 			return read
 
@@ -1767,7 +1767,7 @@ class TestGetStrand(unittest.TestCase):
 			read.next_reference_id = 0
 			read.next_reference_start = 0
 			read.template_length = 0
-			read.query_qualities = pysam.qualitystring_to_array("1)9<)@96'3%6@5:0=3::;;:89*;:@AA@=;A=3)2)1@>*9;-4:A")
+			read.query_qualities = pysam.qualitystring_to_array(b"1)9<)@96'3%6@5:0=3::;;:89*;:@AA@=;A=3)2)1@>*9;-4:A")
 			read.set_tags([('XM', b'H.h...h...H...HHh.................................'), ('XR', b'GA'), ('XG', b'CT')])
 			return read
 
@@ -1783,7 +1783,7 @@ class TestGetStrand(unittest.TestCase):
 			read.next_reference_id = 0
 			read.next_reference_start = 0
 			read.template_length = 0
-			read.query_qualities = pysam.qualitystring_to_array("BCBBBBCCBCAA=@?B?A?@@BCCBCCAAA=B9@B?A=9?BBB??AC@2=")
+			read.query_qualities = pysam.qualitystring_to_array(b"BCBBBBCCBCAA=@?B?A?@@BCCBCCAAA=B9@B?A=9?BBB??AC@2=")
 			read.set_tags([('XM', b'..HH...HHhh.HH...HH........HH.h.H..h.H..h.HH.h.HH.'), ('XR', b'GA'), ('XG', b'GA')])
 			return read
 
@@ -1799,7 +1799,7 @@ class TestGetStrand(unittest.TestCase):
 			read_1.next_reference_id = 0
 			read_1.next_reference_start = 19979235
 			read_1.template_length = 369
-			read_1.query_qualities = pysam.qualitystring_to_array("BC@FDFFFHHHHHJIHICHHHIIJJIGGJJJJJHGIF11?CGHIJIIJJHHHIIJIHHG9BFHIJFFDAC@?6;;-;AC@?DD<98@BDBDD>CDD#####")
+			read_1.query_qualities = pysam.qualitystring_to_array(b"BC@FDFFFHHHHHJIHICHHHIIJJIGGJJJJJHGIF11?CGHIJIIJJHHHIIJIHHG9BFHIJFFDAC@?6;;-;AC@?DD<98@BDBDD>CDD#####")
 			read_1.set_tags([('XM', b'Z...h.Z.h.h......h..hx..hh.hh.x..h.....x...hx....h..x......hhhhhx...........hx...x..Z...x..h.hx....h.'), ('XR', b'CT'), ('XG', b'CT')])
 			read_2 = pysam.AlignedSegment()
 			read_2.query_name = "SRR400564.1684335_HAL:1133:C010EABXX:8:1108:18844:132483_length=101"
@@ -1812,7 +1812,7 @@ class TestGetStrand(unittest.TestCase):
 			read_2.next_reference_id = 0
 			read_2.next_reference_start = 19978967
 			read_2.template_length = -369
-			read_2.query_qualities = pysam.qualitystring_to_array("EDDDDDDBBDDDDDDDCDEEEEEFFFFFHHGHIIFJJJIJJJJIJJJJJIHIJJIJJJJJIJJJJJJJJJJJJJJJJJJJJJJJJJJJHHHHHFFFFFCCC")
+			read_2.query_qualities = pysam.qualitystring_to_array(b"EDDDDDDBBDDDDDDDCDEEEEEFFFFFHHGHIIFJJJIJJJJIJJJJJIHIJJIJJJJJIJJJJJJJJJJJJJJJJJJJJJJJJJJJHHHHHFFFFFCCC")
 			read_2.set_tags([('XM', b'h.x....x......h.z.hX...h....hx...x...h.h......h..hx..hh.hh.x..h....x....hx.........Z...hx..hh.hh..hh.'), ('XR', b'GA'), ('XG', b'CT')])
 			return read_1, read_2
 
@@ -1828,7 +1828,7 @@ class TestGetStrand(unittest.TestCase):
 			read_1.next_reference_id = 0
 			read_1.next_reference_start = 19195917
 			read_1.template_length = -164
-			read_1.query_qualities = pysam.qualitystring_to_array("#####@:4B@;(85DDD@:;DDBBAACD?FD@HHHFIIJIIIHFJIFDJJIIFBGFGIGIGJIHFFDEJJJGIIGJIJJJJIJJHJIHHHHHHFDDDF@@@")
+			read_1.query_qualities = pysam.qualitystring_to_array(b"#####@:4B@;(85DDD@:;DDBBAACD?FD@HHHFIIJIIIHFJIFDJJIIFBGFGIGIGJIHFFDEJJJGIIGJIJJJJIJJHJIHHHHHHFDDDF@@@")
 			read_1.set_tags([('XM', b'Z.......xhh..Zxh.h..h..h....x...xh.......Zx.h...............................h...xh.Z.hh.hh..x......x.'), ('XR', b'CT'), ('XG', b'GA')])
 			read_2 = pysam.AlignedSegment()
 			read_2.query_name = "SRR400564.241291_HAL:1133:C010EABXX:8:1102:8553:52618_length=101"
@@ -1841,7 +1841,7 @@ class TestGetStrand(unittest.TestCase):
 			read_2.next_reference_id = 0
 			read_2.next_reference_start = 19195980
 			read_2.template_length = 164
-			read_2.query_qualities = pysam.qualitystring_to_array("CCCFFFFFHHHHHJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJEHHIJJJJJJIJJIIJHHHFFFFFEEDEEDDDDDDDDDDDDDDDDDDDDDD")
+			read_2.query_qualities = pysam.qualitystring_to_array(b"CCCFFFFFHHHHHJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJEHHIJJJJJJIJJIIJHHHFFFFFEEDEEDDDDDDDDDDDDDDDDDDDDDD")
 			read_2.set_tags([("XM", b".x...hh..xh..z.hh.hh.....h...x........x......hhh.h...x.hh...h..Z.......xhh..Zxh.h..h..h....x...xh...."), ('XR', b'GA'), ('XG', b'GA')])
 			return read_1, read_2
 
@@ -1857,7 +1857,7 @@ class TestGetStrand(unittest.TestCase):
 			read_1.next_reference_id = 0
 			read_1.next_reference_start = 3287383
 			read_1.template_length = -271
-			read_1.query_qualities = pysam.qualitystring_to_array("#########################################73GE@CEGECGDFAFAB@IGD?FB0HF?1JHGF@HFAJIHFJJIHGEA22222224B@:4")
+			read_1.query_qualities = pysam.qualitystring_to_array(b"#########################################73GE@CEGECGDFAFAB@IGD?FB0HF?1JHGF@HFAJIHFJJIHGEA22222224B@:4")
 			read_1.set_tags([('XM', b'Z...HH.HH..H....H..HH..HH..HH.HHH.HHH..HH..HH...........H..HH..HH.HHH.HHH..HH.HH..HH...H..HH..HH..HH.'), ('XR', b'GA'), ('XG', b'CT')])
 			read_2 = pysam.AlignedSegment()
 			read_2.query_name = "SRR400564.6667900_HAL:1133:C010EABXX:8:2207:16412:102567_length=101"
@@ -1870,7 +1870,7 @@ class TestGetStrand(unittest.TestCase):
 			read_2.next_reference_id = 0
 			read_2.next_reference_start = 3287553
 			read_2.template_length = 271
-			read_2.query_qualities = pysam.qualitystring_to_array("CCCFFFFFHHHHHJJJJJJJJJJIIJIGHIJIJJJJJJJJJJJJJJJJJJGGCBFHCHGGCHIIJHHHFFFFECEDEDDDDE@>@CD:ACCDDD>>?::@C")
+			read_2.query_qualities = pysam.qualitystring_to_array(b"CCCFFFFFHHHHHJJJJJJJJJJIIJIGHIJIJJJJJJJJJJJJJJJJJJGGCBFHCHGGCHIIJHHHFFFFECEDEDDDDE@>@CD:ACCDDD>>?::@C")
 			read_2.set_tags([('XM', b'..HH.HH..H....H..HH..XZ..HH.HHH.HHH..HH..HH.........HH..HH.HHH.HHH..HH.HH..HH...H..HH..HH..HH..HH...H'), ('XR', b'CT'), ('XG', b'CT')])
 			return read_1, read_2
 
@@ -1886,7 +1886,7 @@ class TestGetStrand(unittest.TestCase):
 			read_1.next_reference_id = 0
 			read_1.next_reference_start = 55291173
 			read_1.template_length = 154
-			read_1.query_qualities = pysam.qualitystring_to_array("1:BD42222300<CGHIIIJIIJJIIJGIIIIIIIJJIIJIJIIIIIGHIIIIHHGGGFFFFFFDECCDCBBDB@BBA<?BC<0<AC?CB@:@CC@CBC:>")
+			read_1.query_qualities = pysam.qualitystring_to_array(b"1:BD42222300<CGHIIIJIIJJIIJGIIIIIIIJJIIJIJIIIIIGHIIIIHHGGGFFFFFFDECCDCBBDB@BBA<?BC<0<AC?CB@:@CC@CBC:>")
 			read_1.set_tags([('XM', b'z..Hh.HHh..Hh..Hh...h...h...h...H.h..hh..h...h..Hh...h...h.....hh......Hh...h...h..........H..hH.hhH.'), ('XR', b'GA'), ('XG', b'GA')])
 			read_2 = pysam.AlignedSegment()
 			read_2.query_name = "SRR400564.4547217_HAL:1133:C010EABXX:8:2105:21225:192741_length=101"
@@ -1899,7 +1899,7 @@ class TestGetStrand(unittest.TestCase):
 			read_2.next_reference_id = 0
 			read_2.next_reference_start = 55291120
 			read_2.template_length = -154
-			read_2.query_qualities = pysam.qualitystring_to_array("5DDA;DDEC@66DHHHHC=GJJIGJJIGJJJJIIJIHGHIHHHGFFFFBIIJHHGJJIGJJJJJIIHHJIGJJJGJJJJJJJJJIJJJHHHHHFFFDDBBB")
+			read_2.query_qualities = pysam.qualitystring_to_array(b"5DDA;DDEC@66DHHHHC=GJJIGJJIGJJJJIIJIHGHIHHHGFFFFBIIJHHGJJIGJJJJJIIHHJIGJJJGJJJJJJJJJIJJJHHHHHFFFDDBBB")
 			read_2.set_tags([('XM', b'h...H.....HH......HH...H...H..........H..HH.HHH..HH..HH...H...H..HHH......H..........H..HH.HHH...H..H'), ('XR', b'CT'), ('XG', b'GA')])
 			return read_1, read_2
 
