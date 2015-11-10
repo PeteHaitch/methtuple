@@ -77,11 +77,11 @@ C: {2, 3, 4}
 
 ## Installation and dependencies
 
-`methtuple` is written in Python and relies upon the `pysam` module. __NOTE: `methtuple` now requires `pysam v0.8.3` or greater.__
+`methtuple` is written in Python and relies upon the `pysam` module. __NOTE: `methtuple` now requires `pysam v0.8.4` or greater.__
 
 Running `python setup.py install` will attempt to install `pysam` if it isn't found on your system. Alternatively, instructions for installing `pysam` are available from [https://github.com/pysam-developers/pysam](https://github.com/pysam-developers/pysam).
 
-I have extensively used and tested `methtuple` with Python 2.7. It should also work on Python 3.2, 3.3 and 3.4 with the current version of `pysam` (`v0.8.3`), as indicated by the [Travis-CI builds](https://travis-ci.org/PeteHaitch/methtuple).
+I have extensively used and tested `methtuple` with Python 2.7. It should also work on Python 3.2, 3.3, and 3.4 with the current version of `pysam` (`v0.8.4`), as indicated by the [Travis-CI builds](https://travis-ci.org/PeteHaitch/methtuple).
 
 ### Using `pip`
 
@@ -91,7 +91,7 @@ The simplest way:
 pip install methtuple
 ```
 
-`methtuple` is written in Python and requires the `pysam` module. __NOTE: `methtuple` now requires `pysam v0.8.3` or greater.__
+`methtuple` is written in Python and requires the `pysam` module. __NOTE: `methtuple` now requires `pysam v0.8.4` or greater.__
 
 Alternatively, after cloning or downloading the `methtuple` git repositority, simply run:
 
