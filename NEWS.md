@@ -1,6 +1,7 @@
 # Version 1.5.4
 
 `methtuple` now requires pysam `v0.8.4` or greater.
+`methtuple` now support Python 3.5.
 
 ## Bug fixes
 
