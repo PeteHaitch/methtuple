@@ -10,10 +10,12 @@ python:
 
 install:
   - python setup.py install
-  - pip install coveralls
+  # The coveralls Python module does not support Python 3.2.
+  - if [[ $TRAVIS_PYTHON_VERSION != 3.2 ]]; then pip install coveralls; fi
 script:
   - python setup.py test
-  - coverage run --source=methtuple setup.py test
+  # The coverage Python module does not support Python 3.2.
+  - if [[ $TRAVIS_PYTHON_VERSION != 3.2 ]]; then coverage run --source=methtuple setup.py test; fi
 after_success:
   # The coveralls Python module does not support Python 3.2.
   - if [[ $TRAVIS_PYTHON_VERSION != 3.2 ]]; then; coveralls; fi
