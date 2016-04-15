@@ -1,33 +1,52 @@
+# From https://github.com/broadinstitute/viral-ngs/blob/master/.travis.yml
 language: python
 sudo: false
-python:
-    - 'nightly'
-    - '3.5'
-    - '3.4'
-    - '3.3'
-    - '3.2'
-    - '2.7'
-    - '2.6'
-    - pypy
-    - pypy3
-install:
-    - pip wheel -f wheelhouse coveralls biopython cython pysam || true
-    - pip install -f wheelhouse biopython cython pysam coveralls || true
-    # - python setup.py install
-    # - if [ ! -f samtools-1.2 ]; then wget -q -O - https://github.com/samtools/samtools/releases/download/1.2/samtools-1.2.tar.bz2 | tar -xjv; fi
-    # - cd samtools-1.2
-    # - make
-    # - export PATH=$PATH:$PWD
-    # - cd ..
-before_script:
-    - /usr/local/bin/pip install --user biopython
-    # - /usr/bin/python tests/data/download_gene_fasta.py
-script: python setup.py test
-matrix:
-  allow_failures:
-    - python: 'nightly'
+
 cache:
-    directories:
-        - wheelhouse
+ directories:
+  - $HOME/virtualenv
+  - $HOME/miniconda
+
+env:
+  global:
+  - CACHE_DIR="$HOME/virtualenv"
+  - MINICONDA_DIR="$HOME/miniconda"
+
+python:
+  - 2.7
+  - 3.4
+  - 3.5
+
+# # Container pkgs for building diamond.
+# # These versioned and sources hacks should be removed once travis upgrades to
+# # Ubuntu 14.04.
+# addons:
+#   apt:
+#     sources:
+#     - boost-latest # For newer boost
+#     - ubuntu-toolchain-r-test # For newer gcc
+#     packages:
+#     - cmake
+#     - gcc-4.9
+#     - g++-4.9
+#     - libboost1.55-all-dev
+
+# before_install:
+#   - travis/before_install.sh
+
+install:
+  - travis/install-conda.sh
+  - export PATH="$PATH:$HOME/miniconda/bin"
+  - hash -r
+  - travis/install-pip.sh
+  - travis/install-tools.sh
+
+before_script:
+  - flake8 --exit-zero .
+
+script:
+  - travis/tests-unit.sh
+  - travis/tests-long.sh
+
 after_success:
-    - coveralls
+  - coveralls
