@@ -1,31 +1,32 @@
-
-os:
-  - linx
-  - osx
-
-language: c
-sudo: required
-
-env:
-  matrix:
-    - CONDA_PY=2.7
-    - CONDA_PY=3.3
-    - CONDA_PY=3.4
-    - CONDA_PY=3.5
-
-addons:
-  apt:
-    packages:
-    - gcc
-    - g++
-
+# Based on http://conda.pydata.org/docs/travis.html
+language: python
+python:
+  # We don't actually use the Travis Python, but this keeps it organized.
+  - "2.6"
+  - "2.7"
+  - "3.3"
+  - "3.4"
 install:
+  - sudo apt-get update
+  # We do this conditionally because it saves us some downloading if the
+  # version is the same.
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+    else
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  # Useful for debugging any issues with conda
+  - conda info -a
+
+  # Replace dep1 dep2 ... with your dependencies
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pysam pypandoc
+  - source activate test-environment
   - python setup.py install
-  - pip install coveralls
+
 script:
   - python setup.py test
-  - coverage run --source=methtuple setup.py test
-script:
-  - ./run_tests_travis.sh
-after_success:
-  - coveralls
