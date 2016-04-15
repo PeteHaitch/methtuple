@@ -1,22 +1,33 @@
-os:
-  - linx
-  - osx
-
-language: c
-sudo: required
-
-env:
-  matrix:
-    - CONDA_PY=2.7
-    - CONDA_PY=3.3
-    - CONDA_PY=3.4
-    - CONDA_PY=3.5
-
-addons:
-  apt:
-    packages:
-    - gcc
-    - g++
-
-script:
-  - ./run_tests_travis.sh
+language: python
+sudo: false
+python:
+    - 'nightly'
+    - '3.5'
+    - '3.4'
+    - '3.3'
+    - '3.2'
+    - '2.7'
+    - '2.6'
+    - pypy
+    - pypy3
+install:
+    - pip wheel -f wheelhouse coveralls biopython cython pysam || true
+    - pip install -f wheelhouse biopython cython pysam coveralls || true
+    # - python setup.py install
+    # - if [ ! -f samtools-1.2 ]; then wget -q -O - https://github.com/samtools/samtools/releases/download/1.2/samtools-1.2.tar.bz2 | tar -xjv; fi
+    # - cd samtools-1.2
+    # - make
+    # - export PATH=$PATH:$PWD
+    # - cd ..
+before_script:
+    - /usr/local/bin/pip install --user biopython
+    # - /usr/bin/python tests/data/download_gene_fasta.py
+script: python setup.py test
+matrix:
+  allow_failures:
+    - python: 'nightly'
+cache:
+    directories:
+        - wheelhouse
+after_success:
+    - coveralls
