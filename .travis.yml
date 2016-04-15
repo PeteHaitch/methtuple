@@ -1,52 +1,22 @@
-# From https://github.com/broadinstitute/viral-ngs/blob/master/.travis.yml
 language: python
-sudo: false
-
-cache:
- directories:
-  - $HOME/virtualenv
-  - $HOME/miniconda
-
-env:
-  global:
-  - CACHE_DIR="$HOME/virtualenv"
-  - MINICONDA_DIR="$HOME/miniconda"
-
 python:
-  - 2.7
-  - 3.4
-  - 3.5
-
-# # Container pkgs for building diamond.
-# # These versioned and sources hacks should be removed once travis upgrades to
-# # Ubuntu 14.04.
-# addons:
-#   apt:
-#     sources:
-#     - boost-latest # For newer boost
-#     - ubuntu-toolchain-r-test # For newer gcc
-#     packages:
-#     - cmake
-#     - gcc-4.9
-#     - g++-4.9
-#     - libboost1.55-all-dev
-
-# before_install:
-#   - travis/before_install.sh
+  # - "2.6" # Won't support until given reason to. See
+            # https://github.com/PeteHaitch/methtuple/issues/75.
+  - "2.7"
+  # Can't get these working with pysam at the moment
+  # - "3.2"
+  # - "3.3"
+  # - "3.4"
+  # - "3.5"
 
 install:
-  - travis/install-conda.sh
-  - export PATH="$PATH:$HOME/miniconda/bin"
-  - hash -r
-  - travis/install-pip.sh
-  - travis/install-tools.sh
-
-before_script:
-  - flake8 --exit-zero .
-
+  - python setup.py install
+  # The coveralls Python module does not support Python 3.2.
+  - if [[ $TRAVIS_PYTHON_VERSION != 3.2 ]]; then pip install coveralls; fi
 script:
-  - travis/tests-unit.sh
-  - travis/tests-long.sh
-
+  - python setup.py test
+  # The coverage Python module does not support Python 3.2.
+  - if [[ $TRAVIS_PYTHON_VERSION != 3.2 ]]; then coverage run --source=methtuple setup.py test; fi
 after_success:
-  - coveralls
+  # The coveralls Python module does not support Python 3.2.
+  - if [[ $TRAVIS_PYTHON_VERSION != 3.2 ]]; then; coveralls; fi
