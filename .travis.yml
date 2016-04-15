@@ -1,21 +1,31 @@
-language: python
-python:
-  # - "2.6" # Won't support until given reason to. See
-            # https://github.com/PeteHaitch/methtuple/issues/75.
-  - "2.7"
-  - "3.2"
-  - "3.3"
-  - "3.4"
-  - "3.5"
+
+os:
+  - linx
+  - osx
+
+language: c
+sudo: required
+
+env:
+  matrix:
+    - CONDA_PY=2.7
+    - CONDA_PY=3.3
+    - CONDA_PY=3.4
+    - CONDA_PY=3.5
+
+addons:
+  apt:
+    packages:
+    - gcc
+    - g++
 
 install:
   - python setup.py install
-  # The coveralls Python module does not support Python 3.2.
-  - if [[ $TRAVIS_PYTHON_VERSION != 3.2 ]]; then pip install coveralls; fi
+  - pip install coveralls
 script:
   - python setup.py test
-  # The coverage Python module does not support Python 3.2.
-  - if [[ $TRAVIS_PYTHON_VERSION != 3.2 ]]; then coverage run --source=methtuple setup.py test; fi
+  - coverage run --source=methtuple setup.py test
+script:
+  - ./run_tests_travis.sh
 after_success:
-  # The coveralls Python module does not support Python 3.2.
-  - if [[ $TRAVIS_PYTHON_VERSION != 3.2 ]]; then; coveralls; fi
+  - coveralls
