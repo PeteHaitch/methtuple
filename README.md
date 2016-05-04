@@ -21,7 +21,7 @@ The simplest _m-tuple_ is the 1-tuple (_m_ = 1). `methtuple` tabulates the numbe
 
 A 2-tuple (_m_ = 2) is a pair of methylation loci. `methtuple` tabulates the number of reads that methylated at each locus in the pair (_MM_), both unmethylated (_UU_) or methylated at one locus but not the other (_MU_ or _UM_). This idea readily extends to 3-tuples, 4-tuples, etc.
 
-In its default settings, and with _m_ > 1, `methtuple` tries to create only m-tuples made of "neighbouring" loci. However, please see the example below for why I say this only "tries" to create m-tuples of neighbouring loci. For a DNA fragment containing _k_ methylation loci there are _m - k + 1_ m-tuples made of neighbouring loci.
+In its default settings, and with _m_ > 1, `methtuple` tries to create only m-tuples made of "neighbouring" loci. However, please see the example below for why I say this only "tries" to create m-tuples of neighbouring loci. For a DNA fragment containing _k_ methylation loci there are _k - m + 1_ m-tuples made of neighbouring loci.
 
 Alternatively, we can create all combinations of m-tuples by using the `--all-combinations` flag. For a DNA fragment containing _k_ methylation loci there are "_k_ choose _m_" m-tuples when using `--all-combinations`, a number that grows rapidly in _k_, particularly when _m_ is close to _k/2_.
 
