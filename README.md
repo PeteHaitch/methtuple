@@ -7,7 +7,7 @@
 
 ### What does it do?
 
-`methtuple` allows the user to investigate the co-occurence of methylation marks at the level of individual DNA fragments. It does this by performing methylation calling at _m-tuples_ of methylation loci from high-throughput bisulfite sequencing data, such as _methylC-seq_. In short, `methtuple` extracts and tabulates the methylation states of all m-tuples from a `BAM` file (for a user-defined value of _m_).
+`methtuple` allows the user to investigate the co-occurence of methylation marks at the level of individual DNA fragments. It does this by performing methylation calling at _m-tuples_ of methylation loci from high-throughput bisulfite sequencing data, such as _methylC-seq_. In short, `methtuple` extracts and tabulates the methylation states of all m-tuples from a SAM/BAM file (for a user-defined value of _m_).
 
 ### Why would I want to do that?
 
@@ -105,17 +105,17 @@ in the root `methtuple` directory should work for most systems.
 
 ### Basic usage
 
-`methtuple` processes a single `BAM` file and works for both single-end and paired-end sequencing data. Example `BAM` files from single-end directional and paired-end directional bisulfite-sequencing experiments are available in the `data/` directory.
+`methtuple` processes a single SAM or BAM file and works for both single-end and paired-end sequencing data. Example BAM files from single-end directional and paired-end directional bisulfite-sequencing experiments are available in the `data/` directory.
 
 Methylation measurements may be filtered by base quality or other criteria such as the mapping quality of the read or whether the read is marked as a PCR duplicate. For a full list of filtering options, please run `methtuple --help` or see the __Advanced Usage__ section below.
 
-Currently, the BAM file must have been created with [Bismark](http://www.bioinformatics.bbsrc.ac.uk/projects/download.html#bismark). If the data were aligned with Bismark version < 0.8.3 please use the `--aligner Bismark_old` flag. Please file an issue if you would like to use a `BAM` file created with another aligner and I will do my best to support it.
+Currently, the SAM/BAM file must have been created with [Bismark](http://www.bioinformatics.bbsrc.ac.uk/projects/download.html#bismark). If the data were aligned with Bismark version < 0.8.3 please use the `--aligner Bismark_old` flag. Please file an issue if you would like to use a SAM/BAM file created with another aligner and I will do my best to support it.
 
-The main options to pass `methtuple` are the size of the m-tuple (`-m`); the type of methylation, which is some combination of _CG_, _CHG_, _CHH_ and _CNN_ (`--methylation-type`); any filters to be applied to reads or positions within reads (see below); the BAM file; and the sample name, which will be used as a prefix for all output files. Multiple methylation types may be specified jointly, e.g., `--methylation-type CG --methylation-type CHG`
+The main options to pass `methtuple` are the size of the m-tuple (`-m`); the type of methylation, which is some combination of _CG_, _CHG_, _CHH_ and _CNN_ (`--methylation-type`); any filters to be applied to reads or positions within reads (see below); the SAM/BAM file; and the sample name, which will be used as a prefix for all output files. Multiple methylation types may be specified jointly, e.g., `--methylation-type CG --methylation-type CHG`
 
 ### Output
 
-Three output files are created and summary information is written to `STDOUT`. The main output file is a tab-delimited file of all m-tuples, `<in>.<--methylation-type>.<-m>[ac].tsv`, where `<in>` is the prefix of the `<in.bam>` BAM file and `ac` is added if the `--all-combinations` flag was used, e.g., `SRR949207.CG.2ac.tsv`. Output files may be gzipped (`--gzip`) or bzipped (`--bzip2`).
+Three output files are created and summary information is written to `STDOUT`. The main output file is a tab-delimited file of all m-tuples, `<in>.<--methylation-type>.<-m>[ac].tsv`, where `<in>` is the prefix of the `<in.bam>|<in.sam>` SAM/BAM file and `ac` is added if the `--all-combinations` flag was used, e.g., `SRR949207.CG.2ac.tsv`. Output files may be gzipped (`--gzip`) or bzipped (`--bzip2`).
 
 Here are the first 5 rows (including with the header row) from `data/se_directional.fq.gz_bismark_bt2.CG.2.tsv`, which is created by running the single-end directional example shown below:
 
@@ -162,7 +162,7 @@ In this case we didn't set any quality control filters and so this file is empty
 
 ### Examples
 
-Two small example datasets are included in the `data/` directory. Included are the `FASTQ` files and the `BAM` files generated with __Bismark__ in __Bowtie2__ mode. More details of the example datasets can be found in `data/README.md`
+Two small example datasets are included in the `data/` directory. Included are the FASTQ files and the SAM/BAM files generated with __Bismark__ in __Bowtie2__ mode. More details of the example datasets can be found in `data/README.md`
 
 Although the example datasets are both from directional bisulfite-sequencing protocols, `methtuple` also works with data from non-directional bisulfite-sequencing protocols.
 
@@ -182,7 +182,7 @@ This results in 3 files:
 
 #### Paired-end reads
 
-Paired-end data must firstly be sorted by queryname prior to running `methtuple`. `BAM` files created by Bismark, such as `data/pe_directional.bam`, are already sorted by queryname. So, to extract all CG/CHH 3-tuples we would simply run:
+Paired-end data must firstly be sorted by queryname prior to running `methtuple`. BAM files created by Bismark, such as `data/pe_directional.bam`, are already sorted by queryname. So, to extract all CG/CHH 3-tuples we would simply run:
 
 ```
 methtuple -m 3 --methylation-type CG --methylation-type CHH data/pe_directional_1.fq.gz_bismark_bt2_pe.bam
@@ -194,12 +194,12 @@ This results in 3 files:
 * `data/pe_directional_1.fq.gz_bismark_bt2_pe.CG_CHH_per_read.hist`
 * `data/pe_directional_1.fq.gz_bismark_bt2_pe.reads_that_failed_QC.txt`
 
-##### Note on sort-order of paired-end BAM files
+##### Note on sort-order of paired-end SAM/BAM files
 
-If your paired-end BAM file is sorted by genomic coordinates, then you must first sort the `BAM` by queryname and then run `methtuple` on the queryname-sorted `BAM`. This can be done by using `samtools sort` with the `-n` option or Picard's `SortSam` function with the `SO=queryname` option:
+If your paired-end SAM/BAM file is sorted by genomic coordinates, then you must first sort the SAM/BAM by queryname and then run `methtuple` on the queryname-sorted SAM/BAM. This can be done by using `samtools sort` with the `-n` option or Picard's `SortSam` function with the `SO=queryname` option:
 
 ```
-# Create a coordinate-sorted BAM for the sake of argument
+# Create a coordinate-sorted SAM/BAM for the sake of argument
 samtools sort data/pe_directional_1.fq.gz_bismark_bt2_pe.bam data/cs_pe_directional_1.fq.gz_bismark_bt2_pe
 # Re-sort the coordinate-sorted BAM by queryname
 samtools sort -n data/cs_pe_directional_1.fq.gz_bismark_bt2_pe.bam data/qs_pe_directional_1.fq.gz_bismark_bt2_pe
@@ -227,7 +227,7 @@ Memory usage peaked at 1.5GB and the running time was approximately 4.3 hours.
 
 ### Helper script
 
-I frequently work with large, coordinate-sorted `BAM` files. To speed up the extraction of m-tuples, I use a simple parallelisation strategy with [GNU parallel](http://www.gnu.org/software/parallel/). The idea is to split the `BAM` file into chromosome-level `BAM` files, process each chromosome-level `BAM` separately and then recombine these chromosome-level files into a genome-level file. The script `helper_scripts/run_methtuple.sh` implements this strategy; simply edit the key variables in this script or adapt it to your own needs. Please check the requirements listed in `helper_scripts/run_methtuple.sh`.
+I frequently work with large, coordinate-sorted SAM/BAM files. To speed up the extraction of m-tuples, I use a simple parallelisation strategy with [GNU parallel](http://www.gnu.org/software/parallel/). The idea is to split the SAM/BAM file into chromosome-level SAM/BAM files, process each chromosome-level SAM/BAM separately and then recombine these chromosome-level files into a genome-level file. The script `helper_scripts/run_methtuple.sh` implements this strategy; simply edit the key variables in this script or adapt it to your own needs. Please check the requirements listed in `helper_scripts/run_methtuple.sh`.
 
 #### Warnings
 
@@ -239,16 +239,16 @@ I frequently work with large, coordinate-sorted `BAM` files. To speed up the ext
 A full list of options is available by running `methtuple --help`:
 
 ```
-usage: methtuple [options] <in.bam>
+usage: methtuple [options] <in.bam>|<in.sam>
 Please run 'methtuple -h' for a full list of options.
 
 Extract methylation patterns at m-tuples of methylation loci from the aligned
-reads of a bisulfite-sequencing experiment. Currently only supports BAM files
+reads of a bisulfite-sequencing experiment. Currently only supports SAM/BAM files
 created with Bismark.
 
 Input options:
   --aligner {Bismark,Bismark_old}
-                        The aligner used to generate the BAM file. Bismark_old
+                        The aligner used to generate the SAM/BAM file. Bismark_old
                         refers to Bismark version < 0.8.3 (default: Bismark)
   --Phred64             Quality scores are encoded as Phred64 rather than
                         Phred33 (default: False)
@@ -349,7 +349,7 @@ Other:
   -v, --version         show program's version number and exit
   -h, --help            show this help message and exit
 
-methtuple (v1.4.0) by Peter Hickey (peter.hickey@gmail.com,
+methtuple (v1.6.0) by Peter Hickey (peter.hickey@gmail.com,
 https://github.com/PeteHaitch/methtuple/)
 ```
 
@@ -361,17 +361,17 @@ These are current limitations and their statuses:
 
 `methtuple` makes use of Bismark's custom SAM tags `XM`, `XR` and `XG`. The `XM` tag is used to infer the methylation state of each sequenced cytosine while the `XR` and `XG` tags are used to infer the orientation and strand of the alignment. If the data were aligned with Bismark version < 0.8.3 please use the `--oldBismark` flag.
 
-Please file an issue if you would like to use a `BAM` file created with another aligner and I will do my best to support it; also, see [Issue #30](https://github.com/PeteHaitch/methtuple/issues/30)
+Please file an issue if you would like to use a SAM/BAM file created with another aligner and I will do my best to support it; also, see [Issue #30](https://github.com/PeteHaitch/methtuple/issues/30)
 
 ### Paired-end data must be sorted by queryname
 
 This is required in order to avoid lookups when finding the mate of a paired-end read.
 
-The `BAM` file created by Bismark is natively in queryname order and so this is not a problem. If the file is not in queryname order then use `samtools sort` with the `-n` option or Picard's `SortSam` function with `SO=queryname` to sort your `BAM` by queryname. The helper script `helper_scripts/run_methtuple.sh` works with a coordinate-sorted `BAM` file and does so by including a step to sort the chromosome-level `BAM` files by queryname using Picard's `SortSam`.
+The SAM/BAM file created by Bismark is natively in queryname order and so this is not a problem. If the file is not in queryname order then use `samtools sort` with the `-n` option or Picard's `SortSam` function with `SO=queryname` to sort your SAM/BAM by queryname. The helper script `helper_scripts/run_methtuple.sh` works with a coordinate-sorted SAM/BAM file and does so by including a step to sort the chromosome-level SAM/BAM files by queryname using Picard's `SortSam`.
 
 ### The `--aligner Bismark_old` option is a bit crude
 
-Specifically, it assumes that there are no '/' characters in the read names (`QNAME`) and that the BAM has not been processed with any other programs, e.g. Picard's MarkDuplicates, that might change the `FLAG` field. Please file an issue or submit a pull request if you would like this improved.
+Specifically, it assumes that there are no '/' characters in the read names (`QNAME`) and that the SAM/BAM has not been processed with any other programs, e.g. Picard's MarkDuplicates, that might change the `FLAG` field. Please file an issue or submit a pull request if you would like this improved.
 
 ### Construction of "non-neighbouring" m-tuples
 

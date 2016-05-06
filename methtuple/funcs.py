@@ -153,12 +153,12 @@ def does_read_contain_complicated_cigar(read):
     val = any([x[0] not in [0, 1, 2, 4, 5] for x in read.cigartuples])
     return val
 
-def extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, all_combinations, methylation_type, methylation_pattern, ignore_read_1_pos, min_qual, phred_offset, ob_strand_offset):
+def extract_and_update_methylation_index_from_single_end_read(read, AlignmentFile, methylation_m_tuples, m, all_combinations, methylation_type, methylation_pattern, ignore_read_1_pos, min_qual, phred_offset, ob_strand_offset):
     """Extracts m-tuples of methylation loci from a single-end read and adds the comethylation m-tuple to the methylation_m_tuples object.
 
     Args:
         read: An AlignedSegment instance corresponding to a single-end read.
-        BAM: The AlignmentFile instance corresponding to the sample. Required in order to extract chromosome names from read.
+        AlignmentFile: The AlignmentFile instance corresponding to the sample. Required in order to extract chromosome names from read.
         methylation_m_tuples: An MTuple instance.
         m: Is the "m" in "m-tuple", i.e. the size of the m-tuple. m must be an integer greater than or equal to 1. WARNING: No error or warning produced if this condition is violated.
         all_combinations: A boolean indicating whether all combinations of m-tuples should be created or just "neighbouring" m-tuples.
@@ -191,7 +191,7 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
         positions = [x if x is None else x - ob_strand_offset for x in positions]
       XM = read.get_tag('XM')
       meth_calls = sorted(zip([positions[i] + 1 for i in methylation_index], [XM[i] for i in methylation_index]), key = lambda x: x[0])
-      this_chr = BAM.getrname(read.reference_id)
+      this_chr = AlignmentFile.getrname(read.reference_id)
       if ob_strand_offset != 0:
         mt_strand = '*'
       else:
@@ -206,13 +206,13 @@ def extract_and_update_methylation_index_from_single_end_read(read, BAM, methyla
 
     return methylation_m_tuples, n_methylation_loci
 
-def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, all_combinations, methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_filter, n_fragment_skipped_due_to_bad_overlap, FAILED_QC):
+def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, AlignmentFile, methylation_m_tuples, m, all_combinations, methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_filter, n_fragment_skipped_due_to_bad_overlap, FAILED_QC):
     """Extracts m-tuples of methylation loci from a readpair and adds the comethylation m-tuple to the methylation_m_tuples object.
 
     Args:
         read_1: An AlignedSegment instance corresponding to read_1 of the readpair.
         read_2: An AlignedSegment instance corresponding to read_2 of the readpair.
-        BAM: The AlignmentFile instance corresponding to the sample. Required in order to extract chromosome names from read.
+        AlignmentFile: The AlignmentFile instance corresponding to the sample. Required in order to extract chromosome names from read.
         methylation_m_tuples: An MTuple instance.
         m: Is the "m" in "m-tuple", i.e. the size of the m-tuple. m must be an integer greater than or equal to 1. WARNING: No error or warning produced if this condition is violated.
         all_combinations: A boolean indicating whether all combinations of m-tuples should be created or just "neighbouring" m-tuples.
@@ -272,7 +272,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, B
       XM_1 = read_1.get_tag('XM')
       XM_2 = read_2.get_tag('XM')
       meth_calls = sorted(zip([positions_1[i] + 1 for i in methylation_index_1] + [positions_2[i] + 1 for i in methylation_index_2], [XM_1[i] for i in methylation_index_1] + [XM_2[i] for i in methylation_index_2]), key = lambda x: x[0])
-      this_chr = BAM.getrname(read_1.reference_id)
+      this_chr = AlignmentFile.getrname(read_1.reference_id)
       if ob_strand_offset != 0:
         mt_strand = '*'
       else:

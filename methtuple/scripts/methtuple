@@ -2,7 +2,7 @@
 
 # The MIT License (MIT)
 #
-# Copyright (c) [2012-2015] [Peter Hickey (peter.hickey@gmail.com)]
+# Copyright (c) [2012-2016] [Peter Hickey (peter.hickey@gmail.com)]
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -56,21 +56,21 @@ from methtuple.mtuple import *
 from methtuple.funcs import *
 
 #### Command line parser ####
-parser = argparse.ArgumentParser(description = 'Extract methylation patterns at m-tuples of methylation loci from the aligned reads of a bisulfite-sequencing experiment. Currently only supports BAM files created with Bismark.',
+parser = argparse.ArgumentParser(description = 'Extract methylation patterns at m-tuples of methylation loci from the aligned reads of a bisulfite-sequencing experiment. Currently only supports SAM/BAM files created with Bismark.',
     prog = 'methtuple',
     formatter_class = argparse.ArgumentDefaultsHelpFormatter,
     add_help = False,
-    usage = '%(prog)s [options] <in.bam>\nPlease run \'%(prog)s -h\' for a full list of options.',
+    usage = '%(prog)s [options] <in.bam>|<in.sam>\nPlease run \'%(prog)s -h\' for a full list of options.',
     epilog = '%(prog)s (v'+__version__+') by Peter Hickey (peter.hickey@gmail.com, https://github.com/PeteHaitch/methtuple/)')
 # Input arguments
 Input = parser.add_argument_group('Input options')
-Input.add_argument('BAM',
-    metavar = '<in.bam>',
+Input.add_argument('AlignmentFile',
+    metavar = '<in.bam>|<in.sam>',
     help = argparse.SUPPRESS)
 Input.add_argument('--aligner',
     choices = ['Bismark', 'Bismark_old'],
     default = 'Bismark',
-    help = 'The aligner used to generate the BAM file. Bismark_old refers to Bismark version < 0.8.3')
+    help = 'The aligner used to generate the SAM/BAM file. Bismark_old refers to Bismark version < 0.8.3')
 Input.add_argument('--Phred64',
     action = 'store_true',
     default = False,
@@ -161,7 +161,7 @@ args = parser.parse_args()
 #### Variable initialisations ####
 # Set output prefix if unspecified
 if not hasattr(args, 'output_prefix'):
-    args.output_prefix = os.path.splitext(args.BAM)[0]
+    args.output_prefix = os.path.splitext(args.AlignmentFile)[0]
 # Check whether gzip and bzip2 compression are both requested
 if args.gzip and args.bzip2:
     exit_msg = "ERROR: Only one of --gzip or --bzip2 can be selected."
@@ -241,9 +241,9 @@ overlap_filter = args.of
 min_qual = args.mbq
 min_mapping_quality = args.mmq
 
-#### The main program. Loops over the BAM file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or read-pair. ####
-# Open SAM/BAM file and output files
-BAM = pysam.AlignmentFile(args.BAM, 'rb')
+#### The main program. Loops over the AlignmentFile file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or read-pair. ####
+# Open AlignmentFile file and output files (pysam autodetects SAM vs. BAM)
+AlignmentFile = pysam.AlignmentFile(args.AlignmentFile, 'r')
 if all_combinations:
   out_prefix = ".".join([args.output_prefix, '_'.join(methylation_type.split('/')), ''.join([str(args.m), 'ac']), "tsv"])
 else:
@@ -279,12 +279,12 @@ n_fragment_skipped_due_to_unmapped_read_or_mate = 0 # The number of DNA fragment
 n_fragment_skipped_due_to_improper_pair = 0 # The number of DNA fragments skipped due to the read-pair being improperly paired
 n_fragment_skipped_due_to_complicated_cigar = 0 # The number of DNA fragments skipped due to the read or read-pair containing a complicated CIGAR
 n_methylation_loci_per_read = {} # Dictionary of the number of methylation loci that passed QC per read
-chr_map = dict(list(zip(BAM.references, list(range(len(BAM.references)))))) # A dictionary mapping the reference names to their order in the BAM header
+chr_map = dict(list(zip(AlignmentFile.references, list(range(len(AlignmentFile.references)))))) # A dictionary mapping the reference names to their order in the AlignmentFile header
 methylation_m_tuples = MTuple(args.output_prefix, m, methylation_type, chr_map) # Initiate the MTuple object
 
 # Print key variable names and command line parameter options to STDOUT
 print("methtuple (v"+__version__+")\n")
-print('Input BAM file =', BAM.filename.decode("utf-8"))
+print('Input SAM/BAM file =', AlignmentFile.filename.decode("utf-8"))
 print(''.join(['Output file of ', methylation_type, ' ', str(m), '-tuples = ', OUT.name]))
 if args.sc:
     print(''.join(["The counts will be collapsed across Watson and Crick strands and the strand of each ", str(m), "-tuple will be recorded as '*'"]))
@@ -296,9 +296,9 @@ else:
 print(''.join(['Assuming quality scores are Phred', str(phred_offset), '\n']))
 
 if args.aligner == 'Bismark':
-    print('Assuming BAM file was created with Bismark version >= 0.8.3.\n')
+    print('Assuming SAM/BAM file was created with Bismark version >= 0.8.3.\n')
 elif args.aligner == 'Bismark_old':
-    print('Assuming BAM file was created with Bismark version < 0.8.3.\n')
+    print('Assuming SAM/BAM file was created with Bismark version < 0.8.3.\n')
 
 if args.id:
     print('Ignoring reads marked as PCR duplicates')
@@ -342,30 +342,28 @@ else:
   else:
     print(''.join(['Creating ', methylation_type, ' ', str(m), '-tuples']))
 
-# Check that mapped reads have the XR-, XG- and XM-tags set. Will only check first mapped read, so assumes that the first mapped read in the BAM is representative of all mapped reads in the BAM.
-for read in BAM:
-    if read.is_unmapped:
-        continue
+# Flag used in loop
+verified_tags = False
+# Loop over the AlignmentFile and extract methylation m-tuples
+for read in AlignmentFile:
+    # Check that mapped reads have the XR-, XG- and XM-tags set. Will only check first mapped read, so assumes that the first mapped read in the AlignmentFile is representative of all mapped reads in the AlignmentFile.
+    if not verified_tags:
     # Check XR-tag
-    if not read.has_tag('XR'):
-        exit_msg = "ERROR: The first mapped read does not contain an XR-tag. Currently, methtuple can only process BAM files created by Bismark, sorry."
-        sys.exit(exit_msg)
-    # Check XG-tag
-    if not read.has_tag('XG'):
-        exit_msg = "ERROR: The first mapped read does not contain an XG-tag. Currently, methtuple can only process BAM files created by Bismark, sorry."
-        sys.exit(exit_msg)
-    # Check XM-tag
-    if not read.has_tag('XM'):
-        exit_msg = "ERROR: The first mapped read does not contain an XM-tag. Currently, methtuple can only process BAM files created by Bismark, sorry."
-        sys.exit(exit_msg)
-    else:
-        print('Verified that the XR-, XG- and XM-tags are set for the first mapped read.\n')
-        # Reset BAM to start
-        BAM.reset()
-        break
+        if not read.is_unmapped and not read.has_tag('XR'):
+            exit_msg = "ERROR: The first mapped read does not contain an XR-tag. Currently, methtuple can only process SAM/BAM files created by Bismark, sorry."
+            sys.exit(exit_msg)
+        # Check XG-tag
+        if not read.is_unmapped and not read.has_tag('XG'):
+            exit_msg = "ERROR: The first mapped read does not contain an XG-tag. Currently, methtuple can only process SAM/BAM files created by Bismark, sorry."
+            sys.exit(exit_msg)
+        # Check XM-tag
+        if not read.is_unmapped and not read.has_tag('XM'):
+            exit_msg = "ERROR: The first mapped read does not contain an XM-tag. Currently, methtuple can only process SAM/BAM files created by Bismark, sorry."
+            sys.exit(exit_msg)
+        else:
+            print('Verified that the XR-, XG- and XM-tags are set for the first mapped read.\n')
+            verified_tags = True
 
-# Loop over the BAM and extract methylation m-tuples
-for read in BAM:
     # Read is first in a read-pair
     if read.is_paired and read.is_read1:
         # Fix QNAME and FLAG values if data were aligned with Bismark version < 0.8.3
@@ -439,7 +437,7 @@ for read in BAM:
           continue
         # Check that read_1 and read_2 have identical read-names. If not, exit because the file probably isn't sorted by queryname.
         if read_1.query_name == read_2.query_name:
-            methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, BAM, methylation_m_tuples, m, all_combinations, methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_filter, n_fragment_skipped_due_to_bad_overlap, FAILED_QC)
+            methylation_m_tuples, n_methylation_loci_in_fragment, n_fragment_skipped_due_to_bad_overlap = extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, AlignmentFile, methylation_m_tuples, m, all_combinations, methylation_type, methylation_pattern, ignore_read_1_pos, ignore_read_2_pos, min_qual, phred_offset, ob_strand_offset, overlap_filter, n_fragment_skipped_due_to_bad_overlap, FAILED_QC)
             # Update the n_methylation_loci_per_read dictionary
             if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
                 n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
@@ -448,7 +446,7 @@ for read in BAM:
             read_1 = None
             read_2 = None
         else:
-            exit_msg = ''.join(["ERROR: The name of read_1 is not identical to to that of read_2 for read-pair ", read_1.query_name, read_2.query_name, ". Please sort your paired-end BAM file in queryname order with Picard's SortSam function."])
+            exit_msg = ''.join(["ERROR: The name of read_1 is not identical to to that of read_2 for read-pair ", read_1.query_name, read_2.query_name, ". Please sort your paired-end SAM/BAM file in queryname order with Picard's SortSam function."])
             sys.exit(exit_msg)
     # Read is single-end
     elif not read.is_paired:
@@ -489,7 +487,7 @@ for read in BAM:
             read_1 = None
             read_2 = None
             continue
-        methylation_m_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, BAM, methylation_m_tuples, m, all_combinations, methylation_type, methylation_pattern, ignore_read_1_pos, min_qual, phred_offset, ob_strand_offset)
+        methylation_m_tuples, n_methylation_loci_in_fragment = extract_and_update_methylation_index_from_single_end_read(read, AlignmentFile, methylation_m_tuples, m, all_combinations, methylation_type, methylation_pattern, ignore_read_1_pos, min_qual, phred_offset, ob_strand_offset)
         if not n_methylation_loci_in_fragment in n_methylation_loci_per_read:
             n_methylation_loci_per_read[n_methylation_loci_in_fragment] = 0
 
@@ -528,7 +526,7 @@ for k, v in iter(sorted(n_methylation_loci_per_read.items())):
     HIST.write(''.join([str(k), '\t', str(v), '\n']))
 
 # Close all files
-BAM.close()
+AlignmentFile.close()
 OUT.close()
 HIST.close()
 FAILED_QC.close()
