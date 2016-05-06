@@ -452,7 +452,7 @@ for read in AlignmentFile:
             read_1 = None
             read_2 = None
         else:
-            exit_msg = ''.join(["ERROR: The name of read_1 is not identical to to that of read_2 for read-pair ", read_1.query_name, read_2.query_name, ". Please sort your paired-end SAM/BAM file in queryname order with Picard's SortSam function."])
+            exit_msg = ''.join(["ERROR: The name of read_1 is not identical to to that of read_2 for read-pair ", read_1.query_name, read_2.query_name, ". This usually means that the paired-end SAM/BAM file needs to be sorted in queryname order with `samtools sort -n` ", AlignmentFile, " (see README.md for further details). If you believe that your paired-end SAM/BAM file is already sorted by queryname and that this error is incorrect, please file an issue at www.github.com/PeteHaitch/methtuple"])
             sys.exit(exit_msg)
     # Read is single-end
     elif not read.is_paired:
@@ -500,7 +500,7 @@ for read in AlignmentFile:
         n_methylation_loci_per_read[n_methylation_loci_in_fragment] += 1
     # Read is neither single-end nor a mate from a read-pair. This shouldn't happen.
     else:
-        exit_msg = ''.join(['ERROR: Read ', read.query_name, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. methtuplePlease log an issue at www.github.com/PeteHaitch/methtuple describing the error..'])
+        exit_msg = ''.join(['ERROR: Read ', read.query_name, ' is missing the 0x01, 0x40 or 0x80 FLAG bit. This should never happen. Please file an issue at www.github.com/PeteHaitch/methtuple describing the error.'])
         sys.exit(exit_msg)
 
 # Write results to disk

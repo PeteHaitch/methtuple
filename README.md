@@ -367,11 +367,11 @@ These are current limitations and their statuses:
 
 Please file an issue if you would like to use a SAM/BAM file created with another aligner and I will do my best to support it; also, see [Issue #30](https://github.com/PeteHaitch/methtuple/issues/30)
 
-### Paired-end data must be sorted by queryname
+### Paired-end data must be sorted by queryname and it is recommended that SAMtools is used to do this
 
-This is required in order to avoid lookups when finding the mate of a paired-end read.
+Sorting paired-end data by queryname (`QNAME`) is required in order to avoid expensive lookups when finding the mate of a paired-end read. `methtuple` requires that read_1 always occurs before read_2 in each pair. Unfortunately, the SAM specifications provides no guarantee about the relative order of `read_1` and `read_2` when they have identical `QNAME` and the file is sorted by queryname.
 
-The SAM/BAM file created by Bismark is natively in queryname order and so this is not a problem. If the file is not in queryname order then use `samtools sort` with the `-n` option or Picard's `SortSam` function with `SO=queryname` to sort your SAM/BAM by queryname. The helper script `helper_scripts/run_methtuple.sh` works with a coordinate-sorted SAM/BAM file and does so by including a step to sort the chromosome-level SAM/BAM files by queryname using Picard's `SortSam`.
+The SAM/BAM file created by Bismark is already in the required order and so this is not an issue. However, if the SAM/BAM file produced by Bismark has sunsequently been re-sorted in some way (e.g., sorted by genomic co-ordinates for use with Picard's MarkDuplicates utility), then the file will need to be re-sorted. According to Heng Li, one of the developer's of SAMtools, "samtools sort starts to put `read_1` before `read_2` since 0.1.19, released on 03/19/2013." ([https://github.com/samtools/hts-specs/issues/5#issuecomment-106797588](https://github.com/samtools/hts-specs/issues/5#issuecomment-106797588)). Therefore, `samtools sort -n` is the recommended way to sort the SAM/BAM file by queryname in order to ensure that `read_1` occurs before `read_2`. The helper script `helper_scripts/run_methtuple.sh` works with a coordinate-sorted SAM/BAM file and does so by including a step to sort the chromosome-level SAM/BAM files by queryname using `samtools sort -n`.
 
 ### The `--aligner Bismark_old` option is a bit crude
 

@@ -137,7 +137,7 @@ def fix_old_bismark(read):
 	elif read.flag == 179:
 		read.flag = 163
 	else:
-		exit_msg = ''.join(['ERROR: Unexpected FLAG (', str(read.flag), ') for read ', read.query_name, 'Sorry, --aligner Bismark_old is unable to deal with this FLAG. Please log an issue at www.github.com/PeteHaitch/methtuple describing the error..'])
+		exit_msg = ''.join(['ERROR: Unexpected FLAG (', str(read.flag), ') for read ', read.query_name, 'Sorry, --aligner Bismark_old is unable to deal with this FLAG. Please file an issue at www.github.com/PeteHaitch/methtuple describing the error..'])
 		sys.exit(exit_msg)
 	return read
 
@@ -251,7 +251,7 @@ def extract_and_update_methylation_index_from_paired_end_reads(read_1, read_2, A
     strand_1 = get_strand(read_1)
     strand_2 = get_strand(read_2)
     if strand_1 != strand_2:
-      exit_msg = ''.join(['ERROR: The informative strands for read-pair ', read_1.query_name, ',  do not agree between mates. This should never happen.\nPlease log an issue at www.github.com/PeteHaitch/methtuple describing the error.'])
+      exit_msg = ''.join(['ERROR: The informative strands for read-pair ', read_1.query_name, ',  do not agree between mates. This should never happen.\nPlease file an issue at www.github.com/PeteHaitch/methtuple describing the error.'])
       sys.exit(exit_msg)
 
     # Process read-pairs to handle overlapping mates.
@@ -331,7 +331,7 @@ def get_strand(read):
             strand = '-'
         ## Else, something odd about this read
         else:
-            exit_msg = ''.join(['ERROR: Read ', read.query_name, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/methtuple describing the error.'])
+            exit_msg = ''.join(['ERROR: Read ', read.query_name, ' has incompatible or missing XG-tag or XR-tag. Please file an issue at www.github.com/PeteHaitch/methtuple describing the error.'])
             sys.exit(exit_msg)
     ## Paired-end
     elif read.is_paired:
@@ -346,7 +346,7 @@ def get_strand(read):
                 strand = '-'
             ## Else, something odd about this read
             else:
-                exit_msg = ''.join(['ERROR: Read ', read.query_name, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/methtuple describing the error.'])
+                exit_msg = ''.join(['ERROR: Read ', read.query_name, ' has incompatible or missing XG-tag or XR-tag. Please file an issue at www.github.com/PeteHaitch/methtuple describing the error.'])
                 sys.exit(exit_msg)
         elif read.is_read2:
             ## Check if aligned CT or CTOT-strand, i.e., informative for OT-strand.
@@ -357,10 +357,10 @@ def get_strand(read):
                 strand = '-'
             ## Else, something odd about this read
             else:
-                exit_msg = ''.join(['ERROR: Read ', read.query_name, ' has incompatible or missing XG-tag or XR-tag. Please log an issue at www.github.com/PeteHaitch/methtuple describing the error.'])
+                exit_msg = ''.join(['ERROR: Read ', read.query_name, ' has incompatible or missing XG-tag or XR-tag. Please file an issue at www.github.com/PeteHaitch/methtuple describing the error.'])
                 sys.exit(exit_msg)
     else:
-        exit_msg = ''.join(['ERROR: Read ', read.query_name, ' is neither a single-end read nor part of a paired-end read. Please log an issue at www.github.com/PeteHaitch/methtuple describing the error.'])
+        exit_msg = ''.join(['ERROR: Read ', read.query_name, ' is neither a single-end read nor part of a paired-end read. Please file an issue at www.github.com/PeteHaitch/methtuple describing the error.'])
     return strand
 
 # TODO: Check that get_positions() works with soft-clipped reads. If this function handles soft-clipped reads correctly then methtuple can process soft-clipped reads (provided the XM-tag is has '.' for soft-clipped positions and read.query_sequence, read.query_qualities, read.get_tag('XM') and get_positions(read) are all of the same length and equal to the sequence length).
@@ -377,7 +377,7 @@ def get_positions(read):
 
   # A sanity check
   if (len(read.query_sequence) != len(positions)):
-      exit_msg = ''.join(['Length of positions (', str(len(positions)), ') does not equal length of read.query_sequence (', str(len(read.query_sequence)), ') for read: ', read.query_name, '\nThis should never happen. Please log an issue at www.github.com/PeteHaitch/methtuple describing the error..'])
+      exit_msg = ''.join(['Length of positions (', str(len(positions)), ') does not equal length of read.query_sequence (', str(len(read.query_sequence)), ') for read: ', read.query_name, '\nThis should never happen. Please file an issue at www.github.com/PeteHaitch/methtuple describing the error..'])
       sys.exit(exit_msg)
   return positions
 

@@ -59,10 +59,10 @@ class MTuple:
 
         # Check whether there are any unexpected, and therefore invalid, characters in comethylation_state
         if not re.search('[^MU]', comethylation_state) is None:
-            exit_msg = ''.join([read_1.query_name, ' has an invalid comethylation state = ', comethylation_state, '.\nThis should never happen. methtuplePlease log an issue at www.github.com/PeteHaitch/methtuple describing the error..'])
+            exit_msg = ''.join([read_1.query_name, ' has an invalid comethylation state = ', comethylation_state, '.\nThis should never happen. Please file an issue at www.github.com/PeteHaitch/methtuple describing the error.'])
             sys.exit(exit_msg)
         if (len(comethylation_state) != self.m):
-            exit_msg = ''.join(['Length of comethylation string (', str(len(comethylation_state)), ') does not equal m (', str(self.m), '). \nThis should never happen. methtuplePlease log an issue at www.github.com/PeteHaitch/methtuple describing the error..'])
+            exit_msg = ''.join(['Length of comethylation string (', str(len(comethylation_state)), ') does not equal m (', str(self.m), '). \nThis should never happen. Please file an issue at www.github.com/PeteHaitch/methtuple describing the error.'])
             sys.exit(exit_msg)
 
         # Check whether this m-tuple is already in MTuple. If it is just update the corresponding count, otherwise add that m-tuple and then update the corresponding count
