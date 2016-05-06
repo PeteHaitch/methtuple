@@ -243,18 +243,22 @@ usage: methtuple [options] <in.bam>|<in.sam>
 Please run 'methtuple -h' for a full list of options.
 
 Extract methylation patterns at m-tuples of methylation loci from the aligned
-reads of a bisulfite-sequencing experiment. Currently only supports SAM/BAM files
-created with Bismark.
+reads of a bisulfite-sequencing experiment. Currently only supports SAM/BAM
+files created with Bismark.
 
 Input options:
+  <in.bam>|<in.sam>     Input file in BAM or SAM format. Use - to specify
+                        STDIN. The header must be included and alignments must
+                        have been done using Bismark.
   --aligner {Bismark,Bismark_old}
-                        The aligner used to generate the SAM/BAM file. Bismark_old
-                        refers to Bismark version < 0.8.3 (default: Bismark)
+                        The aligner used to generate the SAM/BAM file.
+                        Bismark_old refers to Bismark version < 0.8.3
+                        (default: Bismark)
   --Phred64             Quality scores are encoded as Phred64 rather than
                         Phred33 (default: False)
 
 Output options:
-  -o <text>, --output-prefix <text>
+  -o PREFIX, --output-prefix PREFIX
                         By default, all output files have the same prefix as
                         that of the input file. This will override the prefix
                         of output file names
@@ -283,9 +287,9 @@ Construction of methylation loci m-tuples:
   --ac, --all-combinations
                         Create all combinations of m-tuples, including non-
                         neighbouring m-tuples. WARNING: This will greatly
-                        increase the runtime and memory usage, particularly
-                        for larger values of -m and when analysing non-CG
-                        methylation (default: False)
+                        increase the memory usage, particularly for larger
+                        values of -m and when analysing non-CG methylation
+                        (default: False)
 
 Filtering of reads:
   Applied before filtering of bases
@@ -302,8 +306,8 @@ Filtering of reads:
                         The type of check to be performed (listed roughly from
                         most-to-least stringent): Ignore the read-pair if the
                         sequence in the overlap differs between mates
-                        (sequence_strict); Ignore the overlapping region if the
-                        sequence in the overlap differs between mates
+                        (sequence_strict); Ignore the overlapping region if
+                        the sequence in the overlap differs between mates
                         (sequence); Ignore the read-pair if the XM-tag in the
                         overlap differs (XM_strict); Ignore the overlapping
                         region if the XM-tag in the overlap differs between

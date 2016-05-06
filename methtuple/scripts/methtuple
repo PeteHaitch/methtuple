@@ -66,7 +66,7 @@ parser = argparse.ArgumentParser(description = 'Extract methylation patterns at 
 Input = parser.add_argument_group('Input options')
 Input.add_argument('AlignmentFile',
     metavar = '<in.bam>|<in.sam>',
-    help = argparse.SUPPRESS)
+    help = "Input file in BAM or SAM format. Use - to specify STDIN. The header must be included and alignments must have been done using Bismark.")
 Input.add_argument('--aligner',
     choices = ['Bismark', 'Bismark_old'],
     default = 'Bismark',
@@ -78,7 +78,7 @@ Input.add_argument('--Phred64',
 # Output arguments
 Output = parser.add_argument_group('Output options')
 Output.add_argument('-o', '--output-prefix',
-    metavar = '<text>',
+    metavar = 'PREFIX',
     default = argparse.SUPPRESS,
     help = 'By default, all output files have the same prefix as that of the input file. This will override the prefix of output file names')
 Output.add_argument('--sc', '--strand-collapse',
@@ -161,7 +161,13 @@ args = parser.parse_args()
 #### Variable initialisations ####
 # Set output prefix if unspecified
 if not hasattr(args, 'output_prefix'):
-    args.output_prefix = os.path.splitext(args.AlignmentFile)[0]
+    print(args.AlignmentFile)
+    if args.AlignmentFile != "-":
+        args.output_prefix = os.path.splitext(args.AlignmentFile)[0]
+    else:
+        exit_msg = "ERROR: Must supply -o PREFIX if input file is STDIN"
+        sys.exit(exit_msg)
+
 # Check whether gzip and bzip2 compression are both requested
 if args.gzip and args.bzip2:
     exit_msg = "ERROR: Only one of --gzip or --bzip2 can be selected."
