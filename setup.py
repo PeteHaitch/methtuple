@@ -3,24 +3,18 @@ import os
 from setuptools import setup, find_packages
 
 # Convert README.md to README.rst automagically
-# http://stackoverflow.com/a/23265673
-try:
-    from pypandoc import convert
-    read_md = lambda f: convert(f, 'rst')
-except ImportError:
-    print("warning: pypandoc module not found, could not convert Markdown to RST")
-    read_md = lambda f: open(f, 'r').read()
-
-here = os.path.abspath(os.path.dirname(__file__))
-
-README = open(os.path.join(here, 'README.md')).read()
-CHANGES = '' # open(os.path.join(here, 'CHANGES.md')).read()
+# https://packaging.python.org/en/latest/guides/making-a-pypi-friendly-readme/
+# read the contents of your README file
+from pathlib import Path
+this_directory = Path(__file__).parent
+long_description = (this_directory / "README.md").read_text()
 
 setup(
   name='methtuple',
   version='1.7.0',
   description='methtuple',
-  long_description=read_md('README.rst'),
+  long_description=long_description,
+  long_description_content_type='text/markdown',
   license='MIT',
   classifiers=[
     "Programming Language :: Python :: 2.7",
