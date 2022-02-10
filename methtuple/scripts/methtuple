@@ -2,7 +2,7 @@
 
 # The MIT License (MIT)
 #
-# Copyright (c) [2012-2016] [Peter Hickey (peter.hickey@gmail.com)]
+# Copyright (c) [2012-2022] [Peter Hickey (peter.hickey@gmail.com)]
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -101,9 +101,9 @@ Output.add_argument('--bzip2',
 Options = parser.add_argument_group('Construction of methylation loci m-tuples')
 Options.add_argument('--mt', '--methylation-type',
     choices = ['CG', 'CHG', 'CHH', 'CNN'],
-    default = ['CG'],
+    default = None,
     action = 'append',
-    help = 'The methylation type. Multiple methylation types may be analysed jointly by repeated use of this argument, e.g., --methylation-type CG --methylation-type CHG')
+    help = 'The methylation type. Multiple methylation types may be analysed jointly by repeated use of this argument, e.g., --methylation-type CG --methylation-type CHG. The default (\'None\') corresponds to CG')
 Options.add_argument('-m',
     type = int,
     metavar = '<int>',
@@ -183,6 +183,9 @@ m = args.m
 # There are 4 methylation types and therefore 2^4 = 16 possible subsets (including the empty set). Each subset must be dealt with separately.
 # Also, set the ob_strand_offset variable.
 # If the --strand-collapse flag is not set then we don't collapse across strands (i.e. ob_strand_offset = 0). If the flag is set then what happens depends on the value(s) of --methylation-type
+# The default is to use the CG methylation type
+if args.mt is None:
+    args.mt = ['CG']
 methylation_type = list(set(args.mt)) # list(set(x)) takes a list, x, and returns the unique elements as a list.
 if not args.sc:
     ob_strand_offset = 0

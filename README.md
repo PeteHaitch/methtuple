@@ -1,5 +1,4 @@
-[![Build Status](https://travis-ci.org/PeteHaitch/methtuple.png?branch=master)](https://travis-ci.org/PeteHaitch/methtuple)
-[![Coverage Status](https://coveralls.io/repos/PeteHaitch/methtuple/badge.svg?branch=master)](https://coveralls.io/r/PeteHaitch/methtuple?branch=master)
+![Python package](https://github.com/PeteHaitch/methtuple/actions/workflows/python.yaml/badge.svg)
 
 # methtuple
 
@@ -247,41 +246,41 @@ reads of a bisulfite-sequencing experiment. Currently only supports SAM/BAM
 files created with Bismark.
 
 Input options:
-  <in.bam>|<in.sam>     Input file in BAM or SAM format. Use - to specify
-                        STDIN. The header must be included and alignments must
-                        have been done using Bismark.
+  <in.bam>|<in.sam>     Input file in BAM or SAM format. Use - to specify STDIN.
+                        The header must be included and alignments must have
+                        been done using Bismark.
   --aligner {Bismark,Bismark_old}
                         The aligner used to generate the SAM/BAM file.
-                        Bismark_old refers to Bismark version < 0.8.3
-                        (default: Bismark)
+                        Bismark_old refers to Bismark version < 0.8.3 (default:
+                        Bismark)
   --Phred64             Quality scores are encoded as Phred64 rather than
                         Phred33 (default: False)
 
 Output options:
   -o PREFIX, --output-prefix PREFIX
                         By default, all output files have the same prefix as
-                        that of the input file. This will override the prefix
-                        of output file names
+                        that of the input file. This will override the prefix of
+                        output file names
   --sc, --strand-collapse
-                        Collapse counts across across Watson and Crick
-                        strands. Only possible for CG methylation type. The
-                        strand is recorded as '*' if this option is selected.
-                        (default: False)
+                        Collapse counts across across Watson and Crick strands.
+                        Only possible for CG methylation type. The strand is
+                        recorded as '*' if this option is selected. (default:
+                        False)
   --nfff, --no-failed-filter-file
-                        Do not create the file listing the reads that failed
-                        to pass to pass the filters and which filter it failed
+                        Do not create the file listing the reads that failed to
+                        pass to pass the filters and which filter it failed
                         (default: False)
   --gzip                gzip all output files. --gzip and --bzip2 are mutually
                         exclusive (default: False)
-  --bzip2               bzip2 all output files. --gzip and --bzip2 are
-                        mutually exclusive (default: False)
+  --bzip2               bzip2 all output files. --gzip and --bzip2 are mutually
+                        exclusive (default: False)
 
 Construction of methylation loci m-tuples:
   --mt {CG,CHG,CHH,CNN}, --methylation-type {CG,CHG,CHH,CNN}
-                        The methylation type. Multiple methylation types may
-                        be analysed jointly by repeated use of this argument,
-                        e.g., --methylation-type CG --methylation-type CHG
-                        (default: ['CG'])
+                        The methylation type. Multiple methylation types may be
+                        analysed jointly by repeated use of this argument, e.g.,
+                        --methylation-type CG --methylation-type CHG. The
+                        default ('None') corresponds to CG (default: None)
   -m <int>              The size of the m-tuples, i.e., the 'm' in m-tuples
                         (default: 1)
   --ac, --all-combinations
@@ -296,9 +295,9 @@ Filtering of reads:
 
   --id, --ignore-duplicates
                         Ignore reads that have been flagged as PCR duplicates
-                        by, for example, Picard's MarkDuplicates function.
-                        More specifically, ignore reads with the 0x400 bit in
-                        the FLAG (default: False)
+                        by, for example, Picard's MarkDuplicates function. More
+                        specifically, ignore reads with the 0x400 bit in the
+                        FLAG (default: False)
   --mmq <int>, --min-mapq <int>
                         Ignore reads with a mapping quality score (mapQ) less
                         than <int> (default: 0)
@@ -306,8 +305,8 @@ Filtering of reads:
                         The type of check to be performed (listed roughly from
                         most-to-least stringent): Ignore the read-pair if the
                         sequence in the overlap differs between mates
-                        (sequence_strict); Ignore the overlapping region if
-                        the sequence in the overlap differs between mates
+                        (sequence_strict); Ignore the overlapping region if the
+                        sequence in the overlap differs between mates
                         (sequence); Ignore the read-pair if the XM-tag in the
                         overlap differs (XM_strict); Ignore the overlapping
                         region if the XM-tag in the overlap differs between
@@ -316,35 +315,34 @@ Filtering of reads:
                         (XM_ol); Use the mate with the higher average quality
                         basecalls in the overlapping region (quality); Use the
                         first mate of each read-pair, i.e., the method used by
-                        bismark_methylation_extractor with the --no_overlap
-                        flag (Bismark) (default: XM_ol)
+                        bismark_methylation_extractor with the --no_overlap flag
+                        (Bismark) (default: XM_ol)
   --uip, --use-improper-pairs
                         Use the improper read-pairs, i.e. don't filter them.
-                        More specifically, check the 0x2 FLAG bit of each
-                        read; the exact definition of an improper read-pair
-                        depends on the aligner and alignment parameters
-                        (default: False)
+                        More specifically, check the 0x2 FLAG bit of each read;
+                        the exact definition of an improper read-pair depends on
+                        the aligner and alignment parameters (default: False)
 
 Filtering of bases:
   Applied after filtering of reads
 
   --ir1p VALUES, --ignore-read1-positions VALUES
-                        If single-end data, ignore these read positions from
-                        all reads. If paired-end data, ignore these read
-                        positions from just read_1 of each pair. Multiple
-                        values should be comma-delimited, ranges can be
-                        specified by use of the hyphen and all positions
-                        should use 1-based co-ordinates. For example,
-                        1-5,80,95-100 corresponds to ignoring read-positions
-                        1, 2, 3, 4, 5, 80, 98, 99, 100. (default: None)
+                        If single-end data, ignore these read positions from all
+                        reads. If paired-end data, ignore these read positions
+                        from just read_1 of each pair. Multiple values should be
+                        comma-delimited, ranges can be specified by use of the
+                        hyphen and all positions should use 1-based co-
+                        ordinates. For example, 1-5,80,95-100 corresponds to
+                        ignoring read-positions 1, 2, 3, 4, 5, 80, 98, 99, 100.
+                        (default: None)
   --ir2p VALUES, --ignore-read2-positions VALUES
                         Ignore these read positions from just read_2 of each
-                        pair if paired-end sequencing. Multiple values should
-                        be comma-delimited, ranges can be specified by use of
-                        the hyphen and all positions should use 1-based co-
+                        pair if paired-end sequencing. Multiple values should be
+                        comma-delimited, ranges can be specified by use of the
+                        hyphen and all positions should use 1-based co-
                         ordinates. For example, 1-5,80,95-100 corresponds to
-                        ignoring read-positions 1, 2, 3, 4, 5, 80, 98, 99,
-                        100. (default: None)
+                        ignoring read-positions 1, 2, 3, 4, 5, 80, 98, 99, 100.
+                        (default: None)
   --mbq <int>, --min-base-qual <int>
                         Ignore read positions with a base quality score less
                         than <int> (default: 0)
@@ -353,7 +351,7 @@ Other:
   -v, --version         show program's version number and exit
   -h, --help            show this help message and exit
 
-methtuple (v1.6.0) by Peter Hickey (peter.hickey@gmail.com,
+methtuple (v1.7.0) by Peter Hickey (peter.hickey@gmail.com,
 https://github.com/PeteHaitch/methtuple/)
 ```
 

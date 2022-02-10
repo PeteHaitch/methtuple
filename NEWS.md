@@ -1,3 +1,7 @@
+# Version 1.7.0
+
+- Fixed parsing of `--methylation-type` argument (closes [#102](https://github.com/PeteHaitch/methtuple/issues/102))
+
 # Version 1.5.4
 
 `methtuple` now requires pysam `v0.8.4` or greater.
