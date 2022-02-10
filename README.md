@@ -1,5 +1,4 @@
-[![Build Status](https://travis-ci.org/PeteHaitch/methtuple.png?branch=master)](https://travis-ci.org/PeteHaitch/methtuple)
-[![Coverage Status](https://coveralls.io/repos/PeteHaitch/methtuple/badge.svg?branch=master)](https://coveralls.io/r/PeteHaitch/methtuple?branch=master)
+![Python package](https://github.com/PeteHaitch/methtuple/actions/workflows/python.yaml/badge.svg)
 
 # methtuple
 
