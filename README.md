@@ -1,6 +1,6 @@
-![Python package](https://github.com/PeteHaitch/methtuple/actions/workflows/python.yaml/badge.svg)
-
 # methtuple
+
+![Python package](https://github.com/PeteHaitch/methtuple/actions/workflows/python.yaml/badge.svg)
 
 ## Overview
 
@@ -32,7 +32,7 @@ Well, I hope ASCII art will do.
 
 Suppose we sequence a region of the genome containing five methylation loci with three paired-end reads (`A`, `B` and `C`):
 
-```
+```text
 ref: 1    2   3 4 5
 A_1: |----->
 A_2:         <------|
@@ -44,7 +44,7 @@ C_2:      <------|
 
 If we are interested in 1-tuples, then we would obtain the following from each read by running `methtuple`:
 
-```
+```text
 A: {1}, {2}, {3}, {4}, {5}
 B: {1}, {2}, {4}, {5}
 C: {2}, {3}, {4}
@@ -54,7 +54,7 @@ This result is true regardless of whether the `--all-combinations` flag is set.
 
 If we are interested in 3-tuples, then we would obtain the following from each read by running `methtuple` in its default mode:
 
-```
+```text
 A: {1, 2, 3}, {2, 3, 4}, {3, 4, 5}
 B: {1, 2, 4}, {2, 4, 5}
 C: {2, 3, 4}
@@ -68,7 +68,7 @@ Things to note:
 
 However, if we were to run `methtuple` with `--all-combinations` then we would obtain:
 
-```
+```text
 A: {1, 2, 3}, {2, 3, 4}, {3, 4, 5}, {1, 2, 4}, {1, 2, 5}, {1, 3, 4}, {1, 3, 5}, {1, 4, 5}, {2, 3, 5}, {2, 4, 5}
 B: {1, 2, 4}, {2, 4, 5}, {1, 2, 5}, {1, 4, 5}
 C: {2, 3, 4}
@@ -86,7 +86,7 @@ I have extensively used and tested `methtuple` with Python 2.7. It should also w
 
 The simplest way:
 
-```
+```sh
 pip install methtuple
 ```
 
@@ -94,7 +94,7 @@ pip install methtuple
 
 Alternatively, after cloning or downloading the `methtuple` git repositority, simply run:
 
-```
+```sh
 python setup.py install
 ```
 
@@ -118,7 +118,7 @@ Three output files are created and summary information is written to `STDOUT`. T
 
 Here are the first 5 rows (including with the header row) from `data/se_directional.fq.gz_bismark_bt2.CG.2.tsv`, which is created by running the single-end directional example shown below:
 
-```
+```text
 chr     strand  pos1    pos2    MM      MU      UM      UU
 chr1    +       6387768 6387783 1       0       0       0
 chr1    +       7104116 7104139 1       0       0       0
@@ -134,7 +134,7 @@ The second file (`<in>.<--methylation-type>_per_read.hist`) is a text histogram 
 
 Here is the file `data/se_directional.fq.gz_bismark_bt2.CG_per_read.hist`, which is created by running the single-end directional example shown below:
 
-```
+```text
 n       count
 0       4561
 1       2347
@@ -153,6 +153,7 @@ n       count
 14      1
 18      2
 ```
+
 So, 4,561 reads aligned to a position containing no CpGs while 2 reads aligned to a position containing 18 CpGs.
 
 An optional third and final file (`<in>.reads_that_failed_QC.txt>`) records the querynames (`QNAME`) of all reads that failed to pass quality control filters and which filter the read failed. This file may be omitted by use of the `--no-failed-filter-file` flag.
@@ -169,7 +170,7 @@ Although the example datasets are both from directional bisulfite-sequencing pro
 
 The following command will extract all CpG 2-tuples from the file `data/se_directional.bam`:
 
-```
+```sh
 methtuple -m 2 --methylation-type CG data/se_directional.fq.gz_bismark_bt2.bam
 ```
 
@@ -183,7 +184,7 @@ This results in 3 files:
 
 Paired-end data must firstly be sorted by queryname prior to running `methtuple`. BAM files created by Bismark, such as `data/pe_directional.bam`, are already sorted by queryname. So, to extract all CG/CHH 3-tuples we would simply run:
 
-```
+```sh
 methtuple -m 3 --methylation-type CG --methylation-type CHH data/pe_directional_1.fq.gz_bismark_bt2_pe.bam
 ```
 
@@ -197,7 +198,7 @@ This results in 3 files:
 
 If your paired-end SAM/BAM file is sorted by genomic coordinates, then you must first sort the SAM/BAM by queryname and then run `methtuple` on the queryname-sorted SAM/BAM. This can be done by using `samtools sort` with the `-n` option or Picard's `SortSam` function with the `SO=queryname` option:
 
-```
+```sh
 # Create a coordinate-sorted SAM/BAM for the sake of argument
 samtools sort data/pe_directional_1.fq.gz_bismark_bt2_pe.bam data/cs_pe_directional_1.fq.gz_bismark_bt2_pe
 # Re-sort the coordinate-sorted BAM by queryname
@@ -237,7 +238,7 @@ I frequently work with large, coordinate-sorted SAM/BAM files. To speed up the e
 
 A full list of options is available by running `methtuple --help`:
 
-```
+```text
 usage: methtuple [options] <in.bam>|<in.sam>
 Please run 'methtuple -h' for a full list of options.
 
