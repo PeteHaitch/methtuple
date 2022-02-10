@@ -18,7 +18,7 @@ CHANGES = '' # open(os.path.join(here, 'CHANGES.md')).read()
 
 setup(
   name='methtuple',
-  version='1.6.0',
+  version='1.7.0',
   description='methtuple',
   long_description=read_md('README.md'),
   license='MIT',
