@@ -11,13 +11,12 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
   name='methtuple',
-  version='1.7.0',
+  version='1.8.0',
   description='methtuple',
   long_description=long_description,
   long_description_content_type='text/markdown',
   license='MIT',
   classifiers=[
-    "Programming Language :: Python :: 2.7",
     "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     'Programming Language :: Python :: 3.8',

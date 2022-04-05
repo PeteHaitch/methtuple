@@ -80,7 +80,9 @@ C: {2, 3, 4}
 
 Running `python setup.py install` will attempt to install `pysam` if it isn't found on your system. Alternatively, instructions for installing `pysam` are available from [https://github.com/pysam-developers/pysam](https://github.com/pysam-developers/pysam).
 
-I have extensively used and tested `methtuple` with Python 2.7. It should also work on Python 3.2, 3.3, 3.4, and 3.5 with the current version of `pysam` (`v0.8.4`), as indicated by the [Travis-CI builds](https://travis-ci.org/PeteHaitch/methtuple).
+I have extensively used and tested `methtuple` (<= `v.1.6.0) with Python 2.7 and it should also work on Python 3.x.
+As of `v1.7.0` I stopped trying to provide compatability with Python 2.x.
+Although, I have not used the software much since 2015, it passes its extensive test suite https://github.com/PeteHaitch/methtuple/actions and I will endeavour to provide fixes to any bug reports.
 
 ### Using `pip`
 
@@ -352,7 +354,7 @@ Other:
   -v, --version         show program's version number and exit
   -h, --help            show this help message and exit
 
-methtuple (v1.7.0) by Peter Hickey (peter.hickey@gmail.com,
+methtuple (v1.8.0) by Peter Hickey (peter.hickey@gmail.com,
 https://github.com/PeteHaitch/methtuple/)
 ```
 

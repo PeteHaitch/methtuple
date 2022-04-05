@@ -1,3 +1,9 @@
+# Version 1.8.0
+
+- Fixed parsing of reads containing insertions (closes [#104](https://github.com/PeteHaitch/methtuple/issues/104))
+- Fixed handling of gzip and bzip output files and filenames
+- Remove support for Python 2.7. It may still work, but I'm no longer going to try to maintain compatability with both Python 2 and 3.
+
 # Version 1.7.0
 
 - Fixed parsing of `--methylation-type` argument (closes [#102](https://github.com/PeteHaitch/methtuple/issues/102))
