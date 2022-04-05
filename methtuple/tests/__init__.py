@@ -346,7 +346,7 @@ class TestGetPositions(unittest.TestCase):
 			read.reference_start= read.reference_start+ ss + sh
 			return read
 
-	# Basically, what we test test is that the output of get_positions(read) is identical to the output of read.get_reference_positions() with two exceptions:
+	# Basically, what we test is that the output of get_positions(read) is identical to the output of read.get_reference_positions() with two exceptions:
 	# (1) If the read contains an insertion, then compare against read.get_aligned_pairs(), which returns None for inserted bases
 	# (2) If the read contains soft-clipped bases then need to trim those "start/end Nones" from get_positions(read).
 
