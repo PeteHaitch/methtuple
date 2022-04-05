@@ -260,24 +260,36 @@ else:
 hist_prefix = "".join([args.output_prefix, '.', '_'.join(methylation_type.split('/')), "_per_read.hist"])
 
 if args.gzip:
-  OUT = gzip.open(".".join([out_prefix, "gz"]), "wb")
-  HIST = gzip.open(".".join([hist_prefix, "gz"]), "wb")
+  OUT = gzip.open(".".join([out_prefix, "gz"]), "wt")
+  OUT_NAME = OUT.name
+  HIST = gzip.open(".".join([hist_prefix, "gz"]), "wt")
+  HIST_NAME = HIST.name
 elif args.bzip2:
-  OUT = bz2.BZ2File(".".join([out_prefix, "bz2"]), "w")
-  HIST = bz2.BZ2file(".".join([hist_prefix, "bz2"]), "w")
+  OUT = bz2.open(".".join([out_prefix, "bz2"]), "wt")
+  # BZ2File objects do not have name attribute (https://bugs.python.org/issue24258)
+  OUT_NAME = ".".join([out_prefix, "bz2"])
+  HIST = bz2.open(".".join([hist_prefix, "bz2"]), "wt")
+  # BZ2File objects do not have name attribute (https://bugs.python.org/issue24258)
+  HIST_NAME = ".".join([hist_prefix, "bz2"])
 else:
   OUT = open(out_prefix, "w")
+  OUT_NAME = out_prefix
   HIST = open(hist_prefix, "w")
+  HIST_NAME = hist_prefix
 if not args.nfff:
   nfff_prefix = "".join([args.output_prefix, ".reads_that_failed_QC.txt"])
   if args.gzip:
-    FAILED_QC = gzip.open(".".join([nfff_prefix, "gz"]), "wb")
+    FAILED_QC = gzip.open(".".join([nfff_prefix, "gz"]), "wt")
+    FAILED_QC_NAME = FAILED_QC.name
   elif args.bzip2:
-    FAILED_QC = bz2.BZ2File(".".join([nfff_prefix, "bz2"]), "w")
+    FAILED_QC = bz2.open(".".join([nfff_prefix, "bz2"]), "wt")
+    FAILED_QC_NAME = ".".join([nfff_prefix, "bz2"])
   else:
     FAILED_QC = open(nfff_prefix, "w")
+    FAILED_QC_NAME = FAILED_QC.name
 else:
     FAILED_QC = open(os.devnull, "w")
+    FAILED_QC_NAME = FAILED_QC.name
 
 n_fragment = 0 # The number of DNA fragments. One single-end read contributes one to the count and each half of a read-pair contributes half a count.
 n_fragment_skipped_due_to_bad_overlap = 0 # The number of DNA fragments skipped due to the overlapping sequencing not passing the appropriate filter
@@ -294,11 +306,11 @@ methylation_m_tuples = MTuple(args.output_prefix, m, methylation_type, chr_map) 
 # Print key variable names and command line parameter options to STDOUT
 print("methtuple (v"+__version__+")\n")
 print('Input SAM/BAM file =', AlignmentFile.filename.decode("utf-8"))
-print(''.join(['Output file of ', methylation_type, ' ', str(m), '-tuples = ', OUT.name]))
+print(''.join(['Output file of ', methylation_type, ' ', str(m), '-tuples = ', OUT_NAME]))
 if args.sc:
     print(''.join(["The counts will be collapsed across Watson and Crick strands and the strand of each ", str(m), "-tuple will be recorded as '*'"]))
 if not args.nfff:
-    print('Reads that fail to pass QC filters will be written to =', FAILED_QC.name, '\n')
+    print('Reads that fail to pass QC filters will be written to =', FAILED_QC_NAME, '\n')
 else:
     print('There will be no file of reads that fail to pass QC filters\n')
 
@@ -508,7 +520,7 @@ for read in AlignmentFile:
 
 # Write results to disk
 print(''.join(['Finished extracting ',  methylation_type, ' ', str(m), '-tuples.']))
-print('Now writing output to', OUT.name, '...\n')
+print('Now writing output to', OUT_NAME, '...\n')
 write_methylation_m_tuples_to_file(methylation_m_tuples, OUT)
 
 # Print some summary information to STDOUT
@@ -529,7 +541,7 @@ for k, v in n_methylation_loci_per_read.items():
 print(''.join(['Number of DNA fragments informative for ', methylation_type, ' ', str(m), '-tuples = ', str(n_informative_fragments), ' (', str(round(n_informative_fragments / float(n_fragment) * 100, 1)), '% of total fragments)\n']))
 
 # Write histogram to HIST with the number of methylation loci per DNA fragment that passed QC filters
-print('Writing histogram with the number of', methylation_type, 'methylation loci per DNA fragment that passed QC filters to', HIST.name, '...')
+print('Writing histogram with the number of', methylation_type, 'methylation loci per DNA fragment that passed QC filters to', HIST_NAME, '...')
 HIST.write('n\tcount\n')
 for k, v in iter(sorted(n_methylation_loci_per_read.items())):
     HIST.write(''.join([str(k), '\t', str(v), '\n']))
