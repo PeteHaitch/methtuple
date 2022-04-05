@@ -441,10 +441,10 @@ def process_overlap(read_1, read_2, methylation_index_1, methylation_index_2, ov
     end_ol = max(overlap)
 
     # Get the read-positions (indices of the positions in each read) that are in the overlap. These are used for slicing out the overlap from read elements such as seq, qual and XM-tag.
-    start_ol_1 = [idx for idx, value in enumerate(positions_1) if value >= start_ol and value is not None][0]
-    end_ol_1 = [idx for idx, value in enumerate(positions_1) if value <= end_ol and value is not None][-1]
-    start_ol_2 = [idx for idx, value in enumerate(positions_2) if value >= start_ol and value is not None][0]
-    end_ol_2 = [idx for idx, value in enumerate(positions_2) if value <= end_ol and value is not None][-1]
+    start_ol_1 = [idx for idx, value in enumerate(positions_1) if value is not None and value >= start_ol][0]
+    end_ol_1 = [idx for idx, value in enumerate(positions_1) if value is not None and value <= end_ol][-1]
+    start_ol_2 = [idx for idx, value in enumerate(positions_2) if value is not None and value >= start_ol][0]
+    end_ol_2 = [idx for idx, value in enumerate(positions_2) if value is not None and value <= end_ol][-1]
 
     if overlap_filter == "sequence_strict":
       if read_1.query_sequence[start_ol_1:(end_ol_1 + 1)] != read_2.query_sequence[start_ol_2:(end_ol_2 + 1)]:
