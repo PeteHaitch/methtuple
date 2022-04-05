@@ -252,7 +252,9 @@ min_mapping_quality = args.mmq
 
 #### The main program. Loops over the AlignmentFile file line-by-line (i.e. alignedRead-by-alignedRead) and extracts the XM information for each read or read-pair. ####
 # Open AlignmentFile file and output files (pysam autodetects SAM vs. BAM)
+save = pysam.set_verbosity(0)
 AlignmentFile = pysam.AlignmentFile(args.AlignmentFile, 'r')
+pysam.set_verbosity(save)
 if all_combinations:
   out_prefix = ".".join([args.output_prefix, '_'.join(methylation_type.split('/')), ''.join([str(args.m), 'ac']), "tsv"])
 else:

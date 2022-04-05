@@ -1054,7 +1054,9 @@ class TestExtractAndUpdateMethylationIndexFromSingleEndRead(unittest.TestCase):
 		self.BAM.write(self.obr)
 		self.filename = self.BAM.filename
 		self.BAM.close()
+		save = pysam.set_verbosity(0)
 		self.BAM = pysam.AlignmentFile(self.filename, 'rb')
+		pysam.set_verbosity(save)
 		self.m1ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, AlignmentFile = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', all_combinations = False, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
 		self.m1otac, self.nmlifotac = extract_and_update_methylation_index_from_single_end_read(read = self.otr, AlignmentFile = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', all_combinations = True, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
 		self.m2ot, self.nmlifot = extract_and_update_methylation_index_from_single_end_read(read = self.otr, AlignmentFile = self.BAM, methylation_m_tuples = MTuple('test', 2, 'CG', {'chr1': 0}), m = 2,  methylation_type = 'CG', all_combinations = False, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1)
@@ -1231,7 +1233,9 @@ class TestExtractAndUpdateMethylationIndexFromPairedEndReads(unittest.TestCase):
 		self.BAM.write(self.obr_2)
 		self.filename = self.BAM.filename
 		self.BAM.close()
+		save = pysam.set_verbosity(0)
 		self.BAM = pysam.AlignmentFile(self.filename, 'rb')
+		pysam.set_verbosity(save)
 		self.FAILED_QC = open(tempfile.mkstemp()[1], 'w')
 		self.m1ot, self.nmlifot, self.nfsdtbo = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, AlignmentFile = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', all_combinations = False, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_filter = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
 		self.m1otac, self.nmlifotac, self.nfsdtboca = extract_and_update_methylation_index_from_paired_end_reads(read_1 = self.otr_1, read_2 = self.otr_2, AlignmentFile = self.BAM, methylation_m_tuples = MTuple('test', 1, 'CG', {'chr1': 0}), m = 1, methylation_type = 'CG', all_combinations = True, methylation_pattern = re.compile(r'[Zz]'), ignore_read_1_pos = [], ignore_read_2_pos = [], min_qual = 0, phred_offset = 33, ob_strand_offset = 1, overlap_filter = 'Bismark', n_fragment_skipped_due_to_bad_overlap = 0, FAILED_QC = self.FAILED_QC)
@@ -1508,7 +1512,9 @@ class TestMTuple(unittest.TestCase):
 		self.BAM.write(self.obr)
 		self.filename = self.BAM.filename
 		self.BAM.close()
+		save = pysam.set_verbosity(0)
 		self.BAM = pysam.AlignmentFile(self.filename, 'rb')
+		pysam.set_verbosity(save)
 		self.wfotr = MTuple('test', 2, 'CG', {'chr1': 0})
 		self.wfotr.increment_count(('chr1', 4562, 4573), 'ZZ', self.otr, None)
 		self.wfobr = MTuple('test', 2, 'CG', {'chr1': 0})
@@ -1528,7 +1534,9 @@ class TestMTuple(unittest.TestCase):
 		self.BAMPE.write(self.obr_2)
 		self.filename = self.BAMPE.filename
 		self.BAMPE.close()
+		save = pysam.set_verbosity(0)
 		self.BAMPE = pysam.AlignmentFile(self.filename, 'rb')
+		pysam.set_verbosity(save)
 		self.wfotrpe = MTuple('test', 2, 'CG', {'chr1': 0})
 		self.wfotrpe.increment_count(('chr1', 497, 525), 'ZZ', self.otr_1, self.otr_2)
 		self.wfobrpe = MTuple('test', 2, 'CG', {'chr1': 0})
